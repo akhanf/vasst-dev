@@ -10,7 +10,9 @@ output_dir=.
 
 
 
-betopts="-f 0.4 -B -c 95 107 163 -v"
+betopts="-f 0.5 -R"
+#betopts="-f 0.3 -B"
+#betopts="-f 0.4 -B -c 95 107 163 -v"   # settings for pennylab dti
 
 
 if [ -f $1 ]
@@ -37,25 +39,22 @@ t1=$t1_dir/t1.nii.gz
 bet_t1=$t1_dir/t1.brain.nii.gz
 brainmask=$t1_dir/brainmask.nii.gz
 
-#if [ -e $brainmask ]
-#then
-# echo fslmaths $t1 -mas $brainmask $bet_t1
-# fslmaths $t1 -mas $brainmask $bet_t1
+if [ -e $brainmask ]
+then
+ echo fslmaths $t1 -mas $brainmask $bet_t1
+ fslmaths $t1 -mas $brainmask $bet_t1
 
 
-#else
+else
 
 #skull strip 
 echo bet $t1 $bet_t1 $betopts
 bet $t1 $bet_t1 $betopts
-
-#fi
-
-
 echo fslmaths $bet_t1 -bin $brainmask
 fslmaths $bet_t1 -bin $brainmask
 
 
+fi
 
 
 #intensity normalize to mean 100
