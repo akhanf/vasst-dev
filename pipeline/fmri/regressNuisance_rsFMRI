@@ -1,0 +1,108 @@
+#!/bin/bash
+
+function usage {
+ echo "Usage $0 <subjid/list>  <options>"
+ echo "   -o output_dir		Set output directory (default .)"
+ echo ""
+}
+
+if [ "$#" -lt 1 ]
+then
+ usage
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi  
+
+shift 1 #shift by number of required arguments (incl subjid/list)
+
+#flag o with argument "o:"
+while getopts "o:" options; do
+ case $options in
+    o ) echo "Using output directory: $OPTARG"
+	output_dir=$OPTARG;;
+    * ) usage
+	exit 0;;
+ esac
+done
+
+
+
+
+
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+echo $subj
+fmri_dir=$subj_dir/fmri
+
+distort_dir=$fmri_dir/distortCorr
+ref_fmri=$distort_dir/rs_fmri_distortCorr_avg_bet.nii.gz
+
+in_fmri=$distort_dir/rs_fmri_distortCorr.nii.gz
+
+#put pipeline commands here
+regress_dir=$fmri_dir/regressNuisance
+mkdir -p $regress_dir
+
+regress_fmri=$regress_dir/rs_fmri_distortCorr_regressCSF_GM_WM.nii.gz
+
+fast_dir=$subj_dir/tissue_seg
+
+label[0]=csf
+label[1]=gm
+label[2]=wm
+
+coreg_dir=$subj/coreg/rigid_aladin_t1_fmri
+xfm_t1_fmri=$coreg_dir/t1_to_fmri.xfm
+
+#get probabilistic tissue segmentation in fMRI space 
+for i in `seq 0 2`
+do
+
+ tissue=${label[$i]}
+ in_seg=$fast_dir/t1.brain.fast_pve_$i.nii.gz
+ out_seg=$regress_dir/fast_pve.$tissue.fmri.nii.gz
+
+ echo reg_resample -flo $in_seg -ref $ref_fmri -res $out_seg -xfm $xfm_t1_fmri -LIN
+ reg_resample -flo $in_seg -ref $ref_fmri -res $out_seg -aff $xfm_t1_fmri -LIN
+
+ ts_txt=$regress_dir/weightedts.$tissue.txt
+
+ #extract weighted timeseries for csf, gm, wm
+ echo fslmeants -i $in_fmri -m $out_seg -o $ts_txt -w
+ fslmeants -i $in_fmri -m $out_seg -o $ts_txt -w
+
+
+done
+
+
+ csf_txt=$regress_dir/weightedts.csf.txt
+ gm_txt=$regress_dir/weightedts.gm.txt
+ wm_txt=$regress_dir/weightedts.wm.txt
+
+ combined_txt=$regress_dir//csf+gm+wm.txt
+
+ #combine regressors into single file
+ runMatlabCmd combineRegressors "{'$csf_txt','$gm_txt','$wm_txt'}" "'$combined_txt'"
+
+ #regress out
+ echo "fsl_regfilt -i $in_fmri -d $combined_txt -f "1,2,3" -o $regress_fmri"
+ fsl_regfilt -i $in_fmri -d $combined_txt -f "1,2,3" -o $regress_fmri
+
+
+done
+
+

@@ -1,0 +1,123 @@
+#!/bin/bash
+
+# objective: extract individual label files and time series (in subject's fMRI/EPI space) from prior automatic segmentation
+
+# input: requires prior computation of atlas labels in subject space
+# output: fmri/<atlas>_labels, fmri/<atlas>_ts
+
+# NOTE: by default, gets mean time series; consider using Eigen instead
+
+if [ "$#" -lt 2 ]
+then
+ 
+  echo ""
+  echo "Usage: ${0##*/} <label_csv> <subjid/list>"
+  echo ""
+  echo "List of standard label_csvs: "
+  pushd $PIPELINE_CFG_DIR/labels > /dev/null
+  ls *
+  popd > /dev/null
+  echo ""
+
+  exit 0
+fi
+
+label_csv=$PIPELINE_CFG_DIR/labels/$1
+echo $label_csv
+
+if [ ! -e $label_csv ]
+then
+ echo "label cfg $label_csv does not exist!"
+ exit 0
+fi
+
+shift 1
+
+output_dir=`pwd` # current directory is root directory for subject output
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+  subj_dir=$output_dir/$subj
+
+  fmri_dir=$subj_dir/fmri
+  t1_dir=$subj_dir/t1
+  xfm_dir=$subj_dir/xfms
+  in_label_dir=$subj_dir/labels
+
+  # previously used distortion corrected fmri
+#  in_fmri=$fmri_dir/distortCorr/rs_fmri_distortCorr.nii.gz
+  # now using distortion corrected + regression of CSF, GM, WM
+  in_fmri=$fmri_dir/regressNuisance/rs_fmri_distortCorr_regressCSF_GM_WM.nii.gz
+  in_fmri_parc=$in_label_dir/fmri/prob_bspline_f3d_HarvardOxford_rigid_aladin_t1/HarvardOxford-combined-prob-1mm.nii.gz
+
+  out_dir=$fmri_dir/HarvardOxford-combined-prob_ts
+  out_label_dir=$fmri_dir/HarvardOxford-combined-prob_labels
+
+  mkdir -p $out_dir
+  mkdir -p $out_label_dir
+
+  # for every FreeSurfer label
+  for i in `cat $label_csv`
+  do
+
+    # 1. extract the label mask (either as a separate volume or mask)
+    label=`echo $i | cut -d, -f1`
+    label_name=`echo $i | cut -d, -f2`
+
+#    label=${label%%,*} # label is number before comma
+#    label_name=${label##*,} # name is what is after comma
+
+    echo "name: $label_name, label: $label"
+
+    # use FSL split to deconstruct 4D probabilistic atlas into individual files with the given prefix
+    #  no way to customize output files (all zero-offset) with 4 digits
+    echo fslsplit $in_fmri_parc $out_label_dir/HarvardOxford-combined-prob-
+    fslsplit $in_fmri_parc $out_label_dir/HarvardOxford-combined-prob-
+
+    # 2. get weighted time series within the label mask
+
+    # a bit of a hack, but done bc fslsplit creates output files in the format prefixXXXX (TODO change to printf)
+    numlabel=$(expr $label - 1)
+    if [ ${#numlabel} -eq 1 ]; then
+      label_mask=$out_label_dir/HarvardOxford-combined-prob-000$numlabel.nii.gz
+    elif [ ${#numlabel} -eq 2 ]; then
+      label_mask=$out_label_dir/HarvardOxford-combined-prob-00$numlabel.nii.gz
+    elif [ ${#numlabel} -eq 3 ]; then
+      label_mask=$out_label_dir/HarvardOxford-combined-prob-0$numlabel.nii.gz
+    elif [ ${#numlabel} -eq 4 ]; then
+      label_mask=$out_label_dir/HarvardOxford-combined-prob-$numlabel.nii.gz
+    else
+      echo "Too many labels to be supported by fslsplit"
+      exit 0
+    fi 
+
+    # again hack-ish, but remember that fslsplit output and actual label correspondence are off by 1
+    if [ ${#label} -eq 1 ]; then
+      label_ts="$out_dir/000$label-$label_name-ts.txt"
+    elif [ ${#label} -eq 2 ]; then
+      label_ts="$out_dir/00$label-$label_name-ts.txt"
+    elif [ ${#label} -eq 3 ]; then
+      label_ts="$out_dir/0$label-$label_name-ts.txt"
+    elif [ ${#label} -eq 4 ]; then
+      label_ts="$out_dir/$label-$label_name-ts.txt"
+    else
+      echo "Too many labels to be supported by fslsplit"
+      exit 0
+    fi 
+
+    echo fslmeants -w -i $in_fmri -m $label_mask -o $label_ts
+    fslmeants -w -i $in_fmri -m $label_mask -o $label_ts
+
+  done
+
+done
+

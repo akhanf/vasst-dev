@@ -1,0 +1,211 @@
+#!/bin/bash
+
+# can take in a config file for tractography options
+
+#should take in options for seeding, filtering, exclusion etc..
+#  should be aware of where labels exist w.r.t subjects (i.e. in labels_dti folder)
+
+# seed labels
+# waypoint labels
+# exclude labels
+
+
+if [ "$#" -lt 2 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <tract_cfg> <subjid/list>"
+ echo ""
+ echo "List of standard tract_cfgs: "
+ pushd $PIPELINE_CFG_DIR/tracts > /dev/null
+ ls *
+ popd > /dev/null
+ echo ""
+ 
+ exit 0
+fi
+
+  
+tract_cfg=$PIPELINE_CFG_DIR/tracts/$1
+
+if [ ! -e $tract_cfg ]
+then
+ echo "tract cfg $tract_cfg does not exist!"
+ exit 0
+fi
+
+echo "Sourcing $tract_cfg"
+source $tract_cfg
+
+shift 1
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+ camino_dir=$dti_dir/caminoDTI
+ out_dir=$dti_dir/caminoTractographyTwoTensorProb
+
+ mkdir -p $out_dir
+
+dwi_bvec=$dti_dir/dwi.bvec
+dwi_bval=$dti_dir/dwi.bval
+dwi_vol=$dti_dir/dwi.nii.gz
+brain_mask=$dti_dir/brainmask.nii.gz
+
+scheme=$camino_dir/4Ddwi_bvec.scheme
+dwi=$camino_dir/dwi.Bfloat
+dt=$camino_dir/dt.Bdouble
+dteig=$camino_dir/dteig.Bdouble
+dt_rgb=$camino_dir/dt_rgb.nii.gz
+fa=$camino_dir/fa.nii.gz
+dteig_pd1=$camino_dir/dteig_pd1.nii.gz
+
+picopdf=$camino_dir/twoten_picopdf.Bdouble
+
+#concatenate tracts
+out_bundle=$out_dir/$tract_name.allsteps.Bfloat
+rm $out_bundle 
+
+base_name=$tract_name
+for stepsize in 0.25 0.5 1 2 
+do
+
+tract_name=$base_name.step$stepsize
+
+#run tracking
+tract=$out_dir/$tract_name.unproc.Bfloat
+tract_proc=$out_dir/$tract_name.Bfloat
+tract_vtk_fa=$out_dir/$tract_name.vtk
+tract_vtk_fdm=$out_dir/$tract_name.fdm.vtk
+tract_vtk_orient=$out_dir/$tract_name.orient.vtk
+tract_sc=$out_dir/$tract_name.sc.nii.gz
+tract_cp=$out_dir/$tract_name.cp.nii.gz
+
+label_dir=$dti_dir/caminoLabels
+
+echo seed_file $seed_file
+if [ -n "$seed_file" ]
+then
+seed="$label_dir/$seed_file"
+else 
+ echo no seed file specified!
+ exit 0
+fi
+
+if [  -n "$waypoint_file" ]
+then
+waypoint="-waypointfile $label_dir/$waypoint_file"
+else 
+waypoint=""
+fi
+
+if [  -n "$exclusion_file" ]
+then
+exclusion="-exclusionfile $label_dir/$exclusion_file"
+else 
+exclusion=""
+fi
+
+if [  -n "$endpoint_file" ]
+then
+endpoint="-endpointfile $label_dir/$endpoint_file"
+else 
+endpoint=""
+fi
+
+
+if [ ! -e $seed ]
+ then 
+  echo Seed does not exist: $seed
+  continue
+fi
+
+iterations=500 #500
+
+
+cat $picopdf | track $track_opts -inputmodel pico -numpds 2 -iterations $iterations -tracker rk4 -header $fa -anisfile $fa -stepsize $stepsize -seedfile $seed > $tract
+
+
+#filter tracts
+#echo "procstreamlines $proc_opts $waypoint $exclusion $endpoint -header $fa < $tract > $tract_proc"
+
+
+procstreamlines $proc_opts $waypoint $exclusion $endpoint -header $fa < $tract > $tract_proc
+vtkstreamlines -scalarfile $fa -interpolate < $tract_proc > $tract_vtk_fa
+
+
+procstreamlines -outputacm -outputcp -outputroot $out_dir/${tract_name}. -seedfile $seed   < $tract_proc
+procstreamlines -outputacm -outputsc -outputroot $out_dir/${tract_name}. -seedfile $seed  < $tract_proc
+
+
+fslmaths $out_dir/${tract_name}.acm_cp.nii.gz -mul 1000 $out_dir/${tract_name}.acm_cp.mul1k.nii.gz
+vtkstreamlines -scalarfile $out_dir/${tract_name}.acm_cp.mul1k.nii.gz -interpolate < $tract_proc > $tract_vtk_fdm
+
+
+seed_t1=$label_dir/${seed_file%%.nii.gz}.t1.nii.gz
+t1=$subj_dir/t1/t1.nii.gz
+#warning, not accounting for potential motion between T1 and DTI!  fix later..
+reg_resample -flo $seed -ref $t1 -res $seed_t1 -NN 0
+procstreamlines -outputacm -outputcp -outputroot $out_dir/${tract_name}.t1. -seedfile $seed_t1  < $tract_proc
+
+cat $out_dir/$tract_name >> $out_bundle
+
+rm $tract
+
+done #stepsize
+
+ 
+
+
+
+
+ #create fdm map
+ procstreamlines -outputacm -outputcp -outputroot $out_dir/$base_name.allsteps. -seedfile $seed < $out_bundle
+
+ fslmaths  $out_dir/$base_name.allsteps.acm_cp.nii.gz -mul 1000 $out_dir/$base_name.allsteps.acm_cp.mul1k.nii.gz
+
+ out_vtk=$out_dir/$base_name.fa.allsteps.vtk
+# if [ ! -e $out_vtk ]
+# then
+  echo "vtkstreamlines -scalarfile ../caminoDTI/fa.nii.gz -interpolate < $out_bundle > $out_vtk"
+  vtkstreamlines -scalarfile ../caminoDTI/fa.nii.gz -interpolate < $out_bundle > $out_vtk
+# fi
+
+ out_vtk=$out_dir/$base_name.fdm.allsteps.vtk
+# if [ ! -e $out_vtk ]
+# then
+  echo "vtkstreamlines -scalarfile $bundle.allsteps.acm_cp.mul1k.nii.gz -interpolate < $out_bundle > $out_vtk"
+  vtkstreamlines -scalarfile $bundle.allsteps.acm_cp.mul1k.nii.gz -interpolate < $out_bundle > $out_vtk
+# fi
+
+
+
+
+done #subj
+
+

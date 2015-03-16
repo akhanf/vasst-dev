@@ -1,0 +1,167 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+ out_dir=$dti_dir/caminoDTI
+
+mkdir -p $out_dir
+
+dwi_bvec=$dti_dir/dwi.bvec
+dwi_bval=$dti_dir/dwi.bval
+dwi_vol=$dti_dir/dwi.nii.gz
+brain_mask=$dti_dir/brainmask.nii.gz
+
+scheme=$out_dir/4Ddwi_bvec.scheme
+dwi=$out_dir/dwi.Bfloat
+dt=$out_dir/dt.Bdouble
+dteig=$out_dir/dteig.Bdouble
+dt_rgb=$out_dir/dt_rgb.nii.gz
+fa=$out_dir/fa.nii.gz
+dteig_pd1=$out_dir/dteig_pd1.nii.gz
+
+#diffusion tensor fitting
+#fsl2scheme  -bvecfile $dwi_bvec -bvalfile $dwi_bval > $scheme
+#image2voxel -4dimage $dwi_vol -outputfile $dwi
+#modelfit -inversion 1 -schemefile $scheme -inputfile $dwi  -bgmask $brain_mask  > $dt
+#cat $dt | fa  | voxel2image -outputroot $out_dir/fa -header $dwi_vol
+#cat $dt | dteig > $dteig
+#rgbscalarimg -inputfile $dteig -scalarfile $fa -outputfile $dt_rgb
+#voxel2image -components 12 -outputroot $out_dir/dteig_components_ -header $fa <$dteig
+#fslmerge  -t $dteig_pd1 $out_dir/dteig_components_000[234].nii.gz
+#rm $out_dir/dteig_components_*
+
+dwi_vc=$out_dir/dwi_VC.Bint
+vox_thres="1e-15 1e-4 1e-6"  ## this works for EPI_P008 
+if [ ! -e $dwi_vc ]
+then
+echo "voxelclassify -inputfile $dwi -bgmask $brain_mask -schemefile $scheme -order 4 -ftest $vox_thres > $dwi_vc"
+voxelclassify -inputfile $dwi -bgmask $brain_mask -schemefile $scheme -order 4 -ftest $vox_thres > $dwi_vc
+fi
+
+
+dwi_vc_nii=$out_dir/dwi_VC.nii.gz
+if [ ! -e $dwi_vc_nii ]
+then
+echo "cat $dwi_vc | voxel2image -inputdatatype int -header $fa -outputroot $out_dir/dwi_VC"
+cat $dwi_vc | voxel2image -inputdatatype int -header $fa -outputroot $out_dir/dwi_VC
+fi
+
+twoten=$out_dir/twotensor.Bdouble
+if [ ! -e $twoten ]
+then
+echo "multitenfit -inputfile $dwi -bgmask $brain_mask -schemefile $scheme -voxclassmap $dwi_vc  > $twoten"
+multitenfit -inputfile $dwi -bgmask $brain_mask -schemefile $scheme -voxclassmap $dwi_vc  > $twoten
+fi
+
+
+twoten_eig=$out_dir/twotensor_eig.Bdouble
+if [ ! -e $twoten_eig ]
+then
+echo "dteig -inputmodel multitensor -maxcomponents 2 < $twoten > $twoten_eig "
+dteig -inputmodel multitensor -maxcomponents 2 < $twoten > $twoten_eig 
+fi
+
+twoten_fa=$out_dir/twotensor_fa.nii.gz
+if [ ! -e $twoten_fa ]
+then
+  echo "cat $twoten | fa  | voxel2image -outputroot $out_dir/twoten_fa -header $dwi_vol"
+  cat $twoten | fa  | voxel2image -outputroot $out_dir/twoten_fa -header $dwi_vol
+
+
+fi
+
+twoten_pd1=$out_dir/twotensor_pd1.nii.gz
+twoten_pd2=$out_dir/twotensor_pd2.nii.gz
+
+if [ ! -e $twoten_pd1 -o ! -e $twoten_pd2 ]
+then
+echo "voxel2image -components 24 -outputroot $out_dir/twotensor_eig_components_ -header $fa < $twoten_eig"
+voxel2image -components 24 -outputroot $out_dir/twotensor_eig_components_ -header $fa < $twoten_eig
+echo "fslmerge  -t $twoten_pd1 $out_dir/twotensor_eig_components_000[234].nii.gz"
+fslmerge  -t $twoten_pd1 $out_dir/twotensor_eig_components_000[234].nii.gz
+echo "fslmerge  -t $twoten_pd2 $out_dir/twotensor_eig_components_00{14,15,16}.nii.gz"
+fslmerge  -t $twoten_pd2 $out_dir/twotensor_eig_components_00{14,15,16}.nii.gz
+echo "fslmaths $dwi_vc_nii -thr 4 -bin -mul $twoten_pd2 $twoten_pd2 #mask using voxelclassify"
+fslmaths $dwi_vc_nii -thr 4 -bin -mul $twoten_pd2 $twoten_pd2 #mask using voxelclassify
+echo "rm $out_dir/twotensor_eig_components_*"
+rm $out_dir/twotensor_eig_components_*
+fi
+
+
+snr=16
+samples=1000
+
+#picoPDFS for DTI
+dtlut=$out_dir/dt_lut.Bdouble
+if [ ! -e $dtlut ]
+then
+dtlutgen -lrange 1 15 -step 0.2 -snr 16 -schemefile $scheme -samples $samples > $dtlut
+fi
+
+
+twodt_luts=""
+for angle in 50 70 90
+do
+
+lut=$out_dir/twodt_lut_angle$angle.Bdouble
+
+if [ ! -e $lut ]
+then
+echo "dtlutgen -snr $snr -inversion 31 -schemefile $scheme -cross $angle -frange 0 1 -step 0.1 -samples $samples  > $lut"
+dtlutgen -snr $snr -inversion 31 -schemefile $scheme -cross $angle -frange 0 1 -step 0.1 -samples $samples  > $lut
+fi
+twodt_luts="$twodt_luts $lut"
+
+done
+
+combined_lut=$out_dir/twodt_lut_combined.Bdouble
+if [ ! -e $combined_lut ]
+then
+ echo "combinetwofibreluts -luts $twodt_luts -anglerange 50 90 > $combined_lut"
+ combinetwofibreluts -luts $twodt_luts -anglerange 50 90 > $combined_lut
+fi
+
+twoten_pdf=$out_dir/twoten_picopdf.Bdouble
+if [ ! -e $twoten_pdf ]
+then
+echo "picopdfs -inputmodel multitensor -numpds 2 -luts $dtlut $combined_lut -pdf bingham < $twoten > $twoten_pdf"
+picopdfs -inputmodel multitensor -numpds 2 -luts $dtlut $combined_lut -pdf bingham < $twoten > $twoten_pdf
+fi
+
+done #subj
+
+

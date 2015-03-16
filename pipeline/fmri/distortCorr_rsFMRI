@@ -1,0 +1,53 @@
+#!/bin/bash
+
+
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage: $0 <subjid/list>"
+ exit 0
+fi
+
+
+output_dir=`pwd`
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+fmri_dir=$subj_dir/fmri
+in_fmri=$fmri_dir/rs_fmri.nii.gz
+prestat_dir=$fmri_dir/singleSubj_prestats.feat
+
+out_dir=$fmri_dir/distortCorr
+mkdir -p $out_dir
+
+
+fmri_prestat=$prestat_dir/filtered_func_data.nii.gz
+fmri_mask=$prestat_dir/mask.nii.gz
+extramri_dir=$subj_dir/extra_mri
+t1map_ref=$extramri_dir/t1map.brain.nii.gz
+
+
+fmri_uncorr_avg=$out_dir/rs_fmri_uncorr_avg.nii.gz
+fslmaths $fmri_prestat -Tmean $fmri_uncorr_avg
+fmri_uncorr_bet=$out_dir/rs_fmri_uncorr_avg_bet.nii.gz
+bet $fmri_uncorr_avg $fmri_uncorr_bet -v -R -f 0.5
+
+
+
+echo distortCorrEPI $fmri_uncorr_bet $fmri_prestat $fmri_mask $t1map_ref $out_dir/work $out_dir/rs_fmri_distortCorr.nii.gz $out_dir/mask_distortCorr.nii.gz
+distortCorrEPI $fmri_uncorr_bet $fmri_prestat $fmri_mask $t1map_ref $out_dir/work $out_dir/rs_fmri_distortCorr.nii.gz $out_dir/mask_distortCorr.nii.gz
+
+fslmaths $out_dir/rs_fmri_distortCorr.nii.gz -Tmean -mas $out_dir/mask_distortCorr.nii.gz $out_dir/rs_fmri_distortCorr_avg_bet.nii.gz
+
+done

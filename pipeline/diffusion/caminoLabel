@@ -1,0 +1,63 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage $0 <label_name> <subjid/list>"
+ exit 0
+fi
+
+label_name=$1
+
+shift 1
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+ subj_dir=$output_dir/$subj
+
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+ 
+ camino_dir=$dti_dir/caminoDTI
+ label_dir=$dti_dir/caminoLabels
+
+ mkdir -p $label_dir
+ fa=$camino_dir/fa.nii.gz
+ rgb=$camino_dir/dt_rgb.nii.gz
+ label=$label_dir/$label_name.nii.gz
+
+ if [ ! -e $label ]
+ then 
+ fslmaths $fa -mul 0 $label -odt char
+ echo $subj, Creating new $label 
+ else
+ echo $subj, Loading existing $label 
+ fi
+ itksnap -m $fa -o $rgb -s $label
+
+ done

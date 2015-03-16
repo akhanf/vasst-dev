@@ -1,0 +1,147 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+ echo "Command-line Usage: $0 <input DTI dicom folder blip 1> <input DTI dicom folder blip 2>  <subjid>"
+ echo ".. running UI import"
+
+ N=`zenity --entry --title="N?" --text="Number of DWI acquisitions?"`
+
+ 
+
+ 
+ last_dir=`pwd`
+ for i in `seq 1 $N`
+ do
+ in_dicom_dir[$i]=`zenity --file-selection --filename=$last_dir --directory --title="Choose DTI dicom directory to import (blip $i)"`
+ pe_dir[$i]=`zenity --entry --title="Enter phase encode line:" --text="${in_dicom_dir[$i]}"`
+ last_dir=${in_dicom_dir[$i]}
+ done
+
+ subj=`zenity --entry --title="Enter subject ID:" --text="${in_dicom_dir[$i]}"`
+
+else
+
+N=$1
+
+for i in `seq 1 $N`
+do
+ shift 1 
+ in_dicom_dir[$i]=$1
+done
+
+subj=$2
+
+fi
+
+output_dir=.
+
+
+subj_dir=$output_dir/$subj
+
+
+#put pipeline commands here
+dti_dir=$subj_dir/dti
+uncorr_dir=$dti_dir/uncorrected
+mkdir -p $uncorr_dir
+
+petxt=$uncorr_dir/pedir.txt
+ rm -f $petxt
+
+cd `pwd`
+
+#get b0 volumes from each dwi
+for i in `seq 1 $N`
+do
+
+echo ${pe_dir[$i]} >> $petxt
+dwi=$uncorr_dir/dwi_$i.nii.gz
+
+if [ "$i" = "1" ]
+then 
+  dwi_list=$dwi
+else
+  dwi_list="$dwi_list,$dwi"
+fi
+
+echo DWIConvert --inputDicomDirectory ${in_dicom_dir[$i]} --conversionMode DicomToFSL --outputVolume $dwi
+DWIConvert --inputDicomDirectory ${in_dicom_dir[$i]} --conversionMode DicomToFSL --outputVolume $dwi
+bvec_in=$uncorr_dir/dwi_$i.bvec
+bval_in=$uncorr_dir/dwi_$i.bval
+
+
+nslices=`fslval $dwi dim3`
+isodd=`expr $nslices % 2`
+if [ "$isodd" = "1" ]
+then 
+  echo cropping out single slice to have even number of slices
+  echo fslroi $dwi $dwi 0 -1 0 -1 1 -1 0 -1
+  fslroi $dwi $dwi 0 -1 0 -1 1 -1 0 -1
+fi
+  
+
+
+ di=0
+ for bv in `cat $bval_in`
+ do
+  b0img=$uncorr_dir/dwi_$i.b0_$di.nii.gz
+ if [ "$bv" = 0  -o "$bv" = 5 ]
+ then
+  echo $bv
+  fslroi $uncorr_dir/dwi_$i.nii.gz  $b0img $di 1
+ fi
+  
+ di=$((di+1))
+ done #bval
+
+ #create avg b0
+ avg_b0=$uncorr_dir/avg_b0_$i.nii.gz
+ fslmerge -t $avg_b0 $uncorr_dir/dwi_$i.b0_*.nii.gz
+ fslmaths $avg_b0 -Tmean $avg_b0
+
+
+done #i
+
+
+
+avg_b0=$uncorr_dir/avg_b0.nii.gz
+fslmerge -t $avg_b0 $uncorr_dir/avg_b0_?.nii.gz
+
+#echo "-1 0 0 0.087" > $petxt
+#echo "1 0 0 0.087" >> $petxt
+
+#R-L
+#1 0 0 1e-3*<echo spacing>*
+
+#L-R
+#-1 0 0 1e-3*<echo spacing>*<EPI Factor>
+
+#for 1.75mm data: 128*0.76  = 0.0973
+#for 2mm data: 112*0.7 = 0.0784
+
+
+
+topup --imain=$avg_b0 --datain=$petxt --config=b02b0.cnf --out=$uncorr_dir/topup -v --iout=$uncorr_dir/hifi
+
+distort_dir=$dti_dir/distortCorrect
+mkdir -p $distort_dir
+bvec=$distort_dir/dwi.bvec
+bval=$distort_dir/dwi.bval
+dwi=$distort_dir/dwi.nii.gz
+brainmask=$distort_dir/brainmask.nii.gz
+
+indices=`seq -s , 1 $N`
+
+applytopup --imain=$dwi_list --datain=$petxt --inindex=$indices -t $uncorr_dir/topup -o $distort_dir/dwi -v
+
+#eddy --imain=dwi_bothblips.nii.gz --mask=hifi_b0_brain_mask.nii.gz --acqp=pedir.txt  --index=index.txt --bvecs=dwi_bothblips.bvec --bvals=dwi_bothblips.bval --topup=topup --out=eddy_corrected_data -v
+
+cp $bvec_in $bvec
+cp $bval_in $bval
+bet $dwi $brainmask
+fslmaths $brainmask -bin $brainmask
+
+dtifit -k $dwi -o $distort_dir/dti -m $brainmask -r $bvec -b $bval
+
+
+

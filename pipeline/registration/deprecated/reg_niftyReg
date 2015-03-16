@@ -1,0 +1,101 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <atlas_subj> <subjids>"
+ echo ""
+ echo ""
+ 
+ exit 0
+fi
+
+output_dir=.
+
+atlas_subj=$1
+
+shift 1
+
+# look for atlas_subj in current project folder, then in PIPELINE_ATLAS_DIR
+#  if cannot find in either, then exit
+
+if [  -e $output_dir/$atlas_subj ]
+then
+
+  atlas_dir=$output_dir/$atlas_subj
+
+ else
+
+  #check atlas folder
+  if [ -e $PIPELINE_ATLAS_DIR/$atlas_subj ]
+  then
+    atlas_dir=$PIPELINE_ATLAS_DIR/$atlas_subj
+  else
+    echo "atlas: $atlas_subj does not exist!"
+    exit 0
+  fi
+
+fi
+
+#could put this in a config file as some point:
+atlas_t1=$atlas_dir/t1/t1.brain.inorm.nii.gz
+
+if [ ! -e $atlas_t1 ]
+then
+  echo "$atlas_t1 does not exist, exiting!"
+  exit 0
+fi
+
+
+for subj in $@
+do
+
+ subj_dir=$output_dir/$subj
+
+ out_dir=$subj_dir/reg_affine/$atlas_subj
+ mkdir -p $out_dir
+
+ t1=$subj_dir/t1/t1.brain.inorm.nii.gz
+
+ reg_t1=$out_dir/subj_to_atlas.reg.nii.gz
+ xfm=$out_dir/reg_aladin.subj_to_atlas.xfm
+ inv_xfm=$out_dir/reg_aladin.atlas_to_subj.xfm
+ reg_atlas=$out_dir/atlas_to_subj.reg.nii.gz
+
+# if [ ! -e $reg_t1 ]
+# then
+  echo reg_aladin -ref $atlas_t1 -flo $t1 -aff $xfm -res $reg_t1
+  reg_aladin -ref $atlas_t1 -flo $t1 -aff $xfm -res $reg_t1
+  convert_xfm -omat $inv_xfm -inverse $xfm
+  reg_resample -flo $atlas_t1 -ref $t1 -aff $inv_xfm -res $reg_atlas
+#fi
+
+ out_dir=$subj_dir/reg_f3d/$atlas_subj
+ mkdir -p $out_dir
+
+ cpp=$out_dir/reg_f3d_atlas_to_subj_cpp.nii.gz
+ def=$out_dir/reg_f3d_atlas_to_subj_def.nii.gz
+ resampled=$out_dir/atlas_to_subj.nreg.nii.gz
+
+ #now do non-rigid registration - from atlas to patient so we can xfr atlas labels
+# if [ ! -e $cpp -o ! -e $resampled ]
+# then
+ reg_f3d -ref $t1 -flo $atlas_t1 -aff $inv_xfm -cpp $cpp -res $resampled #-gpu 
+ reg_transform -ref $t1 -cpp2def $cpp $def
+ reg_transform -ref $t1 -def2disp $def $def
+# fi
+
+ cpp=$out_dir/reg_f3d_subj_to_atlas_cpp.nii.gz
+ def=$out_dir/reg_f3d_subj_to_atlas_def.nii.gz 
+ resampled=$out_dir/subj_to_atlas.nreg.nii.gz
+ #now do non-rigid registration - from patient to atlas
+# if [ ! -e $cpp -o ! -e $resampled ]
+# then
+ reg_f3d -ref $atlas_t1 -flo $t1 -aff $xfm -cpp $cpp -res $resampled #-gpu 
+ reg_transform -ref $atlas_t1 -cpp2def $cpp $def
+ reg_transform -ref $atlas_t1 -def2disp $def $def
+# fi
+ 
+
+done
+

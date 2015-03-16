@@ -1,0 +1,83 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <synaptive input dirs>"
+ exit 0
+fi
+
+
+for synaptive_subj in $@
+do
+
+
+
+t1=$synaptive_subj/registration.nrrd
+dwi=$synaptive_subj/output/DWI.nrrd
+brainmask=$synaptive_subj/output/BinaryMask.nrrd
+tract_xml=$synaptive_subj/output/Tracts.xml
+
+
+#get accession number, use that for subj
+if [ ! -e $t1 -o ! -e $tract_xml ]
+then
+  echo skipping $synaptive_subj
+  continue
+else
+
+subj=`grep -a AccessionNumber $t1`
+subj=${subj##*:=}
+
+ if [ -e Tract_xml/$subj.xml ]
+ then 
+  echo $subj already imported
+  continue
+ else
+
+ mkdir -p Tract_xml
+ cp -v $tract_xml Tract_xml/$subj.xml
+ fi
+
+fi
+
+
+
+echo input: $synaptive_subj, subj: $subj
+
+
+
+
+#import T1
+importT1 $t1 $subj
+
+#import brain mask
+importBrainMask $brainmask $subj
+
+#preproc T1
+preprocT1 $subj
+
+#import DWI
+importNrrdDTI $dwi $subj
+
+
+
+out_tract_dir=$subj/dti/synaptive
+mkdir -p $out_tract_dir
+
+tract_name=${tract_xml##*/}
+tract_name=${tract_name%%.xml}
+
+out_bfloat=$out_tract_dir/wholebrain.$tract_name.Bfloat
+out_uid=$out_tract_dir/wholebrain.$tract_name.uid.Buint32
+
+#import tract xml
+if [ ! -e $out_bfloat ]
+then
+runMatlabCmd convertTractsXMLtoCamino "'$tract_xml'" "'$out_bfloat'" "'$out_uid'"
+fi
+
+#run init pre-proc?
+
+
+
+done

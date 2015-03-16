@@ -1,0 +1,50 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+
+ echo "Usage: $0 <dwi nii.gz 1> <dwi nii.gz 2> <output dwi nii.gz >"
+ exit 0
+
+fi
+
+
+nii_1=$1
+nii_2=$2
+pre_1=${nii_1%.nii.gz}
+pre_2=${nii_2%.nii.gz}
+
+out_nii=$3
+pre_out=${out_nii%.nii.gz}
+
+echo fslmerge -t $out_nii $nii_1 $nii_2
+fslmerge -t $out_nii $nii_1 $nii_2
+
+rm -f $pre_out.bval
+
+for val in `cat $pre_1.bval` `cat $pre_2.bval`
+do
+
+echo $val >> $pre_out.bval
+
+done
+
+
+bvec_1=$pre_1.bvec
+bvec_2=$pre_2.bvec
+
+bvec_out=$pre_out.bvec
+rm -f $bvec_out 
+
+#for bvec, go line by line
+for i in `seq 1 3`
+do
+
+for vec in `cat $bvec_1 | head -n $i | tail -n 1` `cat $bvec_2 | head -n $i | tail -n 1`
+do
+echo -n "$vec " >> $bvec_out
+done
+echo "" >> $bvec_out
+
+done
+

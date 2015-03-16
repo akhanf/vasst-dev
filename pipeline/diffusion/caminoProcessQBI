@@ -1,0 +1,122 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+ out_dir=$dti_dir/caminoDTI
+
+mkdir -p $out_dir
+
+dwi_bvec=$dti_dir/dwi.bvec
+dwi_bval=$dti_dir/dwi.bval
+dwi_vol=$dti_dir/dwi.nii.gz
+brain_mask=$dti_dir/brainmask.nii.gz
+brain_mask_binary=$dti_dir/bg_mask.nii.gz
+
+#fslmaths $brain_mask -bin -sub 1 -abs $brain_mask_binary
+fslmaths $brain_mask -bin  $brain_mask_binary
+
+scheme=$out_dir/4Ddwi_bvec.scheme
+dwi=$out_dir/dwi.Bfloat
+dt=$out_dir/dt.Bdouble
+dteig=$out_dir/dteig.Bdouble
+dt_rgb=$out_dir/dt_rgb.nii.gz
+fa=$out_dir/fa.nii.gz
+dteig_pd1=$out_dir/dteig_pd1.nii.gz
+
+#spherical harmonics Q-ball reconstruction
+order=4
+qbmatrix=$out_dir/qballMatrix_SH$order.Bdouble
+echo "qballmx -schemefile $scheme -basistype sh -order $order > $qbmatrix "
+qballmx -schemefile $scheme -basistype sh -order $order > $qbmatrix 
+
+qbodf=$out_dir/dwi_ODF_SH$order.Bdouble
+
+#no normalize
+echo "linrecon $dwi $scheme $qbmatrix -bgmask $brain_mask_binary -normalize > $qbodf"
+linrecon $dwi $scheme $qbmatrix -bgmask $brain_mask_binary -normalize > $qbodf
+
+qbpds=$out_dir/dwi_ODF_SH${order}_PDs.Bdouble
+echo "sfpeaks -inputmodel sh -order $order -numpds 3 -density 100 < $qbodf > $qbpds "
+sfpeaks -inputmodel sh -order $order -numpds 3 -density 100 < $qbodf > $qbpds 
+
+infofile=$out_dir/sfcalib.info
+calibdata=$out_dir/sfcalib.Bfloat
+calibodf=$out_dir/sfcalib_ODF_SH${order}.Bdouble
+calibpds=$out_dir/sfcalib_ODF_SH${order}_PDs.Bdouble
+
+echo "sfpicocalibdata -snr 15 -schemefile $scheme -infooutputfile $infofile > $calibdata"
+sfpicocalibdata -snr 15 -schemefile $scheme -infooutputfile $infofile > $calibdata
+#apply linrecon
+echo "linrecon $calibdata $scheme $qbmatrix -normalize > $calibodf"
+linrecon $calibdata $scheme $qbmatrix -normalize > $calibodf
+echo "sfpeaks -inputmodel sh -order $order -numpds 3 -density 100 < $calibodf > $calibpds "
+sfpeaks -inputmodel sh -order $order -numpds 3 -density 100 < $calibodf > $calibpds 
+echo sflutgen -infofile $infofile -outputstem $out_dir/sf_SH4_lut -pdf watson < $calibpds
+sflutgen -infofile $infofile -outputstem $out_dir/sf_SH4_lut -pdf watson < $calibpds
+
+picopdf=$out_dir/dwi_ODF_SH${order}_PDs_picopdf.Bdouble
+echo "picopdfs -pdf watson -inputmodel pds -numpds 3 -luts $out_dir/sf_SH4_lut_oneFibreLineCoeffs.Bdouble $out_dir/sf_SH4_lut_twoFibreLineCoeffs.Bdouble $out_dir/sf_SH4_lut_twoFibreLineCoeffs.Bdouble < $qbpds > $picopdf"
+picopdfs -pdf watson -inputmodel pds -numpds 3 -luts $out_dir/sf_SH4_lut_oneFibreLineCoeffs.Bdouble $out_dir/sf_SH4_lut_twoFibreLineCoeffs.Bdouble $out_dir/sf_SH4_lut_twoFibreLineCoeffs.Bdouble < $qbpds > $picopdf
+
+done #subj
+
+
+
+#if [ "$order" = "4" ]
+#then
+#  nc=17
+#fi
+#
+#if [ "$order" = "6" ]
+#then
+#  nc=30
+#fi
+#if [ "$order" = "8" ]
+#then
+#  nc=47
+#fi
+
+#split -b $((100*100*nc*8)) dwi_ODF_SH$order.Bdouble  splitBrain/dwi_ODF_SH${order}_slice
+#split -b $((100*100*8)) fa.img splitBrain/fa_slice
+#sfplot -inputmodel sh -order $order -xsize 100 -ysize 100 -minifigsize 30 30 -minifigseparation 2 2 -minmaxnorm -dircolcode -projection 1 -2 -backdrop splitBrain/fa_slicebg < splitBrain/dwi_ODF_SH${order}_slicebg > splitBrain/dwi_ODF_SH${order}_slicebg.rgb
+#display  -size 3200x3200 splitBrain/dwi_ODF_SH${order}_slicebg.rgb
+# 
+
+
+
+

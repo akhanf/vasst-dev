@@ -1,0 +1,65 @@
+#!/bin/bash
+
+atlas=/usr/share/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjids>"
+ exit 0
+fi
+
+output_dir=.
+
+for subj in $@
+do
+
+subj_dir=$output_dir/$subj
+
+
+ out_dir=$subj_dir/regToMNI
+ mkdir -p $out_dir
+
+ 
+ t1=$subj_dir/t1/t1.brain.nii.gz
+
+ reg_t1=$out_dir/t1.brain.reg.nii.gz
+ xfm=$out_dir/t1-MNI.xfm
+
+ if [ ! -e $reg_t1 ]
+ then
+ echo reg_aladin -ref $atlas -flo $t1 -aff $xfm -res $reg_t1
+ reg_aladin -ref $atlas -flo $t1 -aff $xfm -res $reg_t1
+ fi
+
+ cpp=$out_dir/regf3d_MNI-regT1_cpp.nii.gz
+ def=$out_dir/regf3d_MNI-regT1_def.nii.gz
+ resampled=$out_dir/MNI152.regToT1.nii.gz
+ #now do non-rigid registration - from atlas to patient so we can xfr atlas labels
+ if [ ! -e $cpp -o ! -e $resampled ]
+ then
+ echo reg_f3d -ref $reg_t1 -flo $atlas -cpp $cpp -res $resampled -gpu
+ reg_f3d -ref $reg_t1 -flo $atlas -cpp $cpp -res $resampled -gpu 
+ reg_transform -ref $reg_t1 -cpp2def $cpp $def
+reg_transform -ref $reg_t1 -def2disp $def $def
+
+ fi
+ 
+
+
+ cpp=$out_dir/regf3d_regT1-MNI_cpp.nii.gz
+ def=$out_dir/regf3d_regT1-MNI_def.nii.gz
+ resampled=$out_dir/t1.brain.reg.nreg.nii.gz
+ #now do non-rigid registration - from atlas to patient so we can xfr atlas labels
+ if [ ! -e $cpp -o ! -e $resampled ]
+ then
+ echo reg_f3d -ref $reg_t1 -flo $atlas -cpp $cpp -res $resampled -gpu
+ reg_f3d -ref $atlas -flo $reg_t1 -cpp $cpp -res $resampled -gpu 
+ reg_transform -ref $atlas -cpp2def $cpp $def
+reg_transform -ref $atlas -def2disp $def $def
+
+ fi
+ 
+
+done
+
+

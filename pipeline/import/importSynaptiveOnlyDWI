@@ -1,0 +1,40 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <synaptive input dirs>"
+ exit 0
+fi
+
+
+out_dir=synaptive_dwi
+mkdir $out_dir
+
+for synaptive_subj in $@
+do
+
+
+
+t1=$synaptive_subj/registration.nrrd
+dwi=$synaptive_subj/output/DWI.nrrd
+
+
+#get accession number, use that for subj
+if [ ! -e $t1 -o ! -e $dwi ]
+then
+  echo skipping $synaptive_subj
+  continue
+else
+
+subj=`grep -a AccessionNumber $t1`
+subj=${subj##*:=}
+
+
+echo input: $synaptive_subj, subj: $subj
+
+cp -v $t1 $out_dir/$subj.T1.nrrd 
+cp -v $dwi $out_dir/$subj.dwi.nrrd 
+
+fi
+
+done

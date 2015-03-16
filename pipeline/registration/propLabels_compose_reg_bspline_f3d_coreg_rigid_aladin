@@ -1,0 +1,110 @@
+#!/bin/bash
+
+
+###
+#
+# Problem with this script -- reg_resample had some issues with resampling labels from harvardoxford to t1 to fmri.. probably a bug in there..
+#
+###
+
+
+. functions_checkargs
+
+if [ "$#" -lt 6 ]
+then
+ echo ""
+ echo "  Atlas ImgType1  ->(bspline)-> Subj ImgType2 ->(rigid)->  Subj ImgType3 "
+ echo ""
+ echo "Usage: ${0##*/} <img_type_1> <img_type_2> <img_type_3> <label_type> <atlas_subj> <subjid/list>"
+ echo ""
+ echo " e.g. to propagate t1 catani atlas labels to test_subj use:"
+ echo "  $0 t1 catani test_subj"
+ 
+ exit 0
+fi
+
+reg_type_1=bspline_f3d
+reg_type_2=rigid_aladin
+output_dir=.
+
+img_type_1=$1 #e.g.: t1, dti, fmri
+img_type_2=$2 #e.g.: t1, dti, fmri
+img_type_3=$3 #e.g.: t1, dti, fmri
+label_type=$4 #e.g: wm_bundles
+atlas_subj=$5
+
+
+shift 5
+
+img_type=$img_type_2
+checkRegArgs
+img_path_2=$img_path
+
+img_type=$img_type_3
+checkRegArgs
+img_path_3=$img_path
+
+atlas_label_dir=$atlas_dir/labels/${img_type_1}/${label_type}
+
+echo atlas_label_dir $atlas_label_dir
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+ subj_dir=$output_dir/$subj
+ subj_nii_2=$subj_dir/$img_path_2
+ subj_nii_3=$subj_dir/$img_path_3
+
+ #img_type_2 ref
+ img_type_2_ref=`cat $PIPELINE_CFG_DIR/img_types/$img_type_2`
+
+
+ #bspline-dir 
+ reg_dir=$subj_dir/reg/${reg_type_1}_${img_type_1}/${atlas_subj}_${subj}
+
+ 
+ out_dir=$subj_dir/labels/${img_type_3}/${label_type}_${reg_type_1}_${reg_type_2}_${atlas_subj}
+ mkdir -p $out_dir
+
+ #input deformation from A to B
+ cpp=$reg_dir/ctrlpt_${atlas_subj}_to_${subj}.nii.gz
+ echo cpp: $cpp
+
+ #input rigid from B to C
+ rigid=$subj_dir/coreg/${reg_type_2}_${img_type_2}_${img_type_3}/${img_type_2}_to_${img_type_3}.xfm
+
+ if [ ! -e $cpp ]
+ then 
+  echo "Error on $atlas_subj to $subj: Need to run reg_bspline_f3d before propLabels_bspline_f3d!"
+  continue 
+ fi
+
+ composed_dir=$subj_dir/reg/${reg_type_1}_${img_type_1}_${img_type_2}_${reg_type_2}_${img_type_3}/${atlas_subj}_${subj}
+ mkdir -p $composed_dir
+
+ composed_def=$composed_dir/def_${atlas_subj}_to_${subj}.nii.gz
+ echo reg_transform -ref $subj_nii_3 -aff2def $rigid $subj_nii_2 $cpp  $composed_def 
+ reg_transform -ref $subj_nii_3 -aff2def $rigid $subj_nii_2 $cpp  $composed_def 
+ 
+ for in_label in `ls $atlas_label_dir/*.nii.gz`
+ do
+  prefix=${in_label##*/}
+  prefix=${prefix%%.nii.gz}
+  out_label=$out_dir/$prefix.nii.gz
+  echo reg_resample -flo $in_label -res $out_label -NN 0 -def $composed_def -ref $subj_nii_3
+  reg_resample -flo $in_label -res $out_label -NN 0 -def $composed_def -ref $subj_nii_3
+ done
+done
+
+
+

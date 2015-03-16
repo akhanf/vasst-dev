@@ -1,0 +1,91 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+ out_dir=$dti_dir/caminoDTI
+
+mkdir -p $out_dir
+
+dwi_bvec=$dti_dir/dwi.bvec
+dwi_bval=$dti_dir/dwi.bval
+dwi_vol=$dti_dir/dwi.nii.gz
+brain_mask=$dti_dir/brainmask.nii.gz
+
+scheme=$out_dir/4Ddwi_bvec.scheme
+dwi=$out_dir/dwi.Bfloat
+dt=$out_dir/dt.Bdouble
+dteig=$out_dir/dteig.Bdouble
+dt_rgb=$out_dir/dt_rgb.nii.gz
+fa=$out_dir/fa.nii.gz
+dteig_pd1=$out_dir/dteig_pd1.nii.gz
+
+#diffusion tensor fitting
+fsl2scheme  -bvecfile $dwi_bvec -bvalfile $dwi_bval > $scheme
+image2voxel -4dimage $dwi_vol -outputfile $dwi
+modelfit -inversion 1 -schemefile $scheme -inputfile $dwi  -bgmask $brain_mask  > $dt
+cat $dt | fa  | voxel2image -outputroot $out_dir/fa -header $dwi_vol
+cat $dt | dteig > $dteig
+rgbscalarimg -inputfile $dteig -scalarfile $fa -outputfile $dt_rgb
+voxel2image -components 12 -outputroot $out_dir/dteig_components_ -header $fa <$dteig
+fslmerge  -t $dteig_pd1 $out_dir/dteig_components_000[234].nii.gz
+rm $out_dir/dteig_components_*
+
+# multi-tensor fitting
+
+vox_thres="1e-15 1e-4 1e-6"  ## this works for epilepsy-cihr -- might need to be modified for other datasets
+dwi_VC=$out_dir/dwi_VC.Bint
+dwi_vc=$out_dir/dwi_VC.nii.gz
+multitensor=$out_dir/multitensor.Bdouble
+multitensor_Eigs=$out_dir/multitensor_Eigs.Bdouble
+twotenmask=$out_dir/twoten_mask.nii.gz
+
+voxelclassify -inputfile $dwi -bgmask $brain_mask -schemefile $scheme -order 4 -ftest $vox_thres > $dwi_VC
+cat $dwi_VC | voxel2image -inputdatatype int -header $fa -outputroot $out_dir/dwi_VC
+multitenfit -inputfile $dwi -bgmask $brain_mask -schemefile $scheme -voxclassmap $dwi_VC > $multitensor
+dteig -inputmodel multitensor -maxcomponents 2 < $multitensor > $multitensor_Eigs
+voxel2image -components 24 -outputroot $out_dir/dteig_components_ -header $fa < $multitensor_Eigs
+fslmerge  -t $out_dir/dteig_multi_pd1.nii.gz $out_dir/dteig_components_000[234].nii.gz
+fslmerge  -t $out_dir/dteig_multi_pd2.nii.gz $out_dir/dteig_components_00{14,15,16}.nii.gz
+rm $out_dir/dteig_components_*
+fslmaths $dwi_vc -thr 4 $twotenmask
+fslmaths $out_dir/dteig_multi_pd2.nii.gz -mas $twotenmask $out_dir/dteig_multi_pd2.nii.gz
+
+
+
+done #subj
+
+

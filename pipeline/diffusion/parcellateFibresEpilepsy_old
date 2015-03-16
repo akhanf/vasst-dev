@@ -1,0 +1,102 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <label_group_name> <subjid/list>"
+ echo ""
+ echo ""
+ 
+ exit 0
+fi
+
+output_dir=.
+
+
+label_group_name=$1
+shift 1
+
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+for tract_dir in $subj_dir/dti/distortCorrect/caminoTractographyDTI
+do
+
+
+tracts=$tract_dir/wholebrain.Bfloat
+out_dir=$tract_dir/parcellated.wholebrain.$label_group_name
+
+if [ ! -e $tracts ]
+then
+ continue
+fi
+
+ mkdir -p $out_dir
+
+label_dir=$subj_dir/labels/dwi/$label_group_name
+#propLabels_f3d/$atlas_subj
+
+
+for label in `ls $label_dir/*.nii.gz`
+do
+
+ name=${label##*/}
+ name=${name%%.*}
+
+ #create waypoints based on connected components
+ waypoint=$out_dir/${name}_waypoint.nii.gz
+ if [ ! -e $waypoint ]
+ then
+ echo connectedcomp $label $waypoint 
+ connectedcomp $label $waypoint 
+ fi
+
+# nx=`fslval $waypoint dim1 | tr -d ' '`
+# ny=`fslval $waypoint dim2 | tr -d ' '`
+# nz=`fslval $waypoint dim3 | tr -d ' '`
+# px=`fslval $waypoint pixdim1 | tr -d ' '`
+# py=`fslval $waypoint pixdim2 | tr -d ' '`
+# pz=`fslval $waypoint pixdim3 | tr -d ' '`
+
+ out_Bfloat=$out_dir/${name}_bundle.Bfloat
+ out=$out_dir/${name}_bundle.vtk
+# out_trk=$out_dir/${name}_bundle.trk
+
+# if [ ! -e $out ]
+# then 
+ #filter streamlines
+ procstreamlines -waypointfile $waypoint < $tracts > $out_Bfloat
+ vtkstreamlines -colourorient -interpolate < $out_Bfloat > $out
+ #convert to trackvis
+# echo camino_to_trackvis -o $out_trk -d $nx,$ny,$nz -x $px,$py,$pz < $out_Bfloat 
+# camino_to_trackvis -o $out_trk -d $nx,$ny,$nz -x $px,$py,$pz < $out_Bfloat 
+ 
+# fi
+done #label
+
+
+
+#combine all Bfloats into a single VTK
+combined_txt=$out_dir/all_bundles.txt
+combined_vtk=$out_dir/all_bundles.vtk
+
+echo "ls $out_dir/*_bundle.Bfloat > $combined_txt"
+ls $out_dir/*_bundle.Bfloat > $combined_txt
+echo runMatlabCmd combineCaminoTractsInVTK "'$combined_txt'" "'$combined_vtk'"
+runMatlabCmd combineCaminoTractsInVTK "'$combined_txt'" "'$combined_vtk'"
+
+done #tract dir
+done #subj

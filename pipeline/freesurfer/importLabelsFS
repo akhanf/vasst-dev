@@ -1,0 +1,44 @@
+#!/bin/bash
+
+if [ "$#" -lt "1" ]
+then
+ echo "Imports FS labels (wmparc) into standardized label folder"
+ echo ""
+ echo "Usage: $0 <subjid/list>"
+ echo ""
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+fs_dir=$subj_dir/freesurfer/mri
+
+t1=$subj_dir/`cat $PIPELINE_CFG_DIR/img_types/t1`
+
+label_dir=$subj_dir/labels/t1/freesurfer
+mkdir -p $label_dir
+
+for label in wmparc
+do
+
+ mri_convert $fs_dir/$label.mgz $label_dir/$label.nii.gz -rl $t1 -rt nearest -odt short -ns 1
+
+done
+
+
+done

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#reconst:
+qballmx -schemefile 4Ddwi_bvec.scheme > qballMatrix.Bdouble
+
+
+qballmx -schemefile 4Ddwi_bvec.scheme -basistype sh -order 6 > qballMatrix.Bdouble
+
+
+
+
+
+
+
+#synth data
+datasynth -testfunc 3 -schemefile 4Ddwi_bvec.scheme -snr 16 -voxels 10 > testData.Bfloat
+
+#reconst synth data
+linrecon testData.Bfloat 4Ddwi_bvec.scheme qballMatrix.Bdouble -normalize > testODF.Bdouble
+
+#plot synth data
+sfplot -inputmodel rbf -rbfpointset 246 -rbfsigma 0.2618 -xsize 1 -ysize 10 -minifigsize 60 60 -minifigseparation 1 1 -minmaxnorm < testODF.Bdouble > testODF.gray
+
+sfplot -inputmodel sh -order 6 -xsize 1 -ysize 10 -minifigsize 60 60 -minifigseparation 1 1 -minmaxnorm < testODF.Bdouble > testODF.gray
+
+#display it
+display -size 610x61 testODF.gray 
+

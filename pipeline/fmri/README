@@ -1,0 +1,25 @@
+Introduction
+------------
+
+Using a legend for FreeSurfer labels originally available at: /home/alik/epilepsy/local_data/fMRI/scripts/NetworkLabelLists/NetworkLabelList.csv but copied locally here (should be put into repository)
+
+Scripts here with order of use (may be renamed at some point):
+(TODO: before that the prestat work in FSL)
+1. extractTimeSeries_FMRI
+2. computeCorrelationMatrix_FMRI which calls getConnectivitySubj.m
+  * getConnectivitySubj.m is placed in repository/tools/matlab and has a hard-coded path for now
+
+extractTimeSeries_FMRI
+----------------------
+
+- dependency: FreeSurfer automatic segmentation
+- extract individual segmented label files and mean fMRI time series for a given subject based on ROIs from FreeSurfer segmentation (can enter multiple subjects at the command-line)
+
+computeCorrelationMatrix_FMRI
+-----------------------------
+
+- dependency: extractTimeSeries_FMRI
+- compute correlation matrix from time series for further graph analysis
+- also creates subject-specific csv file with CoG and volume of each label
+- also creates numeric correspondence between matrix (1..N) and FreeSurfer labels (whatever FreeSurfer usually uses)
+

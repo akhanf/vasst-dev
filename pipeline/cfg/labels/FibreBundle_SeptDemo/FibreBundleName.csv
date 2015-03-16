@@ -1,0 +1,19 @@
+Label, Name
+101, Left Corticospinal Tract
+201, Right Corticospinal Tract
+302, Corpus Callosum (Body)
+303, Corpus Callosum (Genu)
+304, Corpus Callosum (Splenium)
+105, Left Cingulum
+205, Right Cingulum
+106, Left Arcuate Fasciculus
+206, Right Arcuate Fasciculus
+107, Left Fornix
+207, Right Fornix
+108, Left Uncinate Fasciculus
+208, Right Uncinate Fasciculus
+109, Left Inferior Fronto-Occipital Fasciculus
+209, Right Inferior Fronto-Occipital Fasciculus
+110, Left Inferior Longitudinal Fasciculus
+210, Right Inferior Longitudinal Fasciculus
+311, Cerebellar Tracts

@@ -1,0 +1,224 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <label_group_name> <subjid/list>"
+ echo ""
+ echo ""
+ 
+ exit 0
+fi
+
+output_dir=.
+
+
+min_tracts_before_use_prior=5
+
+
+
+label_group_name=$1
+shift 1
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+for tract_dir in $subj_dir/dti/synaptive
+do
+
+
+
+#tracts=$tract_dir/wholebrain.Bfloat
+
+for tracts in `ls $tract_dir/wholebrain.Tracts.Bfloat`
+do
+
+wholebrain_name=${tracts##*wholebrain.}
+wholebrain_name=${wholebrain_name%%.Bfloat}
+
+out_dir=$tract_dir/parcellated.$wholebrain_name.$label_group_name
+
+if [ ! -e $tracts ]
+then
+ continue
+fi
+
+ mkdir -p $out_dir
+
+label_dir=$subj_dir/labels/dwi/$label_group_name
+#propLabels_f3d/$atlas_subj
+
+
+for label in `ls $label_dir/*.AND_ROI.nii.gz`
+do
+
+ name=${label##*/}
+ name=${name%%.*}
+
+ #NOT_ROI?
+ not_roi=$label_dir/$name.NOT_ROI.nii.gz
+
+
+ 
+ 
+ #create waypoints based on connected components
+ waypoint=$out_dir/${name}_waypoint.nii.gz
+# if [ ! -e $waypoint ]
+# then
+ echo connectedcomp $label $waypoint 
+ connectedcomp $label $waypoint 
+# fi
+
+ empty_roi=$out_dir/empty.nii.gz
+ fslmaths $waypoint -mul 0 $empty_roi
+
+ exclude_roi=""
+ if [ -e $not_roi ]
+ then
+  exclude_roi="-exclusionfile $not_roi"
+  exclude_statimg=$not_roi
+ else
+  exclude_statimg=$empty_roi
+ fi
+
+# nx=`fslval $waypoint dim1 | tr -d ' '`
+# ny=`fslval $waypoint dim2 | tr -d ' '`
+# nz=`fslval $waypoint dim3 | tr -d ' '`
+# px=`fslval $waypoint pixdim1 | tr -d ' '`
+# py=`fslval $waypoint pixdim2 | tr -d ' '`
+# pz=`fslval $waypoint pixdim3 | tr -d ' '`
+
+ out_Bfloat=$out_dir/${name}_bundle.Bfloat
+ out=$out_dir/${name}_bundle.vtk
+# out_trk=$out_dir/${name}_bundle.trk
+
+# if [ ! -e $out ]
+# then 
+ #filter streamlines
+ echo "procstreamlines -waypointfile $waypoint $exclude_roi"
+ procstreamlines -waypointfile $waypoint $exclude_roi < $tracts > $out_Bfloat
+ vtkstreamlines -colourorient -interpolate < $out_Bfloat > $out
+ 
+# fi
+
+
+## create custom spatial for corticospinal tract motor strip
+if [ "$name" = "Cortico_Spinal_Left" -o "$name" = "Cortico_Spinal_Right" ]
+then
+   
+  prior=$out_dir/${name}_prior.nii.gz
+  #pull out motor cortex from waypoints (will be largest connected component out of three, so label 3), and smooth it with gaussian sigma 4
+  fslmaths $waypoint -thr 3 -uthr 3 -bin -s 4 $prior
+  
+  prior_stats=$out_dir/${name}_prior_stats.txt
+  #compute sum of this over each tract 
+  tractstats -tractstat sum -scalarfile $prior  < $tracts | double2txt > $prior_stats
+
+fi
+
+
+ probprior_dir=$subj_dir/labels/dwi/probabilistic_bundles_bspline_f3d_ctrl_avg_rigid_aladin_t1
+  probprior=$probprior_dir/${name}.avg.nii.gz
+ 
+ if [ -e $probprior ]
+ then
+ 
+  probprior_stats=$out_dir/${name}_probprior_stats.txt
+  #compute sum of this over each tract 
+  tractstats -tractstat mean -scalarfile $probprior  < $tracts | double2txt > $probprior_stats
+
+ fi
+
+ #for doing a final exclusion of tracts from matlab (e.g. after clustering)
+ exclude_stats=$out_dir/${name}_exclude_stats.txt
+  tractstats -tractstat sum -scalarfile $exclude_statimg  < $tracts | double2txt > $exclude_stats
+
+
+use_prior=false
+if [ ! -e $probprior -o "$probpriordisabled" =  "true" ] 
+then
+  echo "Not using prob priors"
+
+ else
+ 
+if [ -s $out_Bfloat ] # if not zero file size
+then
+  ntracts=`cat $out_Bfloat | counttracts`
+  echo "Number of tracts in $subj $name: $ntracts"
+  if [ "$ntracts" -lt "$min_tracts_before_use_prior" ]
+  then
+	echo "using prior because too few tracts"
+    use_prior=true
+  fi
+else
+  #no tracts
+	echo "using prior because zero tracts"
+
+  use_prior=true
+fi
+
+fi
+
+
+if [ "$use_prior" = "true" ]
+then
+
+echo "Using spatial prior for $subj, $name"
+
+orig_Bfloat=$out_dir/${name}_origbundle.Bfloat
+orig_vtk=$out_dir/${name}_origbundle.vtk
+
+#backup the original tracts first
+mv -v $out_Bfloat $orig_Bfloat
+mv -v $out $orig_vtk
+
+#generate new ones from the spatial prior
+runMatlabCmd genBundleFromPrior "'$subj'"  "'$name'"
+
+ #run exclusion waypoints once more 
+ prior_Bfloat=$out_dir/${name}_bundle_prior.Bfloat
+ procstreamlines $exclude_roi < $prior_Bfloat > $out_Bfloat
+ vtkstreamlines -colourorient -interpolate < $out_Bfloat > $out
+
+
+fi
+
+
+
+done #label
+
+
+
+#combine all Bfloats into a single VTK
+combined_txt=$out_dir/all_bundles.txt
+combined_vtk=$out_dir/all_bundles.vtk
+combined_mean_vtk=$out_dir/all_bundles.meanbundle.vtk
+
+echo "ls $out_dir/*_bundle.Bfloat > $combined_txt"
+ls $out_dir/*_bundle.Bfloat > $combined_txt
+
+lut=$PIPELINE_CFG_DIR/labels/FibreBundleLUT_2014_11_15.csv
+
+echo "runMatlabCmd combineCaminoTractsInVTK_withLUT "'$combined_txt'" "'$lut'" "'$combined_vtk'""
+runMatlabCmd combineCaminoTractsInVTK_withLUT "'$combined_txt'" "'$lut'" "'$combined_vtk'" # "'$combined_mean_vtk'"
+
+#echo runMatlabCmd combineCaminoTractsInVTK "'$combined_txt'" "'$combined_vtk'"
+#runMatlabCmd combineCaminoTractsInVTK "'$combined_txt'" "'$combined_vtk'"
+
+
+
+done #wholebrain tracts
+done #tract dir
+done #subj

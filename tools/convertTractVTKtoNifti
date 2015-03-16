@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo "Writes Bfloat, acm_sc and binary nifti to path defined by vtk file"
+ echo "Usage: $0  <reference T1> <input vtk> ..."
+ exit 0
+fi
+
+ref_t1=$1
+shift 1
+
+
+#im_list=""
+for in_vtk in $@
+do
+
+
+out_prefix=${in_vtk%.vtk}
+out_root=${out_prefix}_
+out_bfloat=${out_prefix}.Bfloat
+out_nifti=${out_prefix}.nii.gz
+out_acm=${out_prefix}_acm_sc.nii.gz
+
+#if [ ! -e $out_nifti ]
+# then
+runMatlabCmd writeCaminoTracts "readTractsFromVTK('$in_vtk')"  "'$out_bfloat'";
+procstreamlines -header $ref_t1 -outputacm -outputsc -outputroot $out_root < $out_bfloat
+fslmaths ${out_acm} -bin $out_nifti
+#fi
+
+#im_list="$im_list $out_acm"
+
+done
+
+#out_4d=${out_prefix%/*}/all_tract_acm_4D.nii.gz
+#out_maxprob=${out_prefix%/*}/all_tract_maxprob.nii.gz
+#fslmerge -t $out_4d $im_list 
+#prob4DtoMaxProb $out_4d $out_maxprob

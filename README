@@ -1,0 +1,46 @@
+
+
+
+pipelines/
+
+Description:
+
+These are scripts/programs that are aware of the standardized pipeline folder structure and read/write data from/to the standardized folder structure. Writes to and reads from the current project folder, thus working directory should be the one where the subject ID folders are sub-directories.
+
+Required arguments:
+
+Subject ID(s)
+
+Required documentation:
+
+General description
+Input/output arguments
+Optional arguments
+List of software dependencies (e.g. FSL, Freesurfer, other tools)
+List of prerequisite pipelines (e.g. pipelines that need to be run prior to this)
+Standardized data inputs
+Standardized data outputs
+
+
+
+tools/
+
+Description:
+
+Various command-line tools where input and output files must be specified -- i.e. does not assume standardized pipeline folder structure.
+e.g.:  SegmentBrain <input brain nifti>  <output brain segmentation nifti>
+
+
+
+
+projects/
+
+
+Description: 
+
+Scripts or tools specific to a project or sub-project.  Should be well documented, but might have limited generalizability.
+
+
+
+
+

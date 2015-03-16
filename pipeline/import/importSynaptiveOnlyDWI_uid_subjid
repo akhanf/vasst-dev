@@ -1,0 +1,42 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage $0 <input folder> <synaptive uid list> <subject id list>"
+ exit 0
+fi
+
+out_dir=synaptive_dwi
+mkdir $out_dir
+
+input_folder=$1
+uid_list=$2
+subj_list=$3
+
+i=1
+for synaptive_subj in `cat $uid_list`
+do
+
+t1=$input_folder/$synaptive_subj/registration.nrrd
+dwi=$input_folder/$synaptive_subj/output/DWI.nrrd
+
+subj=`head -n $i $subj_list | tail -n 1`
+i=$((i+1))
+
+
+if [ ! -e $t1 -o ! -e $dwi ]
+then
+  echo skipping $synaptive_subj
+  continue
+else
+
+
+
+echo input: $synaptive_subj, subj: $subj
+
+cp -v $t1 $out_dir/$subj.T1.nrrd 
+cp -v $dwi $out_dir/$subj.dwi.nrrd 
+
+fi
+
+done

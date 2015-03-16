@@ -1,0 +1,151 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <label_group_name> <subjid/list>"
+ echo ""
+ echo ""
+ 
+ exit 0
+fi
+
+output_dir=.
+
+
+label_group_name=$1
+shift 1
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+for tract_dir in $subj_dir/dti/distortCorrect/caminoTractographyDTI
+do
+
+
+tracts=$tract_dir/wholebrain.Bfloat
+out_dir=$tract_dir/parcellated.wholebrain.$label_group_name
+
+
+if [ ! -e $tracts ]
+then
+ continue
+fi
+
+ mkdir -p $out_dir
+
+label_dir=$subj_dir/labels/dwi/$label_group_name
+#propLabels_f3d/$atlas_subj
+
+
+for label in `ls $label_dir/*.AND_ROI.nii.gz`
+do
+
+ name=${label##*/}
+ name=${name%%.*}
+
+ #NOT_ROI?
+ not_roi=$label_dir/$name.NOT_ROI.nii.gz
+
+
+ 
+ 
+ #create waypoints based on connected components
+ waypoint=$out_dir/${name}_waypoint.nii.gz
+ if [ ! -e $waypoint ]
+ then
+ echo connectedcomp $label $waypoint 
+ connectedcomp $label $waypoint 
+ fi
+
+ exclude_roi=""
+ if [ -e $not_roi ]
+ then
+  exclude_roi="-exclusionfile $not_roi"
+ fi
+
+# nx=`fslval $waypoint dim1 | tr -d ' '`
+# ny=`fslval $waypoint dim2 | tr -d ' '`
+# nz=`fslval $waypoint dim3 | tr -d ' '`
+# px=`fslval $waypoint pixdim1 | tr -d ' '`
+# py=`fslval $waypoint pixdim2 | tr -d ' '`
+# pz=`fslval $waypoint pixdim3 | tr -d ' '`
+
+ out_Bfloat=$out_dir/${name}_bundle.Bfloat
+ out=$out_dir/${name}_bundle.vtk
+# out_trk=$out_dir/${name}_bundle.trk
+
+# if [ ! -e $out ]
+# then 
+ #filter streamlines
+ echo "procstreamlines -waypointfile $waypoint $exclude_roi"
+ procstreamlines -waypointfile $waypoint $exclude_roi < $tracts > $out_Bfloat
+
+#create connection prob map
+ procstreamlines -waypointfile $waypoint $exclude_roi -outputacm -outputcp -outputroot $out_dir/${name}_bundle. < $tracts 
+
+
+ vtkstreamlines -colourorient -interpolate < $out_Bfloat > $out
+ #convert to trackvis
+# echo camino_to_trackvis -o $out_trk -d $nx,$ny,$nz -x $px,$py,$pz < $out_Bfloat 
+# camino_to_trackvis -o $out_trk -d $nx,$ny,$nz -x $px,$py,$pz < $out_Bfloat 
+ 
+# fi
+
+
+
+## create shape prior for corticospinal tract motor strip
+if [ "$name" = "Cortico_Spinal_Left" -o "$name" = "Cortico_Spinal_Right" ]
+then
+   
+  prior=$out_dir/${name}_prior.nii.gz
+  #pull out motor cortex from waypoints (will be largest connected component out of three, so label 3), and smooth it with gaussian sigma 4
+  fslmaths $waypoint -thr 3 -uthr 3 -bin -s 4 $prior
+  
+  prior_stats=$out_dir/${name}_prior_stats.txt
+  #compute sum of this over each tract 
+  tractstats -tractstat sum -scalarfile $prior  < $tracts | double2txt > $prior_stats
+
+fi
+
+
+
+
+
+
+done #label
+
+
+
+#combine all Bfloats into a single VTK
+combined_txt=$out_dir/all_bundles.txt
+combined_vtk=$out_dir/all_bundles.vtk
+combined_mean_vtk=$out_dir/all_bundles.meanbundle.vtk
+
+echo "ls $out_dir/*_bundle.Bfloat > $combined_txt"
+ls $out_dir/*_bundle.Bfloat > $combined_txt
+
+lut=$PIPELINE_CFG_DIR/labels/FibreBundleLUT.csv
+
+echo "runMatlabCmd combineCaminoTractsInVTK_withLUT "'$combined_txt'" "'$lut'" "'$combined_vtk'""
+runMatlabCmd combineCaminoTractsInVTK_withLUT "'$combined_txt'" "'$lut'" "'$combined_vtk'" # "'$combined_mean_vtk'"
+
+#echo runMatlabCmd combineCaminoTractsInVTK "'$combined_txt'" "'$combined_vtk'"
+#runMatlabCmd combineCaminoTractsInVTK "'$combined_txt'" "'$combined_vtk'"
+
+
+
+done #wholebrain tracts
+done #subj

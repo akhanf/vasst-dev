@@ -1,0 +1,159 @@
+#!/bin/bash
+
+function usage {
+ echo "Usage $0 <subjid/list>  <options>"
+ echo "   -o output_dir		Set output directory (default .)"
+ echo ""
+}
+
+if [ "$#" -lt 1 ]
+then
+ usage
+ exit 0
+fi
+
+label_path=labels/dwi/prob_bspline_f3d_HarvardOxford_rigid_aladin_t1/HarvardOxford-combined-maxprob-thr25-1mm.nii.gz #relative to subj dir
+label_txt_name=HarvardOxford-combined-NetworkLabelList_camino.txt  #relative to pipeline/cfg/labels 
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi  
+
+shift 1 #shift by number of required arguments (incl subjid/list)
+
+#flag o with argument "o:"
+while getopts "o:L:" options; do
+ case $options in
+    o ) echo "Using output directory: $OPTARG"
+	output_dir=$OPTARG;;
+    L ) echo "Using custom label (segmentation) file: $OPTARG"
+	label_path=$OPTARG;;
+    T ) echo "Using custom label name txt file: $OPTARG"
+	label_txt_name=$OPTARG;;
+    * ) usage
+	exit 0;;
+ esac
+done
+
+
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+echo $subj
+#put pipeline commands here
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+
+ camino_dir=$dti_dir/caminoDTI
+ track_dir=$dti_dir/caminoTractographyDTI
+ fa=$camino_dir/fa.nii.gz
+ md=$camino_dir/md.nii.gz
+
+tract_name=wholebrain
+
+tract_bfloat=$track_dir/$tract_name.Bfloat
+
+
+labels=$subj_dir/$label_path
+
+
+
+label_txt=$PIPELINE_CFG_DIR/labels/$label_txt_name
+label_csv=${label_txt%%.txt}.csv
+
+if [ -e $labels ]
+then
+echo "Using label file: $labels"
+else
+echo $labels does not exist!
+continue
+fi
+
+
+if [  -e $label_txt ]
+then
+ echo "Using label txt file: $label_txt"
+else
+ echo $label_txt does not exist!
+ continue
+fi
+
+#check if tract_bfloat exists
+if [ -e $tract_bfloat ]
+then
+ echo Using tract bfloat: $tract_bfloat
+else
+ echo $tract_bfloat does not exist!
+ continue
+fi
+
+out_dir=$camino_dir/connectivity
+mkdir -p $out_dir
+
+labels_clean=$out_dir/labels_clean.nii.gz
+
+if false
+then
+#remove unused labels 
+runMatlabCmd removeUnusedLabels "'$labels'" "'$labels_clean'" "'$label_txt'"
+
+
+
+
+
+cat $tract_bfloat | conmat -targetfile $labels_clean -scalarfile $fa -outputroot $out_dir/conmat_  -targetnamefile $label_txt
+mv $out_dir/conmat_ts.csv $out_dir/conmat_FA.csv
+
+runMatlabCmd reorderCaminoConnectivityMatrix "'$out_dir/conmat_sc.csv'" "'$label_txt'" "'$out_dir/connectivity_ntracts.mat'"
+runMatlabCmd reorderCaminoConnectivityMatrix "'$out_dir/conmat_FA.csv'" "'$label_txt'" "'$out_dir/connectivity_meanFA.mat'"
+
+fi
+
+vol_txt=$out_dir/label_volumes.txt
+rm -f $vol_txt
+
+for lbl in `cat $label_csv`
+do
+
+  num=${lbl%%,*}
+  lbl=${lbl##*,}
+  
+  echo num $num
+  echo lbl $lbl
+
+  volstr=`mri_label_volume $labels_clean $num`
+  echo mri_label_volume $labels_clean $num
+  mri_label_volume $labels_clean $num
+  vol=${volstr#*(}
+  vol=${vol%%\ mm*}
+  echo "vol: $vol"
+  echo $vol >> $vol_txt
+
+done
+
+
+done
+
+

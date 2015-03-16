@@ -1,0 +1,31 @@
+#!/bin/bash
+
+#in_t1=`zenity --file-selection  --title="Choose T1-w image file to import"`
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage $0 <input rs-fMRI image> <subjid>"
+ exit 0
+fi
+
+in_fmri=$1
+subj=$2
+output_dir=.
+
+
+fmri_dir=$output_dir/$subj/fmri
+mkdir -p $fmri_dir
+
+fmri=$fmri_dir/rs_fmri.nii.gz
+
+ext=${in_fmri##*.}
+if [ "$ext" = "mha" -o "$ext" = "mhd" -o "$ext" = "nrrd" -o "$ext" = "nhdr" ]
+then
+c3d $in_fmri -o $fmri
+else
+mri_convert $in_fmri $fmri
+fi
+fslreorient2std $fmri $fmri
+
+
+

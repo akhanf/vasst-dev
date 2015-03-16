@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# objective: extract individual label files and time series (in subject's fMRI/EPI space) from prior automatic segmentation
+
+# input: requires prior computation of atlas labels in subject space
+# output: fmri/<atlas>_labels, fmri/<atlas>_ts
+
+# NOTE: by default, gets mean time series; consider using Eigen instead
+
+# TODO: for now the path of the csv label file and the specific parcellated nifti atlas are hardcoded. Should be a flag or moved to more standard location.
+
+# TODO 2: also consider directly computing weighted time series from 4D probabilistic map of each label
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage: $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=`pwd` # current directory is root directory for subject output
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+  subj_dir=$output_dir/$subj
+
+  fmri_dir=$subj_dir/fmri
+  t1_dir=$subj_dir/t1
+  xfm_dir=$subj_dir/xfms
+  in_label_dir=$subj_dir/labels
+
+  # use distortion corrected fmri
+  in_fmri=$fmri_dir/distortCorr/rs_fmri_distortCorr.nii.gz
+#  in_fmri_parc=$in_label_dir/fmri/freesurfer_rigid_aladin_t1/wmparc.nii.gz
+  # for now just use the 25% maxprob map; may test different options at some point
+  in_fmri_parc=$in_label_dir/fmri/maxprob_bspline_f3d_HarvardOxford_rigid_aladin_t1/HarvardOxford-combined-maxprob-from4D-thr25-1mm.nii.gz
+
+  out_dir=$fmri_dir/HarvardOxford-combined-maxprob-from4D-thr25_ts
+  out_label_dir=$fmri_dir/HarvardOxford-combined-maxprob-from4D-thr25_labels
+
+  mkdir -p $out_dir
+  mkdir -p $out_label_dir
+
+  labellist="/eq-nas/jlau/EpilepsyDatabase/standard/repository/pipeline/cfg/labels/HarvardOxford-combined-NetworkLabelList.csv"
+
+  # for every FreeSurfer label
+  for i in `cat $labellist`
+  do
+
+    # 1. extract the label mask (either as a separate volume or mask)
+    label=`echo $i | cut -d, -f1`
+    label_name=`echo $i | cut -d, -f2`
+
+#    label=${label%%,*} # label is number before comma
+#    label_name=${label##*,} # name is what is after comma
+
+    echo "name: $label_name, label: $label"
+
+    label_mask=$out_label_dir/$label_name.nii.gz
+
+    if [ ! -e $label_mask ] # extract label using freesurfer tool
+    then
+      echo mri_extract_label $in_fmri_parc $label $label_mask
+      mri_extract_label $in_fmri_parc $label $label_mask
+    fi
+
+    # 2. get mean time series within the label mask
+    label_ts="$out_dir/$label-$label_name-ts.txt"
+    echo fslmeants -i $in_fmri -m $label_mask -o $label_ts
+    fslmeants -i $in_fmri -m $label_mask -o $label_ts
+    # TO CONSIDER: fslmeants -i $in_fmri -m $label_mask -o $label_eig --eig
+
+  done
+
+done
+

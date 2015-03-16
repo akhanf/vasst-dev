@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# input: 
+# output:
+
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage: $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=`pwd` # current directory is root directory for subject output
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+fmri_dir=$subj_dir/fmri
+t1_dir=$subj_dir/t1
+xfm_dir=$subj_dir/xfms
+
+
+in_fmri=$fmri_dir/rs_fmri.nii.gz
+in_hires=$t1_dir/t1.brain.nii.gz #bet_t1
+
+tmp_name=feat_$RANDOM
+tmp_dir=/tmp/$tmp_name
+
+mkdir -p $tmp_dir
+
+echo $tmp_dir > $fmri_dir/tmp_dir
+
+cp -v $in_fmri $tmp_dir
+
+
+
+
+
+#should get the following from the image:
+  # TR
+  # number of volumes (and number to skip)
+
+
+nvolumes=`fslval $in_fmri dim4`
+repetitiontime=`fslval $in_fmri pixdim4` #should check to see if TR is set as pixdim4
+ndelete=4
+
+
+
+
+#need to run feat in a temporary folder
+
+#copy fsf file and update with subj id
+
+feattype=singleSubj_prestats
+
+out_fsf=$tmp_dir/feat.$feattype.fsf
+
+cp -v $PIPELINE_CFG_DIR/feat/$feattype.fsf $out_fsf
+
+chmod g+w $out_fsf
+
+#replace with subjid
+output_dir=$tmp_dir/$feattype.feat
+prestat_dir=$fmri_dir/$feattype.feat
+
+sed -i "s/INPUTVOLUME/\/tmp\/$tmp_name\/rs_fmri.nii.gz/g" $out_fsf
+sed -i "s/OUTPUTDIR/\/tmp\/$tmp_name\/$feattype/g" $out_fsf
+sed -i "s/SUBJECTID/$subj/g" $out_fsf
+sed -i "s/NVOLUMES/$nvolumes/g" $out_fsf
+sed -i "s/NDELETE/$ndelete/g" $out_fsf # delete first $ndelete volumes (4)
+sed -i "s/REPETITIONTIME/$repetitiontime/g" $out_fsf
+
+
+echo "FSL Melodic FSF settings file generated: $out_fsf"
+
+
+if [ ! -e $output_dir -o ! -e $prestat_dir ]
+then
+
+echo feat $out_fsf
+feat $out_fsf
+
+#now, copy results from tmp to network drive
+cp -Rv $output_dir $fmri_dir
+mv $fmri_dir/tmp_dir $prestat_dir
+#then remove tmp folder
+#rm -rf $tmp_dir
+
+fi
+
+
+
+
+
+
+
+done

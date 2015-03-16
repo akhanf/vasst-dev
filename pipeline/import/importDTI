@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#in_dti=`zenity --file-selection  --title="Choose T1-w image file to import"`
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage $0 <input DWI image> <subjid>"
+ exit 0
+fi
+
+in_dwi=$1
+subj=$2
+output_dir=.
+
+
+dti_dir=$output_dir/$subj/dti/uncorrected
+mkdir -p $dti_dir
+
+in_path=${in_dwi%/*}
+in_file=${in_dwi##*/}
+in_file=${in_file%%.nii.gz}
+
+cp $in_path/$in_file.nii.gz $dti_dir/dwi.nii.gz
+cp $in_path/$in_file.bvec $dti_dir/dwi.bvec
+cp $in_path/$in_file.bval $dti_dir/dwi.bval
+
+

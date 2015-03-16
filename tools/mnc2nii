@@ -1,0 +1,19 @@
+#!/bin/bash
+
+for im in $@
+do
+
+ prefix=${im%%.mnc}
+ ext=${im##*.}
+ out=$prefix.nii.gz
+
+ if [ "$ext" = "mnc" ]
+ then
+# echo prefix: $prefix
+# echo extension: $ext
+# echo output: $out
+
+ mri_convert $im $out
+ fi
+
+done

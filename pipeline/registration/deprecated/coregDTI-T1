@@ -1,0 +1,55 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjids>"
+ exit 0
+fi
+
+output_dir=.
+
+for subj in $@
+do
+
+ subj_dir=$output_dir/$subj
+
+ #type of dti correction used (distortCorrect, eddyCorrect, uncorrected)
+ for corr in eddyCorrect distortCorrect
+ do
+
+
+ dti_dir=$subj_dir/dti/$corr
+ out_dir=$dti_dir/coreg_T1
+ xfm_dir=$out_dir/xfm
+
+ mkdir -p $out_dir $xfm_dir
+
+ t1=$subj_dir/t1/t1.brain.nii.gz
+ b0=$dti_dir/dti_S0.nii.gz
+ reg_b0=$xfm_dir/dti_S0.regToT1.nii.gz
+
+ xfm=$xfm_dir/dti-t1.xfm
+ inv_xfm=$xfm_dir/t1-dti.xfm
+
+ if [ ! -e $reg_b0 ]
+ then
+ echo reg_aladin -ref $t1 -flo $b0 -aff $xfm -res $reg_b0 -rigOnly
+ reg_aladin -ref $t1 -flo $b0 -aff $xfm -res $reg_b0 -rigOnly
+ fi
+
+ echo convert_xfm -omat $inv_xfm -inverse $xfm 
+ convert_xfm -omat $inv_xfm -inverse $xfm 
+
+ #warp dti metrics too
+ for metric in FA MD L1 L2 L3 MO 
+ do 
+  reg_metric=$out_dir/dti_$metric.nii.gz
+  echo reg_resample -ref $t1 -flo $dti_dir/dti_$metric.nii.gz -aff $xfm -res $reg_metric
+  reg_resample -ref $t1 -flo $dti_dir/dti_$metric.nii.gz -aff $xfm -res $reg_metric
+ done #metric
+
+ done #corr
+done #subj
+
+

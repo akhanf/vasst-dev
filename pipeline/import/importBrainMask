@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#in_brainmask=`zenity --file-selection  --title="Choose T1-w image file to import"`
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage $0 <input brainmask (in T1 space)> <subjid>"
+ exit 0
+fi
+
+in_brainmask=$1
+subj=$2
+output_dir=.
+
+
+t1_dir=$output_dir/$subj/t1
+mkdir -p $t1_dir
+
+brainmask=$t1_dir/brainmask.nii.gz
+
+ext=${in_brainmask##*.}
+if [ "$ext" = "mha" -o "$ext" = "mhd" -o "$ext" = "nrrd" -o "$ext" = "nhdr" ]
+then
+c3d $in_brainmask -o $brainmask
+else
+mri_convert $in_brainmask $brainmask
+fi
+fslreorient2std $brainmask $brainmask
+
+#ensure it is binary..
+fslmaths $brainmask -bin $brainmask
+

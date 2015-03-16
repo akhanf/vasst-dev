@@ -1,0 +1,112 @@
+#!/bin/bash
+
+
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage: $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=`pwd`
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+fmri_dir=$subj_dir/fmri
+t1_dir=$subj_dir/t1
+xfm_dir=$subj_dir/xfms
+
+
+in_fmri=$fmri_dir/distortCorr/rs_fmri_distortCorr.nii.gz
+in_hires=$t1_dir/t1.brain.nii.gz #bet_t1
+
+tmp_name=feat_$RANDOM
+tmp_dir=/tmp/$tmp_name
+
+mkdir -p $tmp_dir
+
+echo $tmp_dir > $fmri_dir/tmp_dir
+
+cp -v $in_fmri $tmp_dir
+cp -v $in_hires $tmp_dir
+
+
+
+
+
+
+#should get the following from the image:
+  # TR
+  # number of volumes (and number to skip)
+
+
+nvolumes=`fslval $in_fmri dim4`
+repetitiontime=`fslval $in_fmri pixdim4` #should check to see if TR is set as pixdim4
+smoothingfwhm=5
+resamplingresolution=3
+
+
+
+#need to run feat in a temporary folder
+
+#copy fsf file and update with subj id
+
+feattype=singleSubj_postDC
+
+out_fsf=$tmp_dir/feat.$feattype.fsf
+
+cp -v $PIPELINE_CFG_DIR/feat/$feattype.fsf $out_fsf
+
+chmod g+w $out_fsf
+
+#replace with subjid
+output_dir=$tmp_dir/$feattype.ica
+poststat_dir=$fmri_dir/$feattype.ica
+
+sed -i "s/INPUTVOLUME/\/tmp\/$tmp_name\/rs_fmri_distortCorr.nii.gz/g" $out_fsf
+sed -i "s/INPUTHIRES/\/tmp\/$tmp_name\/t1.brain.nii.gz/g" $out_fsf
+sed -i "s/OUTPUTDIR/\/tmp\/$tmp_name\/$feattype/g" $out_fsf
+sed -i "s/SUBJECTID/$subj/g" $out_fsf
+sed -i "s/NVOLUMES/$nvolumes/g" $out_fsf
+sed -i "s/REPETITIONTIME/$repetitiontime/g" $out_fsf
+sed -i "s/SMOOTHINGFWHM/$smoothingfwhm/g" $out_fsf
+sed -i "s/RESAMPLINGRESOLUTION/$resamplingresolution/g" $out_fsf
+
+
+echo "FSL Melodic FSF settings file generated: $out_fsf"
+
+
+if [ ! -e $output_dir -o ! -e $poststat_dir ]
+then
+
+echo feat $out_fsf
+feat $out_fsf
+
+#now, copy results from tmp to network drive
+cp -Rv $output_dir $fmri_dir
+mv $fmri_dir/tmp_dir $poststat_dir
+#then remove tmp folder
+#rm -rf $tmp_dir
+
+fi
+
+
+
+
+
+
+
+done

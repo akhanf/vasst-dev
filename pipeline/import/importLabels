@@ -1,0 +1,45 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage $0 <input label type - e.g. Striatum> <input image type - e.g. t1> <subjid> <label image 1 >  <label image 2 (opt)> ... "
+ exit 0
+fi
+
+label_type=$1
+img_type=$2
+subj=$3
+
+shift 3
+
+output_dir=.
+
+
+label_dir=$output_dir/$subj/labels/$img_type/$label_type
+mkdir -p $label_dir
+
+
+for in_label in $@
+do
+
+prefix=${in_label##*/}
+prefix=${prefix%%.nii.gz}
+
+out_label=$label_dir/$prefix.nii.gz
+
+#ext=${in_label##*.}
+#if [ "$ext" = "mha" -o "$ext" = "mhd" -o "$ext" = "nrrd" -o "$ext" = "nhdr" ]
+#then
+#c3d $in_label -o $label
+#else
+#mri_convert $in_label $label -rt nearest
+#fi
+#fslreorient2std $label $label
+
+cp -v $in_label $out_label
+
+done
+
+
+

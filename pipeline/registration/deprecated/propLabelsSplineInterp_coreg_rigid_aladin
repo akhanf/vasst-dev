@@ -1,0 +1,72 @@
+#!/bin/bash
+
+. functions_checkargs
+
+if [ "$#" -lt 4 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <img_type1> <img_type2> <label_type> <subjid/list>"
+ echo ""
+ echo " e.g. to propagate manual_labels in t1 to dti to test_subj use:"
+ echo "  $0 t1 dti manual_labels test_subj"
+ 
+ exit 0
+fi
+
+reg_type=rigid_aladin
+
+output_dir=.
+
+img_type_1=$1 #e.g.: t1, dti, fmri
+img_type_2=$2 #e.g.: t1, dti, fmri
+label_type=$3 #e.g: wm_bundles
+
+shift 3
+
+checkCoregArgs
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+ subj_dir=$output_dir/$subj
+ subj_nii=$subj_dir/$img_path_2
+ echo "subj_nii=$subj_nii"
+ 
+ atlas_label_dir=$subj_dir/labels/${img_type_1}/${label_type}
+ reg_dir=$subj_dir/coreg/${reg_type}_${img_type_1}_${img_type_2}
+
+ out_dir=$subj_dir/labels/${img_type_2}/${label_type}_${reg_type}_${img_type_1}
+ mkdir -p $out_dir
+
+ inv_xfm=$reg_dir/${img_type_1}_to_${img_type_2}.xfm
+
+ if [ ! -e $inv_xfm ]
+ then 
+  echo "Error on $img_type_1 to $img_type_2 in $subj: Need to run coreg_rigid_aladin before propLabels_coreg_rigid_aladin!"
+  continue 
+ fi
+
+
+ for in_label in `ls $atlas_label_dir/*.nii.gz`
+ do
+  prefix=${in_label##*/}
+  prefix=${prefix%%.nii.gz}
+  out_label=$out_dir/$prefix.nii.gz
+  reg_resample -flo $in_label -res $out_label -aff $inv_xfm -ref $subj_nii
+ done
+
+done
+
+
+
+

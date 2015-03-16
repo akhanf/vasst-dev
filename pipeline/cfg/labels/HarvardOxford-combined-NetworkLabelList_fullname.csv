@@ -1,0 +1,113 @@
+1,L_lateralventricle,Left Lateral Ventricle
+2,L_thalamus,Left Thalamus
+3,L_caudate,Left Caudate
+4,L_putamen,Left Putamen
+5,L_pallidum,Left Pallidum
+6,brainstem,Brainstem
+7,L_hippocampus,Left Hippocampus
+8,L_amygdala,Left Amygdala
+9,L_accumbens,Left Accumbens
+10,R_lateralventricle,Right Lateral Ventricle
+11,R_thalamus,Right Thalamus
+12,R_caudate,Right Caudate
+13,R_putamen,Right Putamen
+14,R_pallidum,Right Pallidum
+15,R_hippocampus,Right Hippocampus
+16,R_amygdala,Right Amygdala
+17,R_accumbens,Right Accumbens
+18,L_frontal_pole,Left Frontal Pole
+19,R_frontal_pole,Right Frontal Pole
+20,L_insula,Left Insular Cortex
+21,R_insula,Right Insular Cortex
+22,L_sup_frontal,Left Superior Frontal Gyrus
+23,R_sup_frontal,Right Superior Frontal Gyrus
+24,L_mid_frontal,Left Middle Frontal Gyrus
+25,R_mid_frontal,Right Middle Frontal Gyrus
+26,L_inf_frontal_pars_t,Left Inferior Frontal Gyrus Pars Triangularis
+27,R_inf_frontal_pars_t,Right Inferior Frontal Gyrus Pars Triangularis
+28,L_inf_frontal_pars_op,Left Inferior Frontal Gyrus Pars Opercularis
+29,R_inf_frontal_pars_op,Right Inferior Frontal Gyrus Pars Opercularis
+30,L_precentral,Left Precentral Gyrus
+31,R_precentral,Right Precentral Gyrus
+32,L_temporal_pole,Left Temporal Pole
+33,R_temporal_pole,Right Temporal Pole
+34,L_sup_temporal_ant,Left Superior Temporal Gyrus Anterior
+35,R_sup_temporal_ant,Right Superior Temporal Gyrus Anterior
+36,L_sup_temporal_post,Left Superior Temporal Gyrus Posterior
+37,R_sup_temporal_post,Right Superior Temporal Gyrus Posterior
+38,L_mid_temporal_ant,Left Middle Temporal Gyrus Anterior
+39,R_mid_temporal_ant,Right Middle Temporal Gyrus Anterior
+40,L_mid_temporal_post,Left Middle Temporal Gyrus Posterior
+41,R_mid_temporal_post,Right Middle Temporal Gyrus Posterior
+42,L_mid_temporal_TO,Left Middle Temporal Gyrus TemporoOccipital
+43,R_mid_temporal_TO,Right Middle Temporal Gyrus TemporoOccipital
+44,L_inf_temporal_ant,Left Inferior Temporal Gyrus Anterior
+45,R_inf_temporal_ant,Right Inferior Temporal Gyrus Anterior
+46,L_inf_temporal_post,Left Inferior Temporal Gyrus Posterior
+47,R_inf_temporal_post,Right Inferior Temporal Gyrus Posterior
+48,L_inf_temporal_TO,Left Inferior Temporal Gyrus TemporoOccipital
+49,R_inf_temporal_TO,Right Inferior Temporal Gyrus TemporoOccipital
+50,L_postcentral,Left Precentral Gyrus
+51,R_postcentral,Right Precentral Gyrus
+52,L_sup_parietal,Left Superior Parietal Lobule
+53,R_sup_parietal,Right Superior Parietal Lobule
+54,L_supramarginal_ant,Left Supramarginal Gyrus Anterior
+55,R_supramarginal_ant,Right Supramarginal Gyrus Anterior
+56,L_supramarginal_post,Left Supramarginal Gyrus Posterior
+57,R_supramarginal_post,Right Supramarginal Gyrus Posterior
+58,L_angular,Left Angular Gyrus
+59,R_angular,Right Angular Gyrus
+60,L_lat_occipital_sup,Left Lateral Occipital Cortex Superior
+61,R_lat_occipital_sup,Right Lateral Occipital Cortex Superior
+62,L_lat_occipital_inf,Left Lateral Occipital Cortex Inferior
+63,R_lat_occipital_inf,Right Lateral Occipital Cortex Inferior
+64,L_intracalcarine,Left Intracalcarine Cortex
+65,R_intracalcarine,Right Intracalcarine Cortex
+66,L_frontal_medial,Left Frontal Medial Cortex
+67,R_frontal_medial,Right Frontal Medial Cortex
+68,L_juxtapositional,Left Juxtapositional Lobule Cortex (formerly SMA)
+69,R_juxtapositional,Right Juxtapositional Lobule Cortex (formerly SMA)
+70,L_subcallosal,Left Subcallosal Cortex
+71,R_subcallosal,Right Subcallosal Cortex
+72,L_paracingulate,Left Paracingulate Gyrus
+73,R_paracingulate,Right Paracingulate Gyrus
+74,L_cingulate_ant,Left Cingulate Gyrus Anterior
+75,R_cingulate_ant,Right Cingulate Gyrus Anterior
+76,L_cingulate_post,Left Cingulate Gyrus Posterior
+77,R_cingulate_post,Right Cingulate Gyrus Posterior
+78,L_precuneus,Left Precuneus Cortex
+79,R_precuneus,Right Precuneus Cortex
+80,L_cuneus,Left Cuneal Cortex
+81,R_cuneus,Right Cuneal Cortex
+82,L_frontal_orbital,Left Frontal Orbital Cortex
+83,R_frontal_orbital,Right Frontal Orbital Cortex
+84,L_parahippocampal_ant,Left Parahippocampal Gyrus Anterior
+85,R_parahippocampal_ant,Right Parahippocampal Gyrus Anterior
+86,L_parahippocampal_post,Left Parahippocampal Gyrus Posterior
+87,R_parahippocampal_post,Right Parahippocampal Gyrus Posterior
+88,L_lingual,Left Lingual Gyrus
+89,R_lingual,Right Lingual Gyrus
+90,L_temporal_fusiform_ant,Left Temporal Fusiform Cortex Anterior
+91,R_temporal_fusiform_ant,Right Temporal Fusiform Cortex Anterior
+92,L_temporal_fusiform_post,Left Temporal Fusiform Cortex Posterior
+93,R_temporal_fusiform_post,Right Temporal Fusiform Cortex Posterior
+94,L_temporal_fusiform_TO,Left Temporal Fusiform Cortex TemporoOccipital
+95,R_temporal_fusiform_TO,Right Temporal Fusiform Cortex TemporoOccipital
+96,L_occipital_fusiform,Left Occipital Fusiform Gyrus
+97,R_occipital_fusiform,Right Occipital Fusiform Gyrus
+98,L_frontal_operculum,Left Frontal Operculum Cortex
+99,R_frontal_operculum,Right Frontal Operculum Cortex
+100,L_central_operculum,Left Central Opercular Cortex
+101,R_central_operculum,Right Central Opercular Cortex
+102,L_parietal_operculum,Left Parietal Operculum Cortex
+103,R_parietal_operculum,Right Parietal Operculum Cortex
+104,L_planum_polare,Left Planum Polare
+105,R_planum_polare,Right Planum Polare
+106,L_heschl,Left Heschl Gyrus
+107,R_heschl,Right Heschl Gyrus
+108,L_planum_temporale,Left Planum Temporale
+109,R_planum_temporale,Right Planum Temporale
+110,L_supracalcarine,Left Supracalcarine Cortex
+111,R_supracalcarine,Right Supracalcarine Cortex
+112,L_occipital_pole,Left Occipital Pole
+113,R_occipital_pole,Right Occipital Pole

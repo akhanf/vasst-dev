@@ -1,0 +1,48 @@
+#!/bin/bash
+
+if [ "$#" -lt "1" ]
+then
+ echo "Runs recon-all -all -hippo-subfields for given subject"
+ echo ""
+ echo "Usage: $0 <subjid/list>"
+ echo ""
+ exit 0
+fi
+
+
+recon_opts="-all -hippo-subfields"
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+fsid=freesurfer
+fs_dir=$subj_dir/$fsid
+
+t1=$subj_dir/t1/t1.nii.gz
+
+imported=$fs_dir/mri/orig/001.mgz
+
+if [ ! -e $imported ]
+then
+  #import data
+ recon-all -sd $subj_dir -i $t1 -subjid $fsid
+fi
+
+#run recon-all
+recon-all -sd $subj_dir $recon_opts -subjid $fsid
+
+done
+

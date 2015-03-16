@@ -1,0 +1,33 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 2 ]
+then
+ echo "Command-line Usage: $0 <input DTI nrrd image> <subjid>"
+ echo ".. running UI import"
+
+ in_nrrd=`zenity --file-selection  --title="Choose DTI nrrd image to import"`
+ subj=`zenity --entry --title="Enter subject ID:" --text="$in_nrrd"`
+
+else
+
+in_nrrd=$1
+subj=$2
+
+fi
+
+output_dir=.
+
+
+
+dti_dir=$output_dir/$subj/dti/uncorrected
+mkdir -p $dti_dir
+
+bvec=$dti_dir/dwi.bvec
+bval=$dti_dir/dwi.bval
+
+
+echo DWIConvert --inputVolume $in_nrrd --conversionMode NrrdToFSL --outputVolume $dti_dir/dwi.nii.gz --outputBValues $bval --outputBVectors $bvec 
+DWIConvert --inputVolume $in_nrrd --conversionMode NrrdToFSL --outputVolume $dti_dir/dwi.nii.gz --outputBValues $bval --outputBVectors $bvec 
+
+

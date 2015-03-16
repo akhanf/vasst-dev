@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# objective: compute correlation matrices between time series for different ROIs
+
+# input: time series already computed for each subject ROI
+# output: fmri/<>.mat file
+
+if [ "$#" -lt 2 ]
+then
+
+  echo ""
+  echo "Usage: ${0##*/} <label_csv> <subjid/list>"
+  echo ""
+  echo "List of standard label_csvs: "
+  pushd $PIPELINE_CFG_DIR/labels > /dev/null
+  ls *
+  popd > /dev/null
+  echo ""
+
+  exit 0
+fi
+
+label_csv=$PIPELINE_CFG_DIR/labels/$1
+echo $label_csv
+
+if [ ! -e $label_csv ]
+then
+  echo "label cfg $label_csv does not exist!"
+  exit 0
+fi
+
+shift 1
+
+output_dir=`pwd` # current directory is root directory for subject output
+
+if [ -f $1 ]
+then
+  subjids=`cat $1`
+else
+  subjids=$1
+fi
+
+# after processing flags, the core algorithm
+
+for subj in $subjids
+do
+
+  # output correlation matrix in mat file from time series
+  echo matlab -nojvm -nodisplay -nosplash -nodesktop -r "getConnectivitySubj('$subj','$label_csv'), quit"
+  matlab -nojvm -nodisplay -nosplash -nodesktop -r "getConnectivitySubj('$subj','$label_csv'), quit"
+  # TODO: try & catch wrapping matlab script may be safer...
+
+done
+

@@ -1,0 +1,115 @@
+#!/bin/bash
+
+
+function usage {
+ echo ""
+ echo "Usage: ${0##*/}  <img_type_1> <img_type_2> <subjid/list> <options>"
+ echo "   -o output_dir	 Set output directory (default .)"
+ echo "   -r             Use rigid (6-dof) registration (default affine 12-dof)"
+ echo ""
+ echo " e.g. to register t1 to dti for test_subj use:"
+ echo "  $0 t1 dti test_subj"
+ echo ""
+}
+
+
+. functions_checkargs
+
+if [ "$#" -lt 3 ]
+then
+ usage
+ exit 0
+fi
+
+reg_type=affine_aladin
+
+output_dir=.
+
+img_type_1=$1 #e.g.: t1, dti, fmri
+img_type_2=$2
+
+shift 2
+
+
+checkCoregArgs
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+rigid_opt=""
+
+shift 1 #shift by number of required arguments (incl subjid/list)
+
+#flag o with argument "o:"
+while getopts "o:r" options; do
+ case $options in
+    o ) echo "Using output directory: $OPTARG"
+	output_dir=$OPTARG;;
+    r ) echo "Using rigid registration"
+        reg_type=rigid_aladin
+	rigid_opt="-rigOnly";;
+    * ) usage
+	exit 0;;
+ esac
+done
+
+
+
+for subj in $subjids
+do
+
+
+ subj_dir=$output_dir/$subj
+
+ atlas_nii=$subj_dir/$img_path_1
+ echo atlas_nii=$atlas_nii
+
+ subj_nii=$subj_dir/$img_path_2
+ echo "subj_nii=$subj_nii"
+
+ if [ ! -e $subj_nii ]
+ then
+  echo "$subj_nii does not exist, exiting!"
+  exit 0
+ fi
+
+ if [ ! -e $atlas_nii ]
+ then
+  echo "$atlas_nii does not exist, exiting!"
+  exit 0
+ fi
+ 
+ out_dir=$subj_dir/coreg/${reg_type}_${img_type_1}_${img_type_2}
+ mkdir -p $out_dir
+
+ reg_subj=$out_dir/${img_type_2}_to_${img_type_1}.reg.nii.gz
+ xfm=$out_dir/${img_type_2}_to_${img_type_1}.xfm
+ inv_xfm=$out_dir/${img_type_1}_to_${img_type_2}.xfm
+ reg_atlas=$out_dir/${img_type_1}_to_${img_type_2}.reg.nii.gz
+
+ echo reg_aladin -ref $atlas_nii -flo $subj_nii -aff $xfm -res $reg_subj $rigid_opt
+ reg_aladin -ref $atlas_nii -flo $subj_nii -aff $xfm -res $reg_subj $rigid_opt
+
+ #hack fix for synaptive pipeline (when reg_aladin crashes for unknown reason)
+ if [ ! -e $xfm ]
+ then
+  echo "PROBLEM WITH REG_ALADIN!"
+   cp -v ~/ident.xfm $xfm
+ fi
+
+ echo convert_xfm -omat $inv_xfm -inverse $xfm
+ convert_xfm -omat $inv_xfm -inverse $xfm
+ echo reg_resample -flo $atlas_nii -ref $subj_nii -aff $inv_xfm -res $reg_atlas
+ reg_resample -flo $atlas_nii -ref $subj_nii -aff $inv_xfm -res $reg_atlas
+
+
+
+done
+
+
+
+

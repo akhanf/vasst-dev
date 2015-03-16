@@ -1,0 +1,113 @@
+#!/bin/bash
+
+function usage {
+ echo "Usage $0 <subjid/list>  <options>"
+ echo "   -o output_dir		Set output directory (default .)"
+ echo ""
+}
+
+if [ "$#" -lt 1 ]
+then
+ usage
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi  
+
+shift 1 #shift by number of required arguments (incl subjid/list)
+
+#flag o with argument "o:"
+while getopts "o:" options; do
+ case $options in
+    o ) echo "Using output directory: $OPTARG"
+	output_dir=$OPTARG;;
+    * ) usage
+	exit 0;;
+ esac
+done
+
+
+
+#prereq:  registration, and label propagation from atlas
+
+atlas=HarvardOxford
+
+
+
+
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+echo $subj
+#put pipeline commands here
+
+dti_dir=$subj_dir/dti/distortCorrect
+out_dir=$dti_dir/connParc
+mkdir -p $out_dir
+
+
+label_map=$subj_dir/labels/t1/maxprob_bspline_f3d_HarvardOxford/HarvardOxford-combined-maxprob-from4D-thr25-1mm.nii.gz
+
+
+#get seed regions (caud, put, nucacc)
+#lcaud, lput, lacc: 3,4,9
+#rcaud, rput, racc: 12,13,17
+label_cfg=$PIPELINE_CFG_DIR/labels/HarvardOxford-combined-NetworkLabelList_camino.csv
+
+seeds_nii=$out_dir/all_seeds.nii.gz
+
+if [ ! -e $seeds_nii ] 
+then
+
+
+echo fslmaths $label_map -mul 0 $seeds_nii #initialize
+fslmaths $label_map -mul 0 $seeds_nii
+
+for seed in L_caudate L_putamen L_accumbens R_caudate R_putamen R_accumbens
+do
+ 
+ labelnum=`grep $seed $label_cfg`
+ labelnum=${labelnum%%,*}
+
+ 
+ seed_nii=$out_dir/$seed.nii.gz
+ echo fslmaths $label_map -thr $labelnum -uthr $labelnum $seed_nii
+ fslmaths $label_map -thr $labelnum -uthr $labelnum $seed_nii
+
+ fslmaths $seeds_nii -add $seed_nii $seeds_nii 
+done
+
+fi
+
+
+ camino_dir=$dti_dir/caminoDTI
+iterations=1
+picopdf=$camino_dir/dt_picopdf.Bdouble
+fa=$camino_dir/fa.nii.gz
+
+targets_nii=$subj_dir/labels/t1/HarvardOxford_bspline_f3d_MNI152_1mm/HarvardOxford-cort-maxprob-thr25-1mm.nii.gz
+
+tract=$out_dir/tracts.Bfloat
+ #now, run tractography
+#cat $picopdf | track  -inputmodel pico -iterations $iterations -tracker rk4 -stepsize 0.5 -anisthresh 0.1 -curvethresh 90 -header $fa -anisfile $fa -seedfile $seeds_nii > $tract
+
+#echo "procstreamlines -seedfile $seeds_nii -targetfile $targets_nii -header $fa -outputroot $out_dir/output_ < $tract "
+#procstreamlines -seedfile $seeds_nii -targetfile $targets_nii -outputroot $out_dir/output_ -outputcp < $tract 
+procstreamlines -seedfile $seeds_nii -targetfile $out_dir/test_target.nii.gz -outputroot $out_dir/output_ -outputcp < $tract 
+
+
+done
+
+

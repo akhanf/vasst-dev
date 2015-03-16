@@ -1,0 +1,28 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 2 ]
+then
+ echo "Command-line Usage: $0 <input DTI dicom folder> <subjid>"
+ echo ".. running UI import"
+
+ in_dicom_dir=`zenity --file-selection --directory --title="Choose DTI dicom directory to import"`
+ subj=`zenity --entry --title="Enter subject ID:" --text="$in_dicom_dir"`
+
+else
+
+in_dicom_dir=$1
+subj=$2
+
+fi
+
+output_dir=.
+
+
+
+dti_dir=$output_dir/$subj/dti/uncorrected
+mkdir -p $dti_dir
+
+echo DWIConvert --inputDicomDirectory $in_dicom_dir --conversionMode DicomToFSL --outputVolume $dti_dir/dwi.nii.gz
+DWIConvert --inputDicomDirectory $in_dicom_dir --conversionMode DicomToFSL --outputVolume $dti_dir/dwi.nii.gz
+

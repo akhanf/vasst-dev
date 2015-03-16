@@ -1,0 +1,65 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+ out_dir=$dti_dir/bedpost
+
+mkdir -p $out_dir
+
+
+dwi_bvec=$dti_dir/dwi.bvec
+dwi_bval=$dti_dir/dwi.bval
+dwi_vol=$dti_dir/dwi.nii.gz
+brain_mask=$dti_dir/brainmask.nii.gz
+
+
+#copy files necessary for bedpost command:
+bvals=$out_dir/bvals
+bvecs=$out_dir/bvecs
+data=$out_dir/data.nii.gz
+nodif_brain_mask=$out_dir/nodif_brain_mask.nii.gz
+
+cp -v $dwi_bvec $bvecs
+cp -v $dwi_bval $bvals
+cp -v $dwi_vol $data
+cp -v $brain_mask $nodif_brain_mask
+
+bedpostx $out_dir/ -c
+
+done #subj
+
+

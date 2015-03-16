@@ -1,0 +1,112 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+
+#put pipeline commands here
+dti_dir=$subj_dir/dti
+uncorr_dir=$dti_dir/uncorrected
+
+dwi=$uncorr_dir/dwi.nii.gz
+bvec=$uncorr_dir/dwi.bvec
+bval=$uncorr_dir/dwi.bval
+
+#first perform eddy current corr
+ mask=$uncorr_dir/brainmask.nii.gz
+
+ echo bet $dwi $mask -f 0.1 -v
+ bet $dwi $mask -f 0.1 -v
+
+ echo dtifit -k $dwi -m $mask -o $uncorr_dir/dti -r $bvec -b $bval -V
+ dtifit -k $dwi -m $mask -o $uncorr_dir/dti -r $bvec -b $bval -V
+
+ eddy_dir=$dti_dir/eddyCorrect
+ eddy_dwi=$eddy_dir/dwi.nii.gz
+ eddy_bvec=$eddy_dir/dwi.bvec
+ eddy_bval=$eddy_dir/dwi.bval
+ eddy_mask=$eddy_dir/brainmask.nii.gz
+
+ mkdir -p $eddy_dir
+ if [ ! -e $eddy_dwi ]
+ then
+ eddy_correct $dwi $eddy_dwi 0
+ fi
+ cp -v $bvec $eddy_bvec
+ cp -v $bval $eddy_bval
+ cp -v $mask $eddy_mask
+ 
+ echo dtifit -k $eddy_dwi -m $eddy_mask -o $eddy_dir/dti -r $eddy_bvec -b $eddy_bval -V
+ dtifit -k $eddy_dwi -m $eddy_mask -o $eddy_dir/dti -r $eddy_bvec -b $eddy_bval -V
+
+# despot_dir=$subj_dir/despot
+ extramri_dir=$subj_dir/extra_mri
+ t1map_ref=$extramri_dir/t1map.brain.nii.gz
+ 
+# can only perform distortion correction if a ref volume (e.g. T1map, or other T2-weighted image exists) 
+ if [ -e $t1map_ref ]
+ then
+
+ distort_dir=$dti_dir/distortCorrect
+ distort_work_dir=$dti_dir/distortCorrect/work
+ distort_dwi=$distort_dir/dwi.nii.gz
+ distort_mask=$distort_dir/brainmask.nii.gz
+ distort_bvec=$distort_dir/dwi.bvec
+ distort_bval=$distort_dir/dwi.bval
+
+ mkdir -p $distort_dir $distort_work_dir
+ cp -v $bvec $distort_bvec
+ cp -v $bval $distort_bval
+ cp -v $mask $distort_mask
+
+ #get b0 volume
+ di=0
+ for bv in `cat $bval`
+ do
+  b0img=$distort_work_dir/b0_$di.nii.gz
+ if [ "$bv" = 0 ]
+ then
+  echo $bv
+  echo fslroi $eddy_dwi $b0img $di 1
+  fslroi $eddy_dwi $b0img $di 1
+ fi
+  
+ di=$((di+1))
+ done
+
+ avgb0=$distort_work_dir/avg_b0.nii.gz
+ fslmerge -t $avgb0 $distort_work_dir/b0_*.nii.gz
+ fslmaths $avgb0 -Tmean $avgb0
+
+ echo distortCorrEPI $avgb0 $eddy_dwi $mask $t1map_ref $distort_work_dir $distort_dwi $distort_mask
+ distortCorrEPI $avgb0 $eddy_dwi $mask $t1map_ref $distort_work_dir $distort_dwi $distort_mask
+
+ echo dtifit -k $distort_dwi -m $distort_mask -o $distort_dir/dti -r $distort_bvec -b $distort_bval -V
+ dtifit -k $distort_dwi -m $distort_mask -o $distort_dir/dti -r $distort_bvec -b $distort_bval -V
+
+
+ fi
+
+done
+
+

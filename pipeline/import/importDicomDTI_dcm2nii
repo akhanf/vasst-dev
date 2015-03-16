@@ -1,0 +1,43 @@
+#!/bin/bash
+
+
+
+if [ "$#" -lt 2 ]
+then
+ echo "Command-line Usage: $0 <input DTI dicom folder> <subjid>"
+ echo ".. running UI import"
+
+ in_dicom_dir=`zenity --file-selection --directory --title="Choose DTI dicom directory to import"`
+ subj=`zenity --entry --title="Enter subject ID:" --text="$in_dicom_dir"`
+
+else
+
+in_dicom_dir=$1
+subj=$2
+
+fi
+
+output_dir=.
+
+
+
+
+dti_dir=$output_dir/$subj/dti/uncorrected
+mkdir -p $dti_dir
+
+
+tmp_folder=/tmp/$subj.dwi
+mkdir -p $tmp_folder
+
+dcm2niix -f '%p_%t_%s' -z y -o $tmp_folder $in_dicom_dir
+
+#move the nii with bvec/bval over:
+
+bvec=`ls $tmp_folder/*.bvec`
+prefix=${bvec%%.bvec}
+
+mv $prefix.nii.gz $dti_dir/dwi.nii.gz
+mv $prefix.bvec $dti_dir/dwi.bvec
+mv $prefix.bval $dti_dir/dwi.bval
+
+rm -rf $tmp_folder

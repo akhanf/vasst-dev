@@ -1,0 +1,19 @@
+# Directory for the CSV files for atlas templates.
+
+## HarvardOxford-combined
+
+The HarvardOxford-combined atlas is a customized atlas created from the lateralized cortical (cortl) and subcortical (subcort) labels of the atlas provided in FSL5.0. The label numbers were created in house by adding first a background label, then the subcortical labels (minus the bilateral GM + WM labels), then the lateralized cortical labels for a total of 114 labels. All labels are bilateral except for the brainstem and background.
+
+HarvardOxford-combined-NetworkLabelList.csv: the standard for pipeline analysis
+HarvardOxford-combined-NetworkLabelList_full.csv: has the filenames for mask and time series files for ease of processing mat files
+HarvardOxford-combined-NetworkLabelList_fullname.csv: has the full human text descriptor for each anatomical region; but since bash doesn't have good csv support excluded fullnames with spaces for now
+HarvardOxford-combined-NetworkLabelList_fconn.csv: has the ventricles removed and is ordered based on left/right hemisphere and further into subcortical/cortical; maintains correspondence between HarvardOxford and fconn/matlab worlds.
+
+  * awk '{print NR,$1}' OFS="," HarvardOxford-combined-NetworkLabelList_full_noventr.csv > HarvardOxford-combined-NetworkLabelList_fconn.csv
+
+## FreeSurfer
+
+FreeSurfer-NetworkLabelList.csv
+
+Also used by the group is the template FreeSurfer atlas.
+

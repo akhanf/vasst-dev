@@ -1,0 +1,72 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <atlas_subj> <subjids>"
+ echo ""
+ echo ""
+ 
+ exit 0
+fi
+
+output_dir=.
+
+atlas_subj=$1
+
+shift 1
+
+# look for atlas_subj in current project folder, then in PIPELINE_ATLAS_DIR
+#  if cannot find in either, then exit
+
+if [  -e $output_dir/$atlas_subj ]
+then
+
+  atlas_dir=$output_dir/$atlas_subj
+
+ else
+
+  #check atlas folder
+  if [ -e $PIPELINE_ATLAS_DIR/$atlas_subj ]
+  then
+    atlas_dir=$PIPELINE_ATLAS_DIR/$atlas_subj
+  else
+    echo "atlas: $atlas_subj does not exist!"
+    exit 0
+  fi
+
+fi
+
+#could put this in a config file as some point:
+atlas_t1=$atlas_dir/t1/t1.brain.inorm.nii.gz
+atlas_labels=$atlas_dir/t1_labels
+
+for subj in $@
+do
+
+ subj_dir=$output_dir/$subj
+
+ out_dir=$subj_dir/propLabels_f3d/$atlas_subj
+ mkdir -p $out_dir
+
+ reg_dir=$subj_dir/reg_f3d/$atlas_subj
+ ref=$subj_dir/t1/t1.brain.inorm.nii.gz
+ cpp=$reg_dir/reg_f3d_atlas_to_subj_cpp.nii.gz
+ def=$reg_dir/reg_f3d_atlas_to_subj_def.nii.gz
+
+ #resample all labels in t1_labels folder
+ for in_label in `ls $atlas_labels/*.nii.gz`
+ do
+   label_name=${in_label##*/}
+   label_name=${label_name%%.nii.gz}
+   out_label=$out_dir/$label_name.nii.gz
+   echo reg_resample -flo $in_label -res $out_label -NN 0 -cpp $cpp -ref $ref
+   reg_resample -flo $in_label -res $out_label -NN 0 -cpp $cpp -ref $ref
+
+ done
+ 
+
+
+
+done
+

@@ -1,0 +1,160 @@
+#!/bin/bash
+
+# can take in a config file for tractography options
+
+#should take in options for seeding, filtering, exclusion etc..
+#  should be aware of where labels exist w.r.t subjects (i.e. in labels_dti folder)
+
+# seed labels
+# waypoint labels
+# exclude labels
+
+
+if [ "$#" -lt 2 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <tract_cfg> <subjid/list>"
+ echo ""
+ echo "List of standard tract_cfgs: "
+ pushd $PIPELINE_CFG_DIR/tracts > /dev/null
+ ls *
+ popd > /dev/null
+ echo ""
+ 
+ exit 0
+fi
+
+  
+tract_cfg=$PIPELINE_CFG_DIR/tracts/$1
+
+if [ ! -e $tract_cfg ]
+then
+ echo "tract cfg $tract_cfg does not exist!"
+ exit 0
+fi
+
+echo "Sourcing $tract_cfg"
+source $tract_cfg
+
+shift 1
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+ camino_dir=$dti_dir/caminoDTI
+ out_dir=$dti_dir/caminoTractography
+
+ mkdir -p $out_dir
+
+dwi_bvec=$dti_dir/dwi.bvec
+dwi_bval=$dti_dir/dwi.bval
+dwi_vol=$dti_dir/dwi.nii.gz
+brain_mask=$dti_dir/brainmask.nii.gz
+
+scheme=$camino_dir/4Ddwi_bvec.scheme
+dwi=$camino_dir/dwi.Bfloat
+dt=$camino_dir/dt.Bdouble
+dteig=$camino_dir/dteig.Bdouble
+dt_rgb=$camino_dir/dt_rgb.nii.gz
+fa=$camino_dir/fa.nii.gz
+dteig_pd1=$camino_dir/dteig_pd1.nii.gz
+vox_thres="1e-15 1e-4 1e-6"  ## this works for epilepsy-cihr -- might need to be modified for other datasets
+dwi_VC=$camino_dir/dwi_VC.Bint
+dwi_vc=$camino_dir/dwi_VC.nii.gz
+multitensor=$camino_dir/multitensor.Bdouble
+multitensor_Eigs=$camino_dir/multitensor_Eigs.Bdouble
+twotenmask=$camino_dir/twoten_mask.nii.gz
+
+#qball
+order=4
+qbmatrix=$camino_dir/qballMatrix_SH$order.Bdouble
+qbodf=$camino_dir/dwi_ODF_SH$order.Bdouble
+qbpds=$camino_dir/dwi_ODF_SH${order}_PDs.Bdouble
+
+
+#run tracking
+tract=$out_dir/$tract_name.unproc.Bfloat
+tract_proc=$out_dir/$tract_name.Bfloat
+tract_vtk_fa=$out_dir/$tract_name.vtk
+tract_vtk_orient=$out_dir/$tract_name.orient.vtk
+tract_sc=$out_dir/$tract_name.sc.nii.gz
+tract_cp=$out_dir/$tract_name.cp.nii.gz
+
+label_dir=$dti_dir/caminoLabels
+
+echo seed_file $seed_file
+if [ -n "$seed_file" ]
+then
+seed="$label_dir/$seed_file"
+else 
+ echo no seed file specified!
+ exit 0
+fi
+
+if [  -n "$waypoint_file" ]
+then
+waypoint="-waypointfile $label_dir/$waypoint_file"
+else 
+waypoint=""
+fi
+
+if [  -n "$exclusion_file" ]
+then
+exclusion="-exclusionfile $label_dir/$exclusion_file"
+else 
+exclusion=""
+fi
+
+if [ ! -e $seed ]
+ then 
+  echo Seed does not exist: $seed
+  continue
+fi
+
+#multitensor
+cat $multitensor | track $track_opts -inputmodel multitensor -tracker rk4 -interpolator tend -tendf 0.5 -tendg 0.5 -stepsize 0.5 -anisthresh 0.1 -curvethresh 60 -header $fa -anisfile $fa -seedfile $seed > $tract
+
+#qball (sfpeaks)
+#cat $qbpds | track $track_opts -inputmodel sfpeak -tracker rk4  -stepsize 0.5 -anisthresh 0.1 -curvethresh 60 -header $fa -anisfile $fa -seedfile $seed > $tract
+
+#filter tracts
+echo "cat $tract | procstreamlines $proc_opts $waypoint $exclusion -header $fa > $tract_proc"
+cat $tract | procstreamlines $proc_opts $waypoint $exclusion -header $fa > $tract_proc
+cat $tract_proc | vtkstreamlines -scalarfile $fa -interpolate > $tract_vtk_fa
+#cat $tract_proc | vtkstreamlines -header $fa -colourorient -interpolate > $tract_vtk_orient
+cat $tract_proc | procstreamlines -outputacm -outputcp -outputroot $out_dir/${tract_name}. -seedfile $seed  
+cat $tract_proc | procstreamlines -outputacm -outputsc -outputroot $out_dir/${tract_name}. -seedfile $seed  
+
+
+
+
+done #subj
+
+

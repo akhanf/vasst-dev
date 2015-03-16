@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage $0 <input 4D prob image, from 0 to 100> <threshold (e.g. 50)> <output 3D max prob label map>"
+ exit 0
+fi
+
+
+prob4d=$1
+threshold=$2
+maxprob=$3
+
+echo "Converting $prob4d to $maxprob using threshold of $threshold"
+
+
+tempdir=/tmp/$RANDOM
+mkdir -p $tempdir
+
+#split input
+fslsplit $prob4d $tempdir/prob_ -t
+
+#create const intensity image at threshold level
+fslmaths $tempdir/prob_0000.nii.gz -mul 0 -add $threshold $tempdir/threshold.nii.gz
+
+#create max prob with threshold image as bg label
+c3d $tempdir/threshold.nii.gz `ls $tempdir/prob_*` -vote -o $maxprob
+
+
+

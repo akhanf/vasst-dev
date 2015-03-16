@@ -1,0 +1,32 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage $0 <input MR image> <sequence label - e.g. t1gad, t2, flair> <subjid>"
+ exit 0
+fi
+
+in_mri=$1
+sequence=$2
+subj=$3
+output_dir=.
+
+
+mri_dir=$output_dir/$subj/extra_mri
+mkdir -p $mri_dir
+
+mri=$mri_dir/$sequence.nii.gz
+
+ext=${in_mri##*.}
+if [ "$ext" = "mha" -o "$ext" = "mhd" -o "$ext" = "nrrd" -o "$ext" = "nhdr" ]
+then
+c3d $in_mri -o $mri
+else
+mri_convert $in_mri $mri
+fi
+
+fslreorient2std $mri $mri
+
+
+
