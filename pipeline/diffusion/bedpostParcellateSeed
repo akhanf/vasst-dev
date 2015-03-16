@@ -97,7 +97,7 @@ subj_dir=$output_dir/$subj
 
 
  echo probtrackx2 -x $seed_file --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
-# probtrackx2 -x $seed_file --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
+ probtrackx2 -x $seed_file --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
 
 
 

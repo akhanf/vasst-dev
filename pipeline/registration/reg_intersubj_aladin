@@ -5,6 +5,7 @@ function usage {
  echo "Usage: ${0##*/}  <img_type> <atlas_subj> <subjid/list> <options>"
  echo "   -o output_dir	 Set output directory (default .)"
  echo "   -r             Use rigid (6-dof) registration (default affine 12-dof)"
+ echo "   -i <subjid>	 Use xfm from <subjid> to initialize (default - no initialization)"
  echo ""
  echo " e.g. to register t1 catani to test_subj use:"
  echo "  $0 t1 catani test_subj"
@@ -48,17 +49,20 @@ else
 fi
 
 rigid_opt=""
+init_subj=""
 
 shift 1 #shift by number of required arguments (incl subjid/list)
 
 #flag o with argument "o:"
-while getopts "o:r" options; do
+while getopts "o:ri:" options; do
  case $options in
     o ) echo "Using output directory: $OPTARG"
 	output_dir=$OPTARG;;
     r ) echo "Using rigid registration"
         reg_type=rigid_aladin
 	rigid_opt="-rigOnly";;
+    i ) echo "Initializing with affine from subj: $OPTARG"
+        init_subj=$OPTARG;;
     * ) usage
 	exit 0;;
  esac
@@ -83,7 +87,17 @@ do
  inv_xfm=$out_dir/${atlas_subj}_to_${subj}.xfm
  reg_atlas=$out_dir/${atlas_subj}_to_${subj}.reg.nii.gz
 
- reg_aladin -ref $atlas_nii -flo $subj_nii -aff $xfm -res $reg_subj $rigid_opt
+
+ if [ -n "$init_subj" ]
+ then
+   init_opt="-inaff $output_dir/${init_subj}/reg/${reg_type}_${img_type}/${atlas_subj}_${init_subj}/${init_subj}_to_${atlas_subj}.xfm"
+   echo "Using init subj xfm: $init_opt"
+ else 
+   init_opt=""
+ fi
+ 
+
+ reg_aladin -ref $atlas_nii -flo $subj_nii -aff $xfm -res $reg_subj $rigid_opt $init_opt
  convert_xfm -omat $inv_xfm -inverse $xfm
  reg_resample -flo $atlas_nii -ref $subj_nii -aff $inv_xfm -res $reg_atlas
 

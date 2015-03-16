@@ -59,11 +59,11 @@ error=$jobname.e.txt
 
 echo "# $jobname" > $job
 
-echo "executable = $pipeline_script" >> $job
+echo "executable = `which $pipeline_script`" >> $job
 echo "log = $log" >> $job
 echo "output = $output" >> $job
 echo "error = $error" >> $job
-
+echo "getenv = True" >> $job
 
 for subj in $subjids
 do
@@ -80,5 +80,6 @@ echo "queue" >> $job
 
 done
 
+condor_submit $job
 
 

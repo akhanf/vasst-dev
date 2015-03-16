@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [ "$#" -lt 1 ]
+if [ "$#" -lt 2 ]
 then
- echo "Usage $0 <subjid/list>"
+ echo "Usage $0 <atlas_name> <subjid/list>"
  exit 0
 fi
 
@@ -12,6 +12,10 @@ output_dir=`pwd`
 	#general usage for per-subj processing is to specify the two images to compare, and generate an overlay of these
 	#put it in quickchecks folder, named according to processing
 	#could then be a command for creating report html files
+atlas_name=$1
+
+shift 1
+
 
 qc_dir=QC
 mkdir -p $qc_dir
@@ -34,18 +38,22 @@ subj_dir=$output_dir/$subj
 
 
 #put pipeline commands here
-t1=$subj_dir/t1/t1.nii.gz
-brain=$subj_dir/t1/t1.brain.nii.gz
+
+t1=$PIPELINE_ATLAS_DIR/$atlas_name/t1/t1.brain.nii.gz
+overlay=$subj_dir/reg/bspline_f3d_t1/${atlas_name}_$subj/${subj}_to_${atlas_name}.nreg.nii.gz
 
 
-output_list="$output_list $t1 $brain"
+
+output_list="$output_list $t1 $overlay"
 
 
 done
 
 slicesdir -o $output_list
 
-mv slicesdir $qc_dir/brainmask_`timestamp`
+out_dir=$qc_dir/atlas_bspline_reg_${atlas_name}_`timestamp`
+mv slicesdir $out_dir
 
 echo "Use this to view:"
-echo "chromium-browser $qc_dir/brainmask_`timestamp`/index.html"
+echo "chromium-browser $out_dir/index.html"
+
