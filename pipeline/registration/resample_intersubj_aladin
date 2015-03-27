@@ -1,0 +1,92 @@
+#!/bin/bash
+
+function usage {
+ echo ""
+ echo "Usage: ${0##*/} <img_type> <atlas_subj> <img_path (rel. to subj dir)> <subjid/list> <options>"
+ echo "   -o output_dir  Set output directory (default .)"
+ echo "   -N             Use nearest neighbour (default spline)"
+ echo "   -L             Use linear interpolation (default spline)"
+ echo "   -r             Use rigid (6 dof) registration (default affine 12-dof)"
+ echo "" 
+}
+
+. functions_checkargs
+
+if [ "$#" -lt 4 ]
+then
+ usage
+ exit 0
+fi
+
+reg_type=affine_aladin
+
+output_dir=.
+
+img_type=$1 #e.g.: t1, dti, fmri
+atlas_subj=$2 #e.g.: t1, dti, fmri
+inimg_path=$3 #e.g: wm_bundles
+
+shift 3
+
+checkRegArgs
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+shift 1 
+
+interp_opt=""
+
+#flag o with argument "o:"
+while getopts "o:NrL" options; do
+ case $options in
+    o ) echo "Using output directory: $OPTARG"
+	output_dir=$OPTARG;;
+    N ) echo "Using nearest neighbour interpolation"
+	interp_opt="-NN 0";;
+    L ) echo "Using linear interpolation"
+	interp_opt="-LIN";;
+    r ) echo "Using rigid registration"
+        reg_type=rigid_aladin;;
+    * ) usage
+	exit 0;;
+ esac
+done
+
+
+for subj in $subjids
+do
+
+
+ subj_dir=$output_dir/$subj
+ subj_nii=$subj_dir/$img_path
+ echo "subj_nii=$subj_nii"
+
+
+ in_img=$subj_dir/$inimg_path
+ out_img=$subj_dir/${inimg_path%%.nii.gz}.reg.${atlas_subj}.nii.gz
+
+ 
+ atlas_img=$atlas_dir/$img_path
+ reg_dir=$subj_dir/reg/${reg_type}_${img_type}/${atlas_subj}_${subj}
+
+ xfm=$reg_dir/${subj}_to_${atlas_subj}.xfm
+
+ if [ ! -e $xfm ]
+ then 
+  echo "Cannot find $xfm: Need to run reg_intersubj_aladin before resampling!"
+  continue 
+ fi
+
+ echo reg_resample -flo $in_img -ref $atlas_img -aff $xfm -res $out_img $interp_opt
+ reg_resample -flo $in_img -ref $atlas_img -aff $xfm -res $out_img $interp_opt
+
+done
+
+
+
+

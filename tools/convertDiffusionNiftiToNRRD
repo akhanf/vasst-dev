@@ -1,0 +1,44 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+  echo "Usage: $0 <in_dwi_nii_gz>  <in_dicom_dir (for obtaining proper header info)> <out_nrrd>"
+  exit 0
+fi
+
+in_dwi=$1
+in_dicom=$2
+out_nrrd=$3
+
+dcm_nhdr=${out_nrrd%%.nrrd}.dcm.nhdr
+dcm_raw=${out_nrrd%%.nrrd}.dcm.raw
+dcm_nrrd=${out_nrrd%%.nrrd}.dcm.nrrd
+bad_nrrd=${out_nrrd%%.nrrd}.bad.nrrd
+
+prefix=${in_dwi%%.nii*}
+
+in_bvec=$prefix.bvec
+in_bval=$prefix.bval
+
+
+echo DWIConvert --conversionMode DicomToNrrd  --inputDicomDirectory $in_dicom --outputVolume $dcm_nhdr
+DWIConvert --conversionMode DicomToNrrd  --inputDicomDirectory $in_dicom --outputVolume $dcm_nhdr
+
+numstrip=`cat $dcm_nhdr | wc -l`
+numstrip=$((numstrip-2)) 
+
+echo DWIConvert --conversionMode DicomToNrrd  --inputDicomDirectory $in_dicom --outputVolume $dcm_nrrd
+DWIConvert --conversionMode DicomToNrrd  --inputDicomDirectory $in_dicom --outputVolume $dcm_nrrd
+echo DWIConvert --conversionMode FSLToNrrd  --inputVolume $in_dwi --inputBVectors $in_bvec --inputBValues $in_bval --outputVolume $bad_nrrd
+DWIConvert --conversionMode FSLToNrrd  --inputVolume $in_dwi --inputBVectors $in_bvec --inputBValues $in_bval --outputVolume $bad_nrrd
+
+
+#take header from DicomToNrrd file
+head -n $numstrip $dcm_nrrd > $out_nrrd 
+
+#take body from FSLToNrrd file
+sedcmd=1,${numstrip}d
+sed -e "1,${numstrip}d" $bad_nrrd >> $out_nrrd
+
+rm -f $dcm_nhdr $dcm_raw $dcm_nrrd $bad_nrrd
+
