@@ -6,6 +6,7 @@ function usage {
  echo "   -o output_dir	 Set output directory (default .)"
  echo "   -r             Use rigid (6-dof) registration (default affine 12-dof)"
  echo "   -i <subjid>	 Use xfm from <subjid> to initialize (default - no initialization)"
+ echo "   -a <atlas_dir> Use <atlas_dir> for path to atlas_subj"
  echo ""
  echo " e.g. to register t1 catani to test_subj use:"
  echo "  $0 t1 catani test_subj"
@@ -54,7 +55,7 @@ init_subj=""
 shift 1 #shift by number of required arguments (incl subjid/list)
 
 #flag o with argument "o:"
-while getopts "o:ri:" options; do
+while getopts "o:ri:a:" options; do
  case $options in
     o ) echo "Using output directory: $OPTARG"
 	output_dir=$OPTARG;;
@@ -63,6 +64,9 @@ while getopts "o:ri:" options; do
 	rigid_opt="-rigOnly";;
     i ) echo "Initializing with affine from subj: $OPTARG"
         init_subj=$OPTARG;;
+    a ) echo "Using atlas data dir: $OPTARG"
+        atlas_nii=$OPTARG/$img_path
+	echo atlas_nii=$atlas_nii;;
     * ) usage
 	exit 0;;
  esac

@@ -45,6 +45,8 @@ dti_dir=$subj_dir/dti
 uncorr_dir=$dti_dir/uncorrected
 mkdir -p $uncorr_dir
 
+echo ${in_dicom_dir[1]} > $uncorr_dir/dicom_dir
+
 petxt=$uncorr_dir/pedir.txt
  rm -f $petxt
 

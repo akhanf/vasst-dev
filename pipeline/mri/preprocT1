@@ -10,8 +10,9 @@ output_dir=.
 
 
 
-betopts="-f 0.5 -R"
+#betopts="-f 0.5 -R"
 #betopts="-f 0.3 -B"
+betopts="-f 0.5 -B"
 #betopts="-f 0.4 -B -c 95 107 163 -v"   # settings for pennylab dti
 
 

@@ -23,6 +23,8 @@ output_dir=.
 dti_dir=$output_dir/$subj/dti/uncorrected
 mkdir -p $dti_dir
 
+echo $in_dicom_dir > $dti_dir/dicom_dir
+
 echo DWIConvert --inputDicomDirectory $in_dicom_dir --conversionMode DicomToFSL --outputVolume $dti_dir/dwi.nii.gz
 DWIConvert --inputDicomDirectory $in_dicom_dir --conversionMode DicomToFSL --outputVolume $dti_dir/dwi.nii.gz
 
