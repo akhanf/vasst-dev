@@ -1,0 +1,38 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage $0 <input field map image> <dwell time (in seconds)> <subjid>"
+ exit 0
+fi
+
+in_fmap=$1
+dwell_time=$2
+subj=$3
+output_dir=.
+
+
+mri_dir=$output_dir/$subj/extra_mri
+mkdir -p $fmap_dir
+
+fmap=$mri_dir/fieldmap.nii.gz
+
+ext=${in_fmap##*.}
+
+if [ "$ext" = "nii.gz" ]
+then 
+  cp -v $in_fmap $fmap
+else
+
+if [ "$ext" = "mha" -o "$ext" = "mhd" -o "$ext" = "nrrd" -o "$ext" = "nhdr" ]
+then
+c3d $in_fmap -o $fmap
+else
+mri_convert $in_fmap $fmap
+fi
+
+fi
+
+echo $dwell_time > $mri_dir/fieldmap.dwelltime
+
