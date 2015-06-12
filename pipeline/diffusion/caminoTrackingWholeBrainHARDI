@@ -1,0 +1,114 @@
+#!/bin/bash
+
+# can take in a config file for tractography options
+
+#should take in options for seeding, filtering, exclusion etc..
+#  should be aware of where labels exist w.r.t subjects (i.e. in labels_dti folder)
+
+# seed labels
+# waypoint labels
+# exclude labels
+
+
+if [ "$#" -lt 1 ]
+then
+ echo ""
+ echo "Usage: ${0##*/}  <subjid/list>"
+ echo ""
+ echo ""
+ 
+ exit 0
+fi
+
+  
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+ camino_dir=$dti_dir/caminoDTI
+ out_dir=$dti_dir/caminoTractographyHARDI
+
+ mkdir -p $out_dir
+
+dwi_bvec=$dti_dir/dwi.bvec
+dwi_bval=$dti_dir/dwi.bval
+dwi_vol=$dti_dir/dwi.nii.gz
+brain_mask=$dti_dir/brainmask.nii.gz
+
+scheme=$camino_dir/4Ddwi_bvec.scheme
+dwi=$camino_dir/dwi.Bfloat
+dt=$camino_dir/dt.Bdouble
+dteig=$camino_dir/dteig.Bdouble
+dt_rgb=$camino_dir/dt_rgb.nii.gz
+fa=$camino_dir/fa.nii.gz
+dteig_pd1=$camino_dir/dteig_pd1.nii.gz
+
+tract_name=wholebrain
+
+#run tracking
+tract_unproc=$out_dir/$tract_name.unproc.Bfloat
+tract=$out_dir/$tract_name.Bfloat
+tract_vtk_fa=$out_dir/$tract_name.vtk
+tract_vtk_orient=$out_dir/$tract_name.orient.vtk
+tract_sc=$out_dir/$tract_name.sc.nii.gz
+tract_cp=$out_dir/$tract_name.cp.nii.gz
+
+fa_thresh=0.15
+seed=$out_dir/seed.$tract_name.nii.gz
+
+#resample to 2mm iso for uniform seeding
+echo c3d $fa -resample-mm 2x2x2mm -o $seed
+c3d $fa -resample-mm 2x2x2mm -o $seed
+echo fslmaths $seed -thr $fa_thresh -bin $seed 
+fslmaths $seed -thr $fa_thresh -bin $seed 
+
+
+sfpeaks=$camino_dir/dwi_ODFs_SH6_PDs_sr06_dens200.Bdouble
+
+#single tensor
+track $track_opts -inputmodel sfpeak -tracker rk4 -interpolator nn -stepsize 0.5  -header $fa -anisfile $fa -anisthresh $fa_thresh -seedfile $seed < $sfpeaks > $tract_unproc
+
+#throw out very small meaningless tracts
+procstreamlines -mintractpoints 5 -header $fa < $tract_unproc > $tract
+
+rm -f $tract_unproc
+
+exit 0
+#filter tracts
+cat $tract | vtkstreamlines -scalarfile $fa -interpolate > $tract_vtk_fa
+cat $tract | procstreamlines -outputacm -outputcp -outputroot $out_dir/${tract_name}. -seedfile $seed  
+cat $tract | procstreamlines -outputacm -outputsc -outputroot $out_dir/${tract_name}. -seedfile $seed  
+
+
+
+
+done #subj
+
+

@@ -1,5 +1,5 @@
 %writing custom colored vtk -- given tracts cell, and color cell
-function writeTractsToVTK_withUID(in_tracts,in_uid,out_vtk)
+function writeTractsToVTK_withUID(in_tracts,in_extra,out_vtk)
 
 
 %first write out basic vtk point data
@@ -48,7 +48,9 @@ fwrite(fid,lines,'int',0,'b');
 fprintf(fid,'\n');
 
 
-%add colour here..
+%add extra scalars here:
+
+
 fprintf(fid,'CELL_DATA %d\n',length(in_tracts));
 fprintf(fid,'SCALARS uid unsigned_int 1\n');
 fprintf(fid,'LOOKUP_TABLE default\n');

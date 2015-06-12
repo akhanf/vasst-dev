@@ -1,0 +1,54 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage $0 <sequence name> <subjid/list>"
+ exit 0
+fi
+
+output_dir=.
+sequence=$1
+shift 1
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+t1_dir=$subj_dir/t1
+mri_dir=$subj_dir/extra_mri
+
+xfm_dir=$mri_dir/xfms
+
+t1=$t1_dir/t1.nii.gz
+bet_t1=$t1_dir/t1.brain.nii.gz
+brainmask=$t1_dir/brainmask.nii.gz
+
+#register to t1, then strip the skull
+xfm=$xfm_dir/${sequence}-t1.xfm
+inv_xfm=$xfm_dir/t1-${sequence}.xfm
+
+mri=$mri_dir/$sequence.nii.gz
+reg_mri=$mri_dir/$sequence.regToT1.nii.gz
+masked_mri=$mri_dir/$sequence.regToT1.brain.nii.gz
+
+echo reg_aladin -ref $t1 -flo $mri -aff $xfm -res $reg_mri -rigOnly
+reg_aladin -ref $t1 -flo $mri -aff $xfm -res $reg_mri -rigOnly
+
+echo fslmaths $reg_mri -mas $brainmask $masked_mri
+fslmaths $reg_mri -mas $brainmask $masked_mri
+
+echo convert_xfm -omat $inv_xfm -inverse $xfm 
+convert_xfm -omat $inv_xfm -inverse $xfm 
+
+done

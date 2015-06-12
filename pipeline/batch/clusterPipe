@@ -1,0 +1,68 @@
+#!/bin/bash
+
+#run a pipeline job on the cluster
+#pipeline jobs take subjids as args
+
+if [ "$#" -lt 2 ]
+then 
+  echo "Usage: $0 <name of pipeline script>  <subjid/list> <additional arguments ... if any> "
+  exit 0
+fi
+
+output_dir=.
+
+pipeline_script=$1
+
+shift 1
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+shift 1
+
+add_args=$@
+
+
+
+echo ""
+echo "Running with the following arguments:"
+echo "  Pipeline script:  $pipeline_script"
+echo "  Additional arguments: $@"
+echo "  Subjects: "
+echo "$subjids"
+echo ""
+echo "If correct, enter y"
+read check
+if [ ! "$check" = "y" ]
+then
+  echo "Quitting..."
+  exit 0
+else
+  echo "Running Jobs..."
+
+fi
+
+for subj in $subjids
+do
+
+
+
+pbs_dir=$output_dir/$subj/pbs
+mkdir -p $pbs_dir
+
+
+scriptname=${pipeline_script##*/} #strip leading path
+name=$scriptname.$subj
+job=$pbs_dir/$name
+
+echo $pipeline_script $add_args $subj > $job
+
+qsub -N $name -w `pwd`/$pbs_dir -d `pwd` -l "walltime=72:00:00" -l "mem=6gb" $job
+
+done
+
+
+

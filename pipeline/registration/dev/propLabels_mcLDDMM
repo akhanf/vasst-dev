@@ -1,0 +1,117 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <mclddmm_cfg> <atlas_subj> <subjids>"
+ echo ""
+ echo "List of standard mcLDDMM_cfgs: "
+ pushd $PIPELINE_CFG_DIR/mcLDDMM > /dev/null
+ ls *
+ popd > /dev/null
+ echo ""
+ 
+ exit 0
+fi
+
+
+output_dir=.
+
+chan_cfg=$1
+atlas_subj=$2
+
+
+chan_cfg=$PIPELINE_CFG_DIR/mcLDDMM/$1
+cfg_name=${chan_cfg%%.cfg}
+cfg_name=${cfg_name##*/}
+
+if [ ! -e $chan_cfg ]
+then
+ echo "chan cfg $chan_cfg does not exist!"
+ exit 0
+fi
+
+
+shift 1
+
+
+for subj in $@
+do
+
+if [  "$subj" = "$atlas_subj" ]
+then
+
+# look for atlas_subj in current project folder, then in atlas_dir
+#  if cannot find in either, then exit
+
+if [  -e $output_dir/$atlas_subj ]
+then
+
+  subj_dir=$output_dir/$subj
+
+ else
+
+  #check atlas folder
+  if [ -e $PIPELINE_ATLAS_DIR/$atlas_subj ]
+  then
+    subj_dir=$PIPELINE_ATLAS_DIR/$subj
+  else
+    echo "atlas: $atlas_subj does not exist!"
+    exit 0
+  fi
+
+fi
+
+
+#atlas here:
+
+atlas_labels=$subj_dir/manual_labels
+if [ ! -e $atlas_labels ]
+then 
+ echo "$atlas_labels does not exist!"
+ exit 0
+else 
+ continue
+fi
+
+else
+subj_dir=$output_dir/$subj
+fi
+
+ reg_dir=$subj_dir/reg_mcLDDMM_$cfg_name
+ ref=$reg_dir/$cfg_name.nii.gz
+ map=$reg_dir/reg_$atlas_subj-$subj/lddmm_map.img
+
+
+for lbl in `ls $atlas_labels/*.nii.gz`
+do
+
+ lbl_name=${lbl##*/}
+ lbl_name=${lbl_name%%.nii.gz}
+
+ out_dir=$subj_dir/propLabels_t1
+
+ mkdir -p $out_dir
+
+ out_lbl=$out_dir/$lbl_name.$atlas_subj.nii.gz
+
+ echo reg_resample -flo $lbl -ref $ref -def $map -NN 0 -res $out_lbl
+ reg_resample -flo $lbl -ref $ref -def $map -NN 0 -res $out_lbl
+
+ out_dir=$subj_dir/propLabels_dti
+ mkdir -p $out_dir
+ out_lbl_dti=$out_dir/$lbl_name.$atlas_subj.nii.gz
+
+ corr=distortCorrect
+ dti_ref=$subj_dir/dti/$corr/dti_S0.nii.gz 
+ xfm_t1_dti=$subj_dir/dti/$corr/coreg_T1/xfm/t1-dti.xfm
+
+ echo reg_resample -flo $out_lbl -ref $dti_ref -aff $xfm_t1_dti -res $out_lbl_dti -NN 0
+ reg_resample -flo $out_lbl -ref $dti_ref -aff $xfm_t1_dti -res $out_lbl_dti -NN 0
+
+
+ done #lbl
+
+done #subj
+
+

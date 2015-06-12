@@ -1,0 +1,33 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 2 ]
+then
+  echo "Usage: $0 <prefix, up to series number, excluding the .> <output folder>"
+  exit 0
+fi
+
+
+prefix=$1
+
+out=$2
+
+mkdir -p $out
+
+
+
+#get list of first image in each series
+for first in `ls $prefix.*.0001.*`
+do
+
+ series=${first##$prefix.}
+ series=${series%%.*}
+
+ echo $first: $series
+
+ mkdir -p $out/$series
+ cp -v $prefix.$series.* $out/$series
+ 
+ mri_convert $first $out/$series.nii.gz
+
+done

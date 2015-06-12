@@ -1,10 +1,15 @@
 #!/bin/bash
 
-if [ "$#" -lt 3 ]
+if [ "$#" -lt 6 ]
 then
- echo "Command-line Usage: $0 <input DTI dicom folder blip 1> <input DTI dicom folder blip 2>  <subjid>"
- echo ".. running UI import"
+ echo "Command-line Usage: $0 <number of dwi acquisitions> <input DTI dicom folder blip 1> <phase encode line 1> <input DTI dicom folder blip 2> <phase encode line 2> ..  <subjid>"
 
+read -p "Hit y to run GUI import" prompt
+if [  "$prompt" = "y" -o "$prompt" = "Y" ]
+then
+
+echo ""
+echo "running GUI import..." 
  N=`zenity --entry --title="N?" --text="Number of DWI acquisitions?"`
 
  
@@ -20,19 +25,34 @@ then
 
  subj=`zenity --entry --title="Enter subject ID:" --text="${in_dicom_dir[$i]}"`
 
+else 
+ exit 0
+fi
+
 else
 
 N=$1
 
+shift 1
 for i in `seq 1 $N`
 do
- shift 1 
  in_dicom_dir[$i]=$1
+ pe_dir[$i]=$2
+ shift 2
 done
 
-subj=$2
+subj=$1
 
 fi
+
+
+echo "N: $N"
+for i in `seq 1 $N`
+do
+ echo dicom_dir: ${in_dicom_dir[$i]}
+ echo phase encode line: ${pe_dir[$i]}
+done
+
 
 output_dir=.
 
@@ -109,8 +129,6 @@ done #i
 avg_b0=$uncorr_dir/avg_b0.nii.gz
 fslmerge -t $avg_b0 $uncorr_dir/avg_b0_?.nii.gz
 
-#echo "-1 0 0 0.087" > $petxt
-#echo "1 0 0 0.087" >> $petxt
 
 #R-L
 #1 0 0 1e-3*<echo spacing>*
@@ -121,6 +139,9 @@ fslmerge -t $avg_b0 $uncorr_dir/avg_b0_?.nii.gz
 #for 1.75mm data: 128*0.76  = 0.0973
 #for 2mm data: 112*0.7 = 0.0784
 
+#EPL14B:
+#  1 0 0 0.0784
+#  -1 0 0 0.0784
 
 
 topup --imain=$avg_b0 --datain=$petxt --config=b02b0.cnf --out=$uncorr_dir/topup -v --iout=$uncorr_dir/hifi

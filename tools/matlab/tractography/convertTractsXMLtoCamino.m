@@ -1,4 +1,4 @@
-function convertTractsXMLtoCamino (in_xml,out_Bfloat,out_uid_Buint32)
+function convertTractsXMLtoCamino (in_xml,out_Bfloat,out_uid_Buint32,out_labels_Buint16,out_affinity_Bfloat)
 % function for extracting tract data from Synaptive XML to camino raw
 % Bfloat (can convert from this to vtk with vtkstreamlines)
 
@@ -61,6 +61,54 @@ fid=fopen(out_uid_Buint32,'w');
 fwrite(fid,length(tracts_uid),'uint32',0,'b');
 fwrite(fid,tracts_uid,'uint32',0,'b');
 fclose(fid);
+
+
+%get label data
+   
+labeldata=foo.getElementsByTagName('Data').item(0).getElementsByTagName('TractData').item(0).getElementsByTagName('Labels').item(0);
+
+if (~isempty(labeldata))
+
+labeldata.getAttribute('encoding');
+label_type=labeldata.getAttribute('Element');
+%labeldata.getAttribute('NumberOfElements')
+
+label_encoded=labeldata.getTextContent;
+label_uint8=uint8(char(label_encoded));
+label_uint32=typecast(org.apache.commons.codec.binary.Base64.decodeBase64(label_uint8),'uint16');
+
+
+%write out labels file
+fid=fopen(out_labels_Buint16,'w');
+fwrite(fid,length(label_uint32),'uint16',0,'b');
+fwrite(fid,label_uint32,'uint16',0,'b');
+fclose(fid);
+
+end
+
+
+
+
+affinitydata=foo.getElementsByTagName('Data').item(0).getElementsByTagName('TractData').item(0).getElementsByTagName('Affinity').item(0);
+if (~isempty(affinitydata))
+
+affinitydata.getAttribute('encoding');
+affinity_type=affinitydata.getAttribute('Element');
+
+affinity_encoded=affinitydata.getTextContent;
+affinity_uint8=uint8(char(affinity_encoded));
+affinity_float=typecast(org.apache.commons.codec.binary.Base64.decodeBase64(affinity_uint8),'single');
+
+
+%write out affinity file
+fid=fopen(out_affinity_Bfloat,'w');
+fwrite(fid,length(affinity_float),'single',0,'b');
+fwrite(fid,affinity_float,'single',0,'b');
+fclose(fid);
+end
+
+
+
 
 %test read
 % fid=fopen(out_uid_Buint32,'r');

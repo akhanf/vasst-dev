@@ -107,6 +107,35 @@ bval=$uncorr_dir/dwi.bval
 
  fi
 
+ fieldmap=$subj_dir/extra_mri/fieldmap.nii.gz 
+
+ if [ -e $fieldmap ]
+ then
+
+ dwelltime=`cat $subj_dir/extra_mri/fieldmap.dwelltime`
+
+ 
+ distort_dir=$dti_dir/fieldmapCorrect
+ distort_dwi=$distort_dir/dwi.nii.gz
+ distort_mask=$distort_dir/brainmask.nii.gz
+ distort_bvec=$distort_dir/dwi.bvec
+ distort_bval=$distort_dir/dwi.bval
+
+ mkdir -p $distort_dir 
+ cp -v $bvec $distort_bvec
+ cp -v $bval $distort_bval
+ cp -v $mask $distort_mask
+
+ 
+ echo fugue  --loadfmap=$fieldmap -i $eddy_dwi --dwell=$dwelltime -u $distort_dwi
+ fugue  --loadfmap=$fieldmap -i $eddy_dwi --dwell=$dwelltime -u $distort_dwi
+
+ 
+ echo dtifit -k $distort_dwi -m $distort_mask -o $distort_dir/dti -r $distort_bvec -b $distort_bval -V
+ dtifit -k $distort_dwi -m $distort_mask -o $distort_dir/dti -r $distort_bvec -b $distort_bval -V
+   
+ fi
+
 done
 
 

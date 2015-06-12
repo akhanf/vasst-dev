@@ -1,0 +1,149 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+ echo ""
+ echo "Usage: ${0##*/} <mclddmm_cfg> <atlas_subj> <subjid/list>"
+ echo ""
+ echo "List of standard mcLDDMM_cfgs: "
+ pushd $PIPELINE_CFG_DIR/mcLDDMM > /dev/null
+ ls *
+ popd > /dev/null
+ echo ""
+ 
+ exit 0
+fi
+
+
+output_dir=.
+
+chan_cfg=$1
+atlas_subj=$2
+
+
+chan_cfg=$PIPELINE_CFG_DIR/mcLDDMM/$1
+cfg_name=${chan_cfg%%.cfg}
+cfg_name=${cfg_name##*/}
+
+if [ ! -e $chan_cfg ]
+then
+ echo "chan cfg $chan_cfg does not exist!"
+ exit 0
+fi
+
+
+
+
+
+shift 1
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+if [  "$subj" = "$atlas_subj" ]
+then
+
+# look for atlas_subj in current project folder, then in PIPELINE_ATLAS_DIR
+#  if cannot find in either, then exit
+
+if [  -e $output_dir/$atlas_subj ]
+then
+
+  subj_dir=$output_dir/$subj
+
+ else
+
+  #check atlas folder
+  if [ -e $PIPELINE_ATLAS_DIR/$atlas_subj ]
+  then
+    subj_dir=$PIPELINE_ATLAS_DIR/$subj
+  else
+    echo "atlas: $atlas_subj does not exist!"
+    exit 0
+  fi
+
+fi
+
+
+else
+subj_dir=$output_dir/$subj
+fi
+
+
+chans=""
+for chan in `cat $chan_cfg`
+do
+ chans="$chans $subj_dir/$chan"
+done
+
+
+#check for script completion:
+# coregDTI_T1
+# 
+
+
+
+
+out_dir=$subj_dir/reg_mcLDDMM_$cfg_name
+mkdir -p $out_dir
+
+nii4d=$out_dir/$cfg_name.nii.gz
+
+
+echo fslmerge -t $nii4d $chans
+fslmerge -t $nii4d $chans
+
+#scale by 200 (since mc-lddmm converts to uchar (0-255)
+echo fslmaths $nii4d -mul 200 $nii4d
+fslmaths $nii4d -mul 200 $nii4d
+
+if [  "$subj" = "$atlas_subj" ]
+then
+
+ nii4d_atlas=$nii4d
+
+else
+
+ #perform registration of subj to atlas_subj here (for spatial normalization))
+ reg_dir=$out_dir/reg_$subj-$atlas_subj
+ mkdir -p $reg_dir
+
+ #now perform mcLDDMM
+ flo=$nii4d
+ ref=$nii4d_atlas
+ out_map=$reg_dir/lddmm_map.img
+ out_reg=$reg_dir/$cfg_name.reg.nii.gz
+ work_dir=$reg_dir/mclddmm
+ mkdir -p $work_dir
+ runMultiResGreedy_nii4D $flo $ref $out_map $out_reg $work_dir
+
+
+ #perform registration of atlas_subj to subj here (for atlas label propagation)
+ reg_dir=$out_dir/reg_$atlas_subj-$subj
+ mkdir -p $reg_dir
+
+ #now perform mcLDDMM
+ flo=$nii4d_atlas
+ ref=$nii4d
+ out_map=$reg_dir/lddmm_map.img
+ out_reg=$reg_dir/$cfg_name.reg.nii.gz
+ work_dir=$reg_dir/mclddmm
+ mkdir -p $work_dir
+ runMultiResGreedy_nii4D $flo $ref $out_map $out_reg $work_dir
+
+
+fi
+
+done
+
+

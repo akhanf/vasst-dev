@@ -1,0 +1,119 @@
+#!/bin/bash
+
+#general script for distortion correction
+
+if [ "$#" -lt 1 ]
+ then
+ echo "Usage: $0 <subjids>"
+ exit 0
+fi
+
+
+#both images should be skull stripped and 3D (either avg of BOLD timeseries or avg b0 image)
+
+#1. distorted volume (4D)
+#2. reference volume, T1map (skull stripped, 3D)
+#3. output warp
+
+#distort=$1
+#t1map=$2
+#num_tps=$3
+
+
+for subj in $@
+do
+
+
+distort=../external_data/$subj/SingleSubj.feat/filtered_func_data.nii.gz
+t1map=~/epilepsy/shared_data/$subj/Preop/Despot/DESPOT1HIFI_T1Map_brain.nii.gz
+#t1map=~/epilepsy/shared_data/$subj/Preop/Processed/SynT1weighted/SynT1w_brain.nii.gz
+#Despot/DESPOT1HIFI_T1Map_brain.nii.gz
+corrected=../external_data/$subj/$subj.rs_fmri_distortCorr.nii.gz
+
+
+
+work=../external_data/$subj/distortCorr
+mkdir -p $work
+
+
+avg_distort=$work/avg_distort.nii.gz
+avg_distort_bet=$work/avg_distort_bet.nii.gz
+
+if [ ! -e $avg_distort_bet ] 
+then
+
+echo fslmaths $distort -Tmean $avg_distort
+fslmaths $distort -Tmean $avg_distort
+echo bet $avg_distort $avg_distort_bet -v -R -f 0.5
+bet $avg_distort $avg_distort_bet -v -R -f 0.5
+
+fi
+
+t1map_reg=$work/t1map_reg.nii.gz
+flirt_t1_fmri=$work/flirt_t1-fmri.xfm
+
+if [ ! -e $t1map_reg -o ! -e $flirt_t1_fmri ]
+ then
+
+#first resample ref image to distorted image space
+#echo flirt -in $t1map -out $t1map_reg -ref $distort -applyxfm -usesqform -v
+#flirt -in $t1map -out $t1map_reg -ref $avg_distort_bet -applyxfm -usesqform -v
+
+#if reg t1map to func space (i.e. because of patient movement during session), then need to apply same xfms to FS labels, and finally when mapping func data back to T1 space
+flirt -in $t1map -out $t1map_reg -ref $avg_distort_bet -usesqform -v  -omat $flirt_t1_fmri
+
+
+
+fi
+
+
+use_lddmm=0
+
+if [ "$use_lddmm" = "1" ]
+then
+
+
+avg_distort_lddmm=$work/avg_distort_lddmm.nii.gz
+t1map_lddmm=$work/t1map_reg_lddmm.nii.gz
+
+lddmm_dir=$work/lddmm
+mkdir -p $lddmm_dir
+
+map_undistort=$work/map_distort-t1map.nii.gz
+map_distort=$work/map_t1map-distort.nii.gz
+
+#now use lddmm to register distort to t1map 
+#Usage: /home/alik/epilepsy/shared_data/scripts/wrappers/runNiftiLDDMM_nopad <nii1> <nii2> <defnii1> <defnii2> <disp1to2> <disp2to1> <outdir> <options>
+runNiftiLDDMM_nopad $avg_distort_bet $t1map_reg $avg_distort_lddmm $t1map_lddmm $map_undistort $map_distort $lddmm_dir  -g
+
+else
+
+
+spacing_mm=10
+bending=0.005
+
+out_cpp=$work/outcpp_sp${spacing_mm}_be${bending}.nii.gz
+avg_distort_reg=$work/avg_distort_nreg_sp${spacing_mm}_be${bending}.nii.gz
+
+#use niftyreg
+if [ ! -e $out_cpp ]
+then
+echo reg_f3d -ref $t1map_reg -flo $avg_distort_bet  -sx $spacing_mm -be $bending -cpp $out_cpp -res $avg_distort_reg -gpu
+reg_f3d -ref $t1map_reg -flo $avg_distort_bet  -sx $spacing_mm -be $bending -cpp $out_cpp -res $avg_distort_reg -gpu
+fi
+
+#now, xfm 4D image using deformation to undistort
+
+if [ ! -e $corrected ]
+then
+ fslmaths $distort -mas $avg_distort_bet $corrected
+ reg_resample -ref $t1map_reg -flo $corrected -cpp $out_cpp -res $corrected
+fi
+
+
+fi
+
+
+
+
+done

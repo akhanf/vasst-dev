@@ -1,0 +1,45 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage $0 <input MR image> <image_type> <subjid>"
+ exit 0
+fi
+
+. functions_checkargs
+
+in_mri=$1
+img_type=$2
+subj=$3
+
+checkImgType $img_type
+if [ "$?" = "1" ]
+then
+  exit 0
+else
+  img_path=`cat $PIPELINE_CFG_DIR/img_types/$img_type`
+fi
+
+
+output_dir=.
+out_img=$output_dir/$subj/$img_path
+
+out_dir=${out_img%%.nii*}
+
+mkdir -p $out_dir
+
+
+ext=${in_mri##*.}
+if [ "$ext" = "mha" -o "$ext" = "mhd" -o "$ext" = "nrrd" -o "$ext" = "nhdr" ]
+then
+c3d $in_mri -o $out_img
+else
+mri_convert $in_mri $out_img --no_scale 1
+
+fi
+
+fslreorient2std $out_img $out_img
+
+
+

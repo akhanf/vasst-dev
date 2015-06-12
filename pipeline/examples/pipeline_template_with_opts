@@ -1,0 +1,49 @@
+#!/bin/bash
+
+function usage {
+ echo "Usage $0 <subjid/list>  <options>"
+ echo "   -o output_dir		Set output directory (default .)"
+ echo ""
+}
+
+if [ "$#" -lt 1 ]
+then
+ usage
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi  
+
+shift 1 #shift by number of required arguments (incl subjid/list)
+
+#flag o with argument "o:"
+while getopts "o:" options; do
+ case $options in
+    o ) echo "Using output directory: $OPTARG"
+	output_dir=$OPTARG;;
+    * ) usage
+	exit 0;;
+ esac
+done
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+echo $subj
+#put pipeline commands here
+
+
+done
+
+

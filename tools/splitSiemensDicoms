@@ -3,31 +3,40 @@
 
 if [ "$#" -lt 2 ]
 then
-  echo "Usage: $0 <prefix, up to series number, excluding the .> <output folder>"
+  echo "Usage: $0 <input folder> <output folder>"
   exit 0
 fi
 
 
-prefix=$1
+in=$1
 
 out=$2
 
 mkdir -p $out
 
+#first get prefix
+prefix=`ls $in/*.MR.* -1 | head -n 1`
+prefix=${prefix##*/}
+
+
+prefix="`echo $prefix |  awk -F. '{print $1}'`.`echo $prefix |  awk -F. '{print $2}'`.`echo $prefix |  awk -F. '{print $3}'`"
+
 
 
 #get list of first image in each series
-for first in `ls $prefix.*.0001.*`
+for first in `ls $in/$prefix.*.0001.*`
 do
 
- series=${first##$prefix.}
+ series=${first##*$prefix.}
  series=${series%%.*}
 
  echo $first: $series
 
  mkdir -p $out/$series
- cp -v $prefix.$series.* $out/$series
+ echo "copying series $series to $out/$series"
+  cp  $in/$prefix.$series.* $out/$series
  
+echo mri_convert $first $out/$series.nii.gz
  mri_convert $first $out/$series.nii.gz
 
 done

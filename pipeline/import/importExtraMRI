@@ -23,7 +23,7 @@ if [ "$ext" = "mha" -o "$ext" = "mhd" -o "$ext" = "nrrd" -o "$ext" = "nhdr" ]
 then
 c3d $in_mri -o $mri
 else
-mri_convert $in_mri $mri
+mri_convert $in_mri $mri --no_scale 1
 fi
 
 fslreorient2std $mri $mri
