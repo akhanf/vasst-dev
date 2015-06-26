@@ -1,0 +1,45 @@
+#!/bin/bash
+
+man_dir=$VASST_DEV_HOME/man
+mkdir -p $man_dir
+
+if [ -n "$VASST_DEV_HOME" ]
+then
+ 
+ #create man files for all pipeline scripts
+ pushd $VASST_DEV_HOME/pipeline > /dev/null
+ 
+  for prefix in `ls -d *`
+  do
+   pushd $prefix > /dev/null
+
+   for script in `ls -pd * | grep -v /`
+   do
+    generateManPage `pwd`/$script $prefix.$script > $man_dir/$prefix.$script.man
+   done
+
+   popd > /dev/null
+  done
+
+ popd > /dev/null
+
+
+ 
+ #create a man file for all vasst-dev pipeline commands
+ master_man=$man_dir/vasst-dev
+ echo .TH vasst-dev \"`timestamp`\"  > $master_man
+ echo .SH NAME >> $master_man
+ echo vasst-dev >> $master_man
+ echo .SH PIPELINE SCRIPTS >> $master_man
+ pushd $man_dir > /dev/null
+ for man in `ls *.*`
+ do
+
+  echo ${man%.man} >> $master_man
+  echo .LP >> $master_man
+ 
+ done
+ popd > /dev/null
+ 
+
+fi

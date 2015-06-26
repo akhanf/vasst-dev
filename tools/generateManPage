@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage: $0 <bash_script> <name of man page -- optional, default will use name of bash_script)"
+ exit 0
+fi
+
+in_script=$1
+if [ "$#" -gt 1 ]
+then 
+  name=$2
+else
+ name=${in_script##*/}
+fi
+
+ echo .\" Manpage for $name.
+ echo .TH $name 1 \"`timestamp`\" #\"1.0\" \"$name man page\"
+ echo .SH NAME
+ echo $name
+
+
+#use this to loop by line instead of word
+IFS=$'\n'
+for line in `grep "#MAN" $in_script`
+do
+# echo line 
+# echo $line
+
+ #strip beginning
+ content=${line#\#MAN\ *\ }
+# echo $content
+
+ #get name of subtitle
+ title=${line#\#MAN\ }
+ title=${title%%\ *}
+# echo $title
+
+ echo .SH $title
+ echo $content
+
+ 
+done

@@ -1,0 +1,55 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+
+in_dir=$dti_dir
+
+in_dwi=$in_dir/dwi.nii.gz
+in_bvec=$in_dir/dwi.bvec
+in_bvec_t=$in_dir/dwi.bvec_t
+in_bval=$in_dir/dwi.bval
+out_nrrd=$in_dir/dwi.nrrd
+
+
+echo runMatlabCmd transposeBvecFlipY "'$in_bvec'" "'$in_bvec_t'"
+runMatlabCmd transposeBvecFlipY "'$in_bvec'" "'$in_bvec_t'"
+
+echo DWIConvert --conversionMode FSLToNrrd  --inputVolume $in_dwi --inputBVectors $in_bvec_t --inputBValues $in_bval --outputVolume $out_nrrd
+DWIConvert --conversionMode FSLToNrrd  --inputVolume $in_dwi --inputBVectors $in_bvec_t --inputBValues $in_bval --outputVolume $out_nrrd
+
+done
