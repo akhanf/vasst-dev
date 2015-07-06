@@ -1,0 +1,109 @@
+#!/bin/bash
+
+function usage {
+ echo ""
+ echo "Averages a set of nonrigidly propagated labels for structures using fslmaths"
+ echo ""
+ echo "Usage: $0 <img_type> <label_type> <labellist> <atlaslist> <subjid/list>"
+ echo ""
+}
+
+if [ "$#" -lt 5 ]
+then
+ usage
+ exit 0
+fi
+
+
+. functions_checkargs
+
+img_type=$1
+label_type=$2
+readarray labellist < $3		#read in label list as an array
+readarray atlaslist < $4		#read in atlas list as an array
+
+if [ -f $5 ]				#read in subject list
+then
+ readarray subjid < $5
+else
+ subjid=$5
+fi
+
+#Use this for leave one out validation, i.e. your subject is also in your atlas list
+#for ((i=0; i<${#atlaslist[@]}; i++))	#loop through array indices to remove the subject id from the array
+#do
+
+# if [ ${atlaslist[$i]} = ${subjid} ];
+# then
+#  unset atlaslist[$i]			#remove subjid from array
+#  atlaslist=(${atlaslist[@]})		#reset index
+# fi
+
+#done 
+
+
+number_subj=0
+
+
+for line in ${atlaslist[@]}		#use for loop to count number of atlases whose labels are to be averaged
+do
+ ((number_subj=number_subj+1))
+done
+
+
+input_subj=$(echo ${atlaslist[0]})		#set an initial input atlas for fslmaths to start with
+
+unset subjid[0]
+subjid=(${subjid[@]})
+
+for subj in ${subjid[@]}
+do
+
+ for label in ${labellist[@]}		#loop through all labels initially just to establish output file so that the later loop can function
+ do
+  out_dir=./$subj/labels/"$img_type"_avg	#set output directory; probably a better way to do this other than including this line in every loop
+  mkdir $out_dir
+  label_dir="./$subj/labels/$img_type/"$label_type"_bspline_f3d_"		#set label directory; same as above
+  sum_file=$out_dir/sum_${subj}_${label}.nii.gz					#set location and name of the output file
+  fslmaths ${label_dir}${input_subj}/${input_subj}_${label}.nii.gz $sum_file	#setting the input subject labels as the output label for the later loop
+ done
+
+done
+
+
+unset atlaslist[0]                      #remove atlas that was set as initial output file from atlas list so it is not used again in the later loop
+atlaslist=(${atlaslist[@]})		#reset index
+
+for subj in ${subjid[@]}		#loop through each subject
+do
+
+ for label in ${labellist[@]}		#loop through each label
+ do
+
+  for atlas in ${atlaslist[@]}		#loop through each atlas and add these atlas labels to the output file for each label
+  do
+   out_dir=./$subj/labels/"$img_type"_avg
+   label_dir="./$subj/labels/$img_type/"$label_type"_bspline_f3d_"
+   sum_file=$out_dir/sum_${subj}_${label}.nii.gz			#set location and name of output file, currently set to what the last loop finished on
+   echo fslmaths $sum_file -add "$label_dir""${atlas}"/"${atlas}"_"${label}".nii.gz $sum_file
+   fslmaths $sum_file -add "$label_dir""${atlas}"/"${atlas}"_"${label}".nii.gz $sum_file		#add the labels together
+  done
+
+ done
+ 
+done
+
+
+for subj in ${subjid[@]}
+do
+
+ for label in ${labellist[@]}			#loop through the label list to average the labels
+ do
+  out_dir=./$subj/labels/"$img_type"_avg
+  label_dir="./$subj/labels/$img_type/"$label_type"_bspline_f3d_"
+  sum_file=$out_dir/sum_${subj}_${label}.nii.gz				#set location and name of output file, currently set to what the last loop finished on
+  echo fslmaths $sum_file -div $number_subj $out_dir/avg_${subj}_${label}.nii.gz
+  fslmaths $sum_file -div $number_subj $out_dir/avg_${subj}_${label}.nii.gz		#divide the summed label by the number of subjects
+ done
+ 
+done
