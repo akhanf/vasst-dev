@@ -1,0 +1,53 @@
+#!/bin/bash
+
+#script will perform affine then non-rigid registration of all T1 images in the subject list to one of the T1 images in the subject list
+#script will then propagate labels from each of the atlas images to the subject image
+
+function usage {
+ echo ""
+ echo "Performs affine and non-rigid registration from each of the atlases to the subject and then propagates the labels from each atlas to the subject."
+ echo ""
+ echo "Usage: ${0##*/} <img_type> <label_type> <atlas/list> <subjid/list>"
+ echo ""
+}
+
+. functions_checkargs
+
+if [ "$#" -lt 4 ]
+then
+ usage
+ exit 0
+fi
+
+img_type=$1
+label_type=$2
+
+if [ -f $3 ]		#read in atlas list
+then
+ atlaslist=`cat $3`
+else
+ atlaslist=$3
+fi
+
+if [ -f $4 ]		#read in subject list
+then
+ subjids=`cat $4`
+else
+ subjids=$4
+fi
+
+#use this for leave one out validation, i.e. your subject is one of the atlases in your list
+#atlaslist=("${atlaslist[@]/$subjid}")		#remove subject from atlas list
+
+for subj in $subjids
+do
+
+ for atlas in $atlaslist
+ 
+ do
+  reg_intersubj_aladin $img_type ${atlas} $subj				#perform affine registration between atlas and subject
+  reg_bspline_f3d $img_type ${atlas} $subj					#perform non-rigid registration between atlas and subject
+  #propLabels_reg_bspline_f3d $img_type $label_type ${atlas} $subj -L		#propagate labels from atlas to subject using linear interpolation
+ done
+
+done
