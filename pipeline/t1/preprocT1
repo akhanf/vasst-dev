@@ -1,5 +1,11 @@
 #!/bin/bash
+ 
+#MAN SYNOPSIS Pre-processes T1 images (skull-strip, intensity normalize)
+#MAN OPTIONS Currently does not take any options.  TODO: add option for setting bet parameters
+#MAN DEPENDENCIES importT1
+#MAN OUTPUT t1/t1.brain.nii.gz, t1/t1.brain.inorm.nii.gz
 
+ 
 if [ "$#" -lt 1 ]
 then
  echo "Usage $0 <subjid/list>"

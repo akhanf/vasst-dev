@@ -2,7 +2,7 @@
 
 % given initial bundles:
 
-function labelTractsHybrid_withClustering_camino ( subj)
+function labelTractsHybrid_withClustering_hardi ( subj)
 
 
 %subj='1.2.840.113845.11.1000000001951524609.20130802093226.6697837';

@@ -93,17 +93,44 @@ subj_dir=$output_dir/$subj
  
  samples_base=$bedpost_dir/merged
 
- probtrack_opts="-l --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --forcedir --opd --os2t"
+ probtrack_opts="-l --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --forcedir --opd --os2t --s2tastext"
 
 
  echo probtrackx2 -x $seed_file --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
  probtrackx2 -x $seed_file --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
 
 
+ vol_csv=$parc_dir/target_volumes.csv
+ rm -f $vol_csv
 
-#/usr/share/fsl/5.0/bin/probtrackx2 -x /eq-nas/alik/EpilepsyDatabase/standard/projects/epilepsy_peters/EPI_V065/dti/distortCorrect/connParc/L_caudate.nii.gz -l --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --forcedir --opd -s /eq-nas/alik/EpilepsyDatabase/standard/projects/epilepsy_peters/EPI_V065/dti/distortCorrect/bedpost.bedpostX/merged -m /eq-nas/alik/EpilepsyDatabase/standard/projects/epilepsy_peters/EPI_V065/dti/distortCorrect/bedpost.bedpostX/nodif_brain_mask --dir=/eq-nas/alik/EpilepsyDatabase/standard/projects/epilepsy_peters/EPI_V065/dti/distortCorrect/bedpost.bedpostX/testtrack_targetted --targetmasks=/eq-nas/alik/EpilepsyDatabase/standard/projects/epilepsy_peters/EPI_V065/dti/distortCorrect/bedpost.bedpostX/testtrack_targetted/targets.txt --os2t 
+ name_txt=$parc_dir/target_names.txt
+ rm -f $name_txt
+
+ echo "Normalizing seed to target maps by volume of target"
+
+ #normalize seeds_to_targets by volume of target
+ for target in `cat $targets_file`
+ do
+ 
+  vol=`fslstats $target -V`
+  vol=${vol#[0-9]*\ }
+
+  echo $vol >> $vol_csv
+   
+  name=${target##*/}
+  name=${name%%.nii.gz}
+  
+  echo $name >> $name_txt
+
+  in_seeds=$parc_dir/probtrack/seeds_to_$name.nii.gz
+  norm_seeds=$parc_dir/probtrack/seeds_to_$name.normVol.nii.gz
+
+   fslmaths $in_seeds -div $vol $norm_seeds
+ 
+ 
 
 
+ done #targets
 
 
 done #subj

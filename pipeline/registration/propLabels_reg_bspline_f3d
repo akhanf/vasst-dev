@@ -52,7 +52,7 @@ while getopts "o:SL" options; do
     o ) echo "Using output directory: $OPTARG"
 	output_dir=$OPTARG;;
     S ) echo "Using spline interpolation"
-	interp_opt="";;
+	interp_opt="";; #cubic spline by default
     L ) echo "Using linear interpolation"
 	interp_opt="-LIN";;
     * ) usage
