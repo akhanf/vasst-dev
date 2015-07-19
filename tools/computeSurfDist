@@ -1,0 +1,33 @@
+#!/bin/bash
+
+
+seg1=$1
+seg2=$2
+out_csv=$3
+
+shift 3
+
+for lbl in $@
+do
+ seg1_lbl=tmp_1_$lbl.nii.gz
+ seg1_lbl_ana=tmp_1_$lbl.img
+ seg1_lbl_prefix=tmp_1_$lbl
+ seg1_lbl_byu=tmp_1_$lbl.byu
+
+ seg2_lbl=tmp_2_$lbl.nii.gz
+ seg2_lbl_ana=tmp_2_$lbl.img
+ seg2_lbl_prefix=tmp_2_$lbl
+ seg2_lbl_byu=tmp_2_$lbl.byu
+
+ fslmaths $seg1 -thr $lbl -uthr $lbl -bin $seg1_lbl
+ fslmaths $seg2 -thr $lbl -uthr $lbl -bin $seg2_lbl
+ mri_convert $seg1_lbl $seg1_lbl_ana
+ mri_convert $seg2_lbl $seg2_lbl_ana
+ AnalyzeToBYU $seg1_lbl_ana 0.5 $seg1_lbl_prefix
+ AnalyzeToBYU $seg2_lbl_ana 0.5 $seg2_lbl_prefix
+
+ echo -n "," >> $out_csv
+ echo ComputeMeanSurfaceDistance $seg1_lbl_byu $seg2_lbl_byu `GetVoxDims $seg1_lbl_ana`
+ ComputeMeanSurfaceDistance $seg1_lbl_byu $seg2_lbl_byu `GetVoxDims $seg1_lbl_ana` >> $out_csv
+done
+

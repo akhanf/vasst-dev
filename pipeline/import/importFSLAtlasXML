@@ -1,0 +1,63 @@
+#!/bin/bash 
+
+if [ "$#" -lt 1 ]
+then
+
+echo "Imports FSL atlas xml into pipeline CSV files, removing bad characters"
+echo "Usage: $0 <fsl atlas name> "
+exit 0
+fi
+
+atlas_name=$1
+
+atlas_xml=$FSLDIR/data/atlases/$atlas_name.xml
+
+if [ ! -e $atlas_xml ]
+then
+  echo "$atlas_xml does not exist! Choose from the following:"
+  for atlas in `ls $FSLDIR/data/atlases/*.xml`
+  do 
+    name=${atlas%%.xml}
+    name=${name##*/}
+   echo $name
+  done
+echo ""
+  exit 0
+fi
+
+out_csv=$PIPELINE_CFG_DIR/labels/$atlas_name.csv
+if [ -e $out_csv ]
+then
+  echo "$out_csv already exists, quitting!"
+  exit 0
+ else
+  echo -n "Writing CSV file to $out_csv ... "
+fi
+
+tmp=/tmp/tmp$RANDOM
+grep index $atlas_xml > $tmp
+
+N=`cat $tmp | wc -l`
+
+for i in `seq 1 $N`
+do
+
+line=`cat $tmp | head -n $i | tail -n 1`
+
+ name=${line%<*}
+ name=${name##*>}
+ name=`echo $name | sed 's/\ /_/g'` #replace whitespace with underscore
+ name=`echo $name | sed 's/-//g'`  #remove hyphens
+ name=`echo $name | sed "s/'//g"`  #remove '
+ name=`echo $name | sed 's/,/_/g'`  #replace , with _
+ name=`echo $name | sed 's/__/_/g'`  #replace __ with _
+ name=`echo $name | sed 's/(//g'`  #remove parentheses ( )
+ name=`echo $name | sed 's/)//g'`  #remove parentheses ( )
+ 
+  
+ echo $name >> $out_csv
+ 
+done
+
+echo "done!"
+rm -f $tmp
