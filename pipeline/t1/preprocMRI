@@ -1,0 +1,87 @@
+#!/bin/bash
+
+#MAN SYNOPSIS Pre-processes T1 images (skull-strip, intensity normalize)
+#MAN OPTIONS Currently does not take any options.  TODO: add option for setting bet parameters
+#MAN DEPENDENCIES importT1
+#MAN OUTPUT t1/t1.brain.nii.gz, t1/t1.brain.inorm.nii.gz
+
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage $0 <img_type> <subjid/list>"
+ exit 0
+fi
+
+. functions_checkargs
+
+output_dir=.
+
+img_type=$1
+
+checkImgType $img_type
+if [ "$?" = "1" ]
+then
+  exit 0
+else
+  img_path=`cat $PIPELINE_CFG_DIR/img_types/$img_type`
+fi
+
+
+#betopts="-f 0.5 -R"
+#betopts="-f 0.3 -B"
+betopts="-f 0.5 -B"
+betopts="-f 0.4 -B"
+
+#betopts="-f 0.4 -B -c 95 107 163 -v"   # settings for pennylab dti
+
+if [ -f $2 ]
+then
+ subjids=`cat $2`
+else
+ subjids=$2
+fi
+
+
+for subj in $subjids
+do
+
+prefix=${img_path%%/*}
+
+subj_dir=$output_dir/$subj
+
+file_dir=$subj_dir/$prefix
+xfm_dir=$subj_dir/xfms
+
+#t1=$t1_dir/t1.nii.gz
+
+bet=${subj}/$prefix/${prefix}.brain.nii.gz
+brainmask=${subj}/$prefix/brainmask.nii.gz
+
+
+if [ -e $brainmask ]
+then
+ echo fslmaths ${subj}/$img_path -mas $brainmask $bet
+ fslmaths ${subj}/img_path -mas $brainmask $bet
+
+
+else
+
+#skull strip 
+echo bet ${subj}/$img_path $bet $betopts
+bet ${subj}/$img_path $bet $betopts
+echo fslmaths $bet -bin $brainmask
+fslmaths $bet -bin $brainmask
+
+
+fi
+
+
+#intensity normalize to mean 100
+norm=${subj}/$prefix/${prefix}.brain.inorm.nii.gz
+echo fslmaths $bet -inm 0.5 $norm
+fslmaths $bet -inm 0.5 $norm
+
+
+
+done
+
