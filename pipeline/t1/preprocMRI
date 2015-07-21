@@ -61,7 +61,7 @@ brainmask=${subj}/$prefix/brainmask.nii.gz
 if [ -e $brainmask ]
 then
  echo fslmaths ${subj}/$img_path -mas $brainmask $bet
- fslmaths ${subj}/img_path -mas $brainmask $bet
+ fslmaths ${subj}/${img_path} -mas $brainmask $bet
 
 
 else
