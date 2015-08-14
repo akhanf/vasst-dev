@@ -1,0 +1,268 @@
+#!/bin/bash
+
+function usage {
+ echo "Usage $0 <subjid/list> <config_file> <options>"
+ echo "   -o output_dir		Set output directory (default .)"
+ echo ""
+}
+
+if [ "$#" -lt 2 ]
+then
+ usage
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi  
+
+shift 1 #shift by number of required arguments (incl subjid/list)
+
+cfg_file=$1
+if [ -f $1 ]
+then
+  source $cfg_file
+else
+  echo "config file doesn't exist!"
+  exit 0
+fi
+ 
+shift 1
+
+
+#flag o with argument "o:"
+while getopts "o:" options; do
+ case $options in
+    o ) echo "Using output directory: $OPTARG"
+	output_dir=$OPTARG;;
+    * ) usage
+	exit 0;;
+ esac
+done
+
+
+
+#config file will set:
+
+#surfdisp_name=   #name of config file (for creating output dir)
+#template_4d=  #path to template 4D seg  (absolute path) -- could potentially be MNI atlas 
+#
+#index_list=		#label list file for selecting what channels to use? -- would enable shape analysis from any MNI atlas
+#			#name,index (into 4D image)
+#target_4d_path=   #path to 4D segmentations (will be prepended with subjid)
+#resample_res=  #isotropic resolution to resample images
+#isothreshold=  #threshold for generating isosurface
+#genpbs_opts=  #options for generatePBSfluidmatch
+		#presmoothing??
+
+
+
+
+# provide segs that are already coregistered to some common (e.g. MNI152_1mm) space
+
+
+out_dir=surfdisp_$surfdisp_name
+mkdir -p $out_dir
+
+
+#prep template seg
+template_dir=$out_dir/template
+mkdir -p $template_dir
+
+if [ ! -e $template_4d ]
+then
+ echo "template 4D seg does not exist!"
+ exit 0
+fi
+
+#read index_list to pull out indices of interest
+#pull out indices of interest
+for line in `cat $index_list`
+do
+ 
+ struct=${line%%,*}
+ index=${line##*,}
+
+ nii=$template_dir/$struct.nii.gz
+ ana=$template_dir/${struct}_ana.img
+
+ if [ ! -e $nii ]
+ then
+ fslroi $template_4d $nii $index 1
+ fi
+ if [ ! -e $ana ]
+ then
+ mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
+ fi
+
+done
+
+
+#get crop params 
+avgall=$template_dir/avgAll.img
+avgall_crop=$template_dir/avgAll_crop.img
+paddim=20
+cropparam=$template_dir/crop_param.txt
+
+if [ ! -e $cropparam ]
+then
+AverageImage $avgall $template_dir/*_ana.img
+CropImageToSegExtents $avgall $avgall $avgall_crop $paddim $cropparam 
+fi
+
+nstruct=`cat $index_list | wc -l`
+ template_img_list=$template_dir/template_images.txt
+ echo $nstruct > $template_img_list
+
+#now crop each template seg
+for line in `cat $index_list`
+do
+ 
+ struct=${line%%,*}
+ index=${line##*,}
+
+ ana=$template_dir/${struct}_ana.img
+ crop=$template_dir/${struct}_ana_crop.img 
+ if [ ! -e $crop ]
+ then
+ CropImage $ana `cat $cropparam` $crop
+ fi
+
+ byu_noext=$template_dir/${struct}_ana_crop
+ byu=$template_dir/${struct}_ana_crop.byu
+ byu_cpp=$template_dir/${struct}_ana_crop_cpp.byu
+
+ if [ ! -e $byu_cpp ]
+ then
+ #create surfaces
+  AnalyzeToBYU  $crop $isothreshold $byu_noext
+  ConvertBYU_BW-CPP $byu $byu_cpp `GetImageDims $crop`
+ fi
+
+ #add to image list for lddmm
+ echo `pwd`/$crop >> $template_img_list
+ 
+
+done
+
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+target_dir=$output_dir/$subj/surfdisp_$surfdisp_name
+mkdir -p $target_dir
+
+echo $subj
+#put pipeline commands here
+
+ nstruct=`cat $index_list | wc -l`
+ target_img_list=$target_dir/target_images.txt
+ echo $nstruct > $target_img_list
+
+#read index_list to pull out indices of interest
+#pull out indices of interest
+for line in `cat $index_list`
+do
+ 
+ struct=${line%%,*}
+ index=${line##*,}
+
+ nii=$target_dir/$struct.nii.gz
+ ana=$target_dir/${struct}_ana.img
+
+if [ ! -e $nii ]
+then 
+ fslroi $subj_dir/$target_4d_path $nii $index 1
+fi
+
+ if [ ! -e $ana ]
+then
+ mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
+fi
+
+ crop=$target_dir/${struct}_ana_crop.img 
+ if [ ! -e $crop ]
+ then
+ CropImage $ana `cat $cropparam` $crop
+ fi
+
+#don't need target surfaces for quantification, but creating just in case
+
+ byu_noext=$target_dir/${struct}_ana_crop
+ byu=$target_dir/${struct}_ana_crop.byu
+
+ #create surfaces
+  AnalyzeToBYU  $crop $isothreshold $byu_noext
+
+ #add to image list for lddmm
+ echo `pwd`/$crop >> $target_img_list
+done 
+
+ lddmm_dir=$target_dir/lddmm
+ cmd=`pwd`/$lddmm_dir/cmd.pbs 
+
+ rm -f $cmd
+ #run lddmm
+ echo "runLDDMM -o "$genpbs_opts" `pwd`/$template_img_list `pwd`/$target_img_list $lddmm_dir"
+ runLDDMM -o "$genpbs_opts" `pwd`/$template_img_list `pwd`/$target_img_list $lddmm_dir
+exit 0
+ pushd $lddmm_dir
+ sh $cmd
+ popd 
+
+ map=$lddmm_dir/HmapGreedy000.vtk 
+
+for line in `cat $index_list`
+do
+ 
+ struct=${line%%,*}
+ index=${line##*,}
+
+ template_byu=$template_dir/${struct}_ana_crop.byu
+ template_byu_cpp=$template_dir/${struct}_ana_crop_cpp.byu
+
+ disp_csv=$target_dir/${struct}.surf_disp.csv
+ disp_txt=$target_dir/${struct}.surf_disp.txt
+ disp_vtk=$target_dir/templateSurface_${struct}_disp.vtk
+
+
+ prop_surf=$target_dir/propSurface_${struct}.byu
+ inout_txt=$target_dir/${struct}.surf_inout.txt
+ disp_vtk=$target_dir/templateSurface_${struct}_inout.vtk
+
+ #now compute surface vector displacements
+ GenSurfDisplacementTxt $template_byu_cpp $map $disp_csv
+
+
+ #propagate surface
+ TransformSurfaceWithMaps $template_byu_cpp $map $prop_surf
+ ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`
+ 
+ #generate inout displacements
+
+ compdisp $template_byu $prop_surf $inout_txt
+
+ CombineBYUandSurfDist $template_byu $inout_txt $inout_vtk
+
+ sed 's/,/\ /g' $disp_csv > $disp_txt
+ ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
+
+
+done
+
+
+
+
+
+done
+
+

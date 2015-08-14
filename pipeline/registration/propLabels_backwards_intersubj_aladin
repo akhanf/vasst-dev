@@ -70,6 +70,7 @@ do
 
  subj_dir=$output_dir/$subj
  subj_nii=$subj_dir/$img_path
+ atlas_nii=$atlas_dir/$img_path
  echo "subj_nii=$subj_nii"
  
  subj_label_dir=$subj_dir/labels/${img_type}/${label_type}
@@ -87,12 +88,12 @@ do
  fi
 
 
- for in_label in `ls $atlas_label_dir/*.nii.gz`
+ for in_label in `ls $subj_label_dir/*.nii.gz`
  do
   prefix=${in_label##*/}
   prefix=${prefix%%.nii.gz}
   out_label=$out_dir/$prefix.nii.gz
-  reg_resample -flo $in_label -res $out_label -aff $xfm -ref $subj_nii $interp_opt
+  reg_resample -flo $in_label -res $out_label -aff $xfm -ref $atlas_nii $interp_opt
  done
 
 done
