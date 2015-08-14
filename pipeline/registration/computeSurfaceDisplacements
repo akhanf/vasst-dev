@@ -214,7 +214,6 @@ done
  #run lddmm
  echo "runLDDMM -o "$genpbs_opts" `pwd`/$template_img_list `pwd`/$target_img_list $lddmm_dir"
  runLDDMM -o "$genpbs_opts" `pwd`/$template_img_list `pwd`/$target_img_list $lddmm_dir
-exit 0
  pushd $lddmm_dir
  sh $cmd
  popd 
