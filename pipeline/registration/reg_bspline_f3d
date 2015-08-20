@@ -5,7 +5,8 @@
 if [ "$#" -lt 3 ]
 then
  echo ""
- echo "Usage: ${0##*/} <img_type> <atlas_subj> <subjid/list>"
+ echo "Usage: ${0##*/} <img_type> <atlas_subj> <subjid/list> <options>"
+ echo "		-b bending energy value		Set bending energy penalty term (default 0.005)"
  echo ""
  echo " e.g. to register t1 catani atlas to test_subj use:"
  echo "  $0 t1 catani test_subj"
@@ -44,6 +45,16 @@ else
  subjids=$1
 fi
 
+be=""
+shift 1
+while getopts "b:" options; do
+ case $options in
+    b ) echo "Using bending energy penalty: $OPTARG"
+        be="-be $OPTARG";;
+    * ) usage
+        exit 0;;
+ esac
+done
 
 for subj in $subjids
 do
@@ -77,15 +88,15 @@ do
  def=$out_dir/def_${atlas_subj}_to_${subj}.nii.gz
  resampled=$out_dir/${atlas_subj}_to_${subj}.nreg.nii.gz
 
- reg_f3d -ref $subj_nii -flo $atlas_nii -aff $inv_xfm -cpp $cpp -res $resampled #-gpu 
- reg_transform -ref $t1 -cpp2def $cpp $def
- reg_transform -ref $t1 -def2disp $def $def
-
+ reg_f3d -ref $subj_nii -flo $atlas_nii -aff $inv_xfm -cpp $cpp -res $resampled $be #-gpu 
+ reg_transform -ref $subj_nii -cpp2def $cpp $def
+ reg_transform -ref $subj_nii -def2disp $def $def
+ 
  cpp=$out_dir/ctrlpt_${subj}_to_${atlas_subj}.nii.gz
  def=$out_dir/def_${subj}_to_${atlas_subj}.nii.gz
  resampled=$out_dir/${subj}_to_${atlas_subj}.nreg.nii.gz
 
- reg_f3d -ref $atlas_nii -flo $subj_nii -aff $xfm -cpp $cpp -res $resampled #-gpu 
+ reg_f3d -ref $atlas_nii -flo $subj_nii -aff $xfm -cpp $cpp -res $resampled $be #-gpu 
  reg_transform -ref $atlas_nii -cpp2def $cpp $def
  reg_transform -ref $atlas_nii -def2disp $def $def
  
