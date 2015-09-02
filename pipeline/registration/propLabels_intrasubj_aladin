@@ -75,9 +75,9 @@ do
  mkdir -p $out_dir
 
  inv_xfm=$reg_dir/${img_type_1}_to_${img_type_2}.xfm
-
  if [ ! -e $inv_xfm ]
  then 
+echo $inv_xfm
   echo "Error on $img_type_1 to $img_type_2 in $subj: Need to run coreg_rigid_aladin before propLabels_coreg_rigid_aladin!"
   continue 
  fi

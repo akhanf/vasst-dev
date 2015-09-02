@@ -25,9 +25,10 @@ fi
 output_dir=.
 out_img=$output_dir/$subj/$img_path
 
-out_dir=${out_img%%/${img_type}.nii*}
+out_dir=${out_img%/*}
 
 mkdir -p $out_dir
+echo $out_dir
 
 
 ext=${in_mri##*.}

@@ -30,16 +30,16 @@ else
 fi
 
 #Use this for leave one out validation, i.e. your subject is also in your atlas list
-#for ((i=0; i<${#atlaslist[@]}; i++))	#loop through array indices to remove the subject id from the array
-#do
+for ((i=0; i<${#atlaslist[@]}; i++))	#loop through array indices to remove the subject id from the array
+do
 
-# if [ ${atlaslist[$i]} = ${subjid} ];
-# then
-#  unset atlaslist[$i]			#remove subjid from array
-#  atlaslist=(${atlaslist[@]})		#reset index
-# fi
+ if [ ${atlaslist[$i]} = ${subjid} ];
+ then
+  unset atlaslist[$i]			#remove subjid from array
+  atlaslist=(${atlaslist[@]})		#reset index
+ fi
 
-#done 
+done 
 
 
 number_subj=0
@@ -53,8 +53,8 @@ done
 
 input_subj=$(echo ${atlaslist[0]})		#set an initial input atlas for fslmaths to start with
 
-unset subjid[0]
-subjid=(${subjid[@]})
+#unset subjid[0]
+#subjid=(${subjid[@]})
 
 for subj in ${subjid[@]}
 do
@@ -62,9 +62,10 @@ do
  for label in ${labellist[@]}		#loop through all labels initially just to establish output file so that the later loop can function
  do
   out_dir=./$subj/labels/"$img_type"_avg	#set output directory; probably a better way to do this other than including this line in every loop
-  mkdir $out_dir
+  #mkdir $out_dir
   label_dir="./$subj/labels/$img_type/"$label_type"_bspline_f3d_"		#set label directory; same as above
   sum_file=$out_dir/sum_${subj}_${label}.nii.gz					#set location and name of the output file
+  echo fslmaths ${label_dir}${input_subj}/${input_subj}_${label}.nii.gz $sum_file
   fslmaths ${label_dir}${input_subj}/${input_subj}_${label}.nii.gz $sum_file	#setting the input subject labels as the output label for the later loop
  done
 

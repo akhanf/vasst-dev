@@ -102,7 +102,7 @@ do
  
 
  reg_aladin -ref $atlas_nii -flo $subj_nii -aff $xfm -res $reg_subj $rigid_opt $init_opt
- convert_xfm -omat $inv_xfm -inverse $xfm
+ reg_transform -invAffine $xfm $inv_xfm -ref $subj_nii
  reg_resample -flo $atlas_nii -ref $subj_nii -aff $inv_xfm -res $reg_atlas
 
 

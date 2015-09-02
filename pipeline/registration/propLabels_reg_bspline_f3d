@@ -75,7 +75,7 @@ do
  out_dir=$subj_dir/labels/${img_type}/${label_type}_${reg_type}_${atlas_subj}
  mkdir -p $out_dir
 
- cpp=$reg_dir/ctrlpt_${atlas_subj}_to_${subj}.nii.gz
+ cpp=$reg_dir/ctrlpt_${atlas_subj}_to_${subj}.BE0.0025.nii.gz
 
  if [ ! -e $cpp ]
  then 
@@ -88,7 +88,7 @@ do
  do
   prefix=${in_label##*/}
   prefix=${prefix%%.nii.gz}
-  out_label=$out_dir/$prefix.nii.gz
+  out_label=$out_dir/${prefix}.BE0.0025.nii.gz
   reg_resample -flo $in_label -res $out_label -cpp $cpp -ref $subj_nii $interp_opt
  done
 

@@ -37,7 +37,8 @@ else
 fi
 
 #use this for leave one out validation, i.e. your subject is one of the atlases in your list
-#atlaslist=("${atlaslist[@]/$subjid}")		#remove subject from atlas list
+#atlaslist=("${atlaslist[@]/$subjids}")		#remove subject from atlas list
+
 
 for subj in $subjids
 do
@@ -47,7 +48,7 @@ do
  do
   reg_intersubj_aladin $img_type ${atlas} $subj				#perform affine registration between atlas and subject
   reg_bspline_f3d $img_type ${atlas} $subj					#perform non-rigid registration between atlas and subject
-  #propLabels_reg_bspline_f3d $img_type $label_type ${atlas} $subj -L		#propagate labels from atlas to subject using linear interpolation
+  propLabels_reg_bspline_f3d $img_type $label_type ${atlas} $subj -L 		#propagate labels from atlas to subject using linear interpolation
  done
 
 done
