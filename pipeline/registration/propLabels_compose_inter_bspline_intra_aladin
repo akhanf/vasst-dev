@@ -64,7 +64,7 @@ while getopts "o:r" options; do
     o ) echo "Using output directory: $OPTARG"
 	output_dir=$OPTARG;;
     r ) echo "Using rigid registration"
-        reg_type=rigid_aladin
+        reg_type_2=rigid_aladin
 	rigid_opt="-rigOnly";;
     * ) usage
 	exit 0;;
