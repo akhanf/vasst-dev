@@ -41,15 +41,15 @@ do
   in_fmri=$fmri_dir/distortCorr/rs_fmri_distortCorr.nii.gz
 #  in_fmri_parc=$in_label_dir/fmri/freesurfer_rigid_aladin_t1/wmparc.nii.gz
   # for now just use the 25% maxprob map; may test different options at some point
-  in_fmri_parc=$in_label_dir/fmri/maxprob_bspline_f3d_HarvardOxford_rigid_aladin_t1/HarvardOxford-combined-maxprob-from4D-thr25-1mm.nii.gz
+  in_fmri_parc=$in_label_dir/fmri/maxprob_bspline_f3d_rigid_aladin_HarvardOxford/HarvardOxford-combined-maxprob-thr25-1mm.nii.gz
 
-  out_dir=$fmri_dir/HarvardOxford-combined-maxprob-from4D-thr25_ts
-  out_label_dir=$fmri_dir/HarvardOxford-combined-maxprob-from4D-thr25_labels
+  out_dir=$fmri_dir/HarvardOxford-combined-maxprob-thr25_ts
+  out_label_dir=$fmri_dir/HarvardOxford-combined-maxprob-thr25_labels
 
   mkdir -p $out_dir
   mkdir -p $out_label_dir
 
-  labellist="/eq-nas/jlau/EpilepsyDatabase/standard/repository/pipeline/cfg/labels/HarvardOxford-combined-NetworkLabelList.csv"
+  labellist="/cluster/software/vasst-dev/pipeline/cfg/labels/HarvardOxford-combined-NetworkLabelList.csv"
 
   # for every FreeSurfer label
   for i in `cat $labellist`
