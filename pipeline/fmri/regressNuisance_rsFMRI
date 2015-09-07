@@ -65,7 +65,7 @@ label[0]=csf
 label[1]=gm
 label[2]=wm
 
-coreg_dir=$subj/coreg/affine_aladin_t1_fmri # changed from rigid -> affine
+coreg_dir=$subj/coreg/rigid_aladin_t1_fmri # rigid transformation between t1 and fmri
 xfm_t1_fmri=$coreg_dir/t1_to_fmri.xfm
 
 #get probabilistic tissue segmentation in fMRI space 

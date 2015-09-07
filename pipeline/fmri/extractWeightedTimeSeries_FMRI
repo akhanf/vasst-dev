@@ -57,7 +57,7 @@ do
 #  in_fmri=$fmri_dir/distortCorr/rs_fmri_distortCorr.nii.gz
   # now using distortion corrected + regression of CSF, GM, WM
   in_fmri=$fmri_dir/regressNuisance/rs_fmri_distortCorr_regressCSF_GM_WM.nii.gz
-  in_fmri_parc=$in_label_dir/fmri/prob_bspline_f3d_HarvardOxford_affine_aladin_t1/HarvardOxford-combined-prob-1mm.nii.gz
+  in_fmri_parc=$in_label_dir/fmri/prob_bspline_f3d_HarvardOxford_rigid_aladin_t1/HarvardOxford-combined-prob-1mm.nii.gz
 
   out_dir=$fmri_dir/HarvardOxford-combined-prob_ts
   out_label_dir=$fmri_dir/HarvardOxford-combined-prob_labels
