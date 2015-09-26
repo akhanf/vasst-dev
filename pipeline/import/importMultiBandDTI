@@ -88,6 +88,9 @@ fi
 
 echo DWIConvert --inputDicomDirectory ${in_dicom_dir[$i]} --conversionMode DicomToFSL --outputVolume $dwi
 DWIConvert --inputDicomDirectory ${in_dicom_dir[$i]} --conversionMode DicomToFSL --outputVolume $dwi
+
+fixSiemensDiffusionNifti $dwi $dwi 
+
 bvec_in=$uncorr_dir/dwi_$i.bvec
 bval_in=$uncorr_dir/dwi_$i.bval
 

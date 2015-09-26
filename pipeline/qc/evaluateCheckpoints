@@ -1,0 +1,46 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage: $0 <data_dir> <checkpoint_csv> <subjects...>"
+ exit 0
+fi
+
+data_dir=$1
+checkpoint_csv=$2
+shift 2
+
+nchk=`cat $checkpoint_csv | wc -l`
+echo -n "subj"
+
+ for i in `seq 1 $nchk`
+ do
+  line=`cat $checkpoint_csv | head -n $i | tail -n 1`
+  name=${line%%,*}
+  echo -n ",$name"
+ done
+ echo ""
+
+for subj in $@
+do
+ echo -n $subj
+ for i in `seq 1 $nchk`
+ do
+  line=`cat $checkpoint_csv | head -n $i | tail -n 1`
+  name=${line%%,*}
+  file=${line##*,}
+  first=`ls -d $data_dir/$subj/${file} 2>/dev/null | head -n 1`
+
+  if [[ -e $first && -n  "$first" ]]
+  then
+#    echo exists, first = $first
+    echo -n ",1"
+  else
+    echo -n ",0"
+  fi   
+
+
+ done
+ echo ""  #finish line
+
+done
