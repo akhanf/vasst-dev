@@ -1,0 +1,70 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage $0 <image_type_1> <image_type_2>  <subjid/list>"
+ exit 0
+fi
+
+. functions_checkargs
+output_dir=`pwd`
+
+# generate quickchecks for overlays
+	#general usage for per-subj processing is to specify the two images to compare, and generate an overlay of these
+	#put it in quickchecks folder, named according to processing
+	#could then be a command for creating report html files
+
+img_type_1=$1
+img_type_2=$2
+
+#this sets img_path_1 
+checkCoregArgs
+
+shift 2
+
+
+qc_dir=QC
+mkdir -p $qc_dir
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+
+output_list=""
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+
+#put pipeline commands here
+
+bgimg=$subj_dir/$img_path_1 
+overlay=$subj_dir/coreg/*_${img_type_1}_${img_type_2}/${img_type_2}_to_${img_type_1}.reg.nii.gz
+
+output_list="$output_list $bgimg $overlay"
+
+bgimg=$subj_dir/$img_path_2
+overlay=$subj_dir/coreg/*_${img_type_1}_${img_type_2}/${img_type_1}_to_${img_type_2}.reg.nii.gz
+
+
+output_list="$output_list $bgimg $overlay"
+
+
+done
+
+slicesdir -o $output_list
+
+out_dir=$qc_dir/intrasubj_reg_${img_type_1}_${img_type_2}_`timestamp`
+mv slicesdir $out_dir
+
+echo "Use this to view:"
+echo "chromium-browser $out_dir/index.html"
+

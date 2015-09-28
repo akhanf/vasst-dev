@@ -1,0 +1,105 @@
+#!/bin/bash
+
+function usage {
+ echo "Extracts mean values from an image for given segmentation and label_cfg"
+ echo "Usage $0 <label_cfg> <path_to_seg - relative to subj_dir> <path to quantitative image> <subjid/list>  <options>"
+ echo "   -o output_dir		Set output directory (default .)"
+ echo ""
+
+ echo ""
+ echo "List of standard label cfgs: "
+ pushd $PIPELINE_CFG_DIR/labels > /dev/null
+ ls *
+ popd > /dev/null
+ echo ""
+
+}
+
+if [ "$#" -lt 4 ]
+then
+ usage
+ exit 0
+fi
+
+output_dir=.
+label_cfg=$PIPELINE_CFG_DIR/labels/$1
+seg_path=$2
+im_path=$3
+
+if [ ! -e $label_cfg ]
+then
+ echo "label cfg $label_cfg does not exist!"
+ exit 0
+fi
+
+shift 3
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$@
+fi  
+
+shift 1 #shift by number of required arguments (incl subjid/list)
+
+#flag o with argument "o:"
+while getopts "o:" options; do
+ case $options in
+    o ) echo "Using output directory: $OPTARG"
+	output_dir=$OPTARG;;
+    * ) usage
+	exit 0;;
+ esac
+done
+
+
+#write data to stdout
+echo -n subj
+for labelline in `cat $label_cfg`
+do
+
+ name=${labelline%%,*}
+ num=${labelline##*,}
+ echo -n ",$name"
+
+done
+
+echo ""
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+echo -n $subj
+#put pipeline commands here
+
+
+seg=$subj_dir/$seg_path
+im=$subj_dir/$im_path
+
+#loop through labels
+for labelline in `cat $label_cfg`
+do
+
+ name=${labelline%%,*}
+ num=${labelline##*,}
+
+ mask=/tmp/mask_$RANDOM 
+ fslmaths $seg -thr $num -uthr $num -bin $mask
+# volboth=`fslstats $seg -l $((num-1)) -u $((num+1)) -V`
+ mean=`fslstats $im -k $mask -M`
+# vol_mm=`echo $volboth | awk {'print $2'}`
+
+ echo -n ",$mean"
+ 
+done
+
+echo ""
+
+
+done
+
+
