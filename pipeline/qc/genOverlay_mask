@@ -1,0 +1,58 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage $0 <path to image> <path to mask> <out_name> <subjid/list>"
+ exit 0
+fi
+
+output_dir=`pwd`
+
+# generate quickchecks for overlays
+	#general usage for per-subj processing is to specify the two images to compare, and generate an overlay of these
+	#put it in quickchecks folder, named according to processing
+	#could then be a command for creating report html files
+
+qc_dir=QC
+mkdir -p $qc_dir
+
+img_path=$1
+mask_path=$2
+out_name=$3
+shift 3
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+output_list=""
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+
+#put pipeline commands here
+
+img=$
+img=$subj_dir/$img_path
+mask=$subj_dir/$mask_path
+
+
+output_list="$output_list $img $mask"
+
+
+done
+
+slicesdir -o $output_list
+
+mv slicesdir $qc_dir/${out_name}_`timestamp`
+
+echo "Use this to view:"
+echo "chromium-browser $qc_dir/${out_name}_`timestamp`/index.html"

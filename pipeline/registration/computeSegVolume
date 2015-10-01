@@ -1,0 +1,101 @@
+#!/bin/bash
+
+function usage {
+ echo "Usage $0 <label_cfg> <path_to_seg - relative to subj_dir> <subjid/list>  <options>"
+ echo "   -o output_dir		Set output directory (default .)"
+ echo ""
+
+ echo ""
+ echo "List of standard label cfgs: "
+ pushd $PIPELINE_CFG_DIR/labels > /dev/null
+ ls *
+ popd > /dev/null
+ echo ""
+
+}
+
+if [ "$#" -lt 3 ]
+then
+ usage
+ exit 0
+fi
+
+output_dir=.
+label_cfg=$PIPELINE_CFG_DIR/labels/$1
+seg_path=$2
+
+if [ ! -e $label_cfg ]
+then
+ echo "label cfg $label_cfg does not exist!"
+ exit 0
+fi
+
+shift 2
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi  
+
+shift 1 #shift by number of required arguments (incl subjid/list)
+
+#flag o with argument "o:"
+while getopts "o:" options; do
+ case $options in
+    o ) echo "Using output directory: $OPTARG"
+	output_dir=$OPTARG;;
+    * ) usage
+	exit 0;;
+ esac
+done
+
+
+#write data to stdout
+echo -n subj
+for labelline in `cat $label_cfg`
+do
+
+ name=${labelline%%,*}
+ num=${labelline##*,}
+ echo -n ",$name"
+
+done
+
+echo ""
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+echo -n $subj
+#put pipeline commands here
+
+
+seg=$subj_dir/$seg_path
+
+#loop through labels
+for labelline in `cat $label_cfg`
+do
+
+ name=${labelline%%,*}
+ num=${labelline##*,}
+
+  
+ volboth=`fslstats $seg -l $((num-1)) -u $((num+1)) -V`
+ vol_mm=`echo $volboth | awk {'print $2'}`
+
+ #fix this!
+ echo -n ",$vol_mm"
+ 
+done
+
+echo ""
+
+
+done
+
+
