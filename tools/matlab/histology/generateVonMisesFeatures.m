@@ -1,6 +1,6 @@
 
 function generateVonMisesFeatures (in_mat,out_mat)
-
+warning('off','all')
 load(in_mat);
 
 %  compute von mises features
