@@ -1,0 +1,27 @@
+#!/bin/bash
+if [ "$#" -lt "2" ]
+then
+
+echo "Usage: $0 <dicom txt> \"<query string>\"" 
+echo  ""
+echo "e.g. : $0 despot.txt \"Series Description\""
+exit 0
+
+fi
+
+
+
+dcm=$1
+query=$2
+
+#echo dcm: $dcm
+#echo query: $query
+output=`cat $dcm | grep "$query" | head -n 1`
+
+
+
+#echo $output
+  output=${output##*\[}
+  output=${output%%\]*}
+echo $output
+
