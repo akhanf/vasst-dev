@@ -1,4 +1,4 @@
-function [hist_counts,hist_centers,major_angle,mean_anisotropy]  = computeStructuralTensor(img,sigma)
+function [hist_counts,hist_centers,major_angle,mean_anisotropy,mean_trace]  = computeStructuralTensor(img,sigma)
 
 
 n = 256;
@@ -100,5 +100,6 @@ hist_counts=hist_counts;
 hist_centers=hist_centers;
 major_angle=max_angle;
 mean_anisotropy=mean(anisotropy);
+mean_trace=mean(trace(:));
 end
 

@@ -8,6 +8,15 @@ function [contours,contoursClosed, names,names_alt] = readAperioXMLContours(xml)
     
     [vertStart, end_idx, extents, matches, vertTokens] = regexpi(dta,'<Vertex X="([^"]*)" Y="([^"]*)"/>');
     allVertTokens = cat(1,vertTokens{:});
+    
+    if (isempty(allVertTokens))
+        contours=[];
+        contoursClosed=[];
+        names=[];
+        names_alt=[];
+        return;
+    end
+    
     verts=reshape(sscanf(sprintf('%s*', allVertTokens{:}), '%f*'),[],2);
 
     [regionStarts, end_idx, extents, matches, regTokens] = regexpi(dta,'<Region [^>]*Type="([^"]*)"[^>]*>');

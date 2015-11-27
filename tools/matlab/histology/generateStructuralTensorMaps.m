@@ -24,9 +24,11 @@ subj=name(1:8);
 
 
 outdir=sprintf('%s/../100um_StructuralTensors',path);
+mkdir(outdir);
 
 outmap=sprintf('%s/%s.mat',outdir,name);
 
+sigma=5;
 
 scalefac=200;
 
@@ -75,7 +77,8 @@ total_counts=zeros(size(xout));
 
 
 %features={'principal_orientation_rad','principal_orientation_x','principal_orientation_y','principal_orientation_dispersion'};
-features={'major_angle_sigma1','anisotropy_sigma1','major_angle_sigma2','anisotropy_sigma2'};
+
+features={'major_angle','mean_anisotropy','mean_trace'};
 
 featureVec=zeros(Nx,Ny,length(features));
 
@@ -83,10 +86,8 @@ featureVec=zeros(Nx,Ny,length(features));
 %padwidth should be radius of pyramidal neuron (say 10um/2 = 5um)
 padWidth=0; %in pixels
 
-hist_counts_sigma2=cell(Nx,Ny);
+hist_counts=cell(Nx,Ny);
 hist_centers=cell(Nx,Ny);
-hist_counts_sigma5=cell(Nx,Ny);
-
 
 
 
@@ -110,8 +111,7 @@ for i=1:Nx
         
         
         % perform structural tensor analysis
-            [hist_counts_sigma2{i,j},hist_centers{i,j},featureVec(i,j,1),featureVec(i,j,2)]=computeStructuralTensor(proc_img,2);
-            [hist_counts_sigma5{i,j},hist_centers{i,j},featureVec(i,j,3),featureVec(i,j,4)]=computeStructuralTensor(proc_img,5);
+            [hist_counts{i,j},hist_centers{i,j},featureVec(i,j,1),featureVec(i,j,2),featureVec(i,j,3)]=computeStructuralTensor(proc_img,sigma);
 
 
             %update this later to include: 
@@ -124,13 +124,12 @@ for i=1:Nx
 
                    
         end
-        i
        
 end
 
 
 
-save(outmap,'hist_counts_sigma2','hist_counts_sigma5','hist_centers','features','featureVec');
+save(outmap,'sigma','hist_counts','hist_centers','features','featureVec');
     
     
 end

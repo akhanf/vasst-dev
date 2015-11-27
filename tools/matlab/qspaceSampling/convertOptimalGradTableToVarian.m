@@ -2,7 +2,9 @@ function convertOptimalGradTableToVarian( optimal_txt, out_file )
 % obtain optimal sampling from http://www.emmanuelcaruyer.com/q-space-sampling.php
 
 
-% does NOT assume that an implicit first grad direction is always added b=0 --
+
+% scanner will add 3 b0 scans to beginning, and last 3 directions will be
+% lost --> so put 3 b0 scans on the end to account for this..
 
 
 
@@ -14,12 +16,15 @@ optimal=importdata(optimal_txt);
 ndir=size(optimal.data,1);
 
 %number of b0 (excluding implicit 1)
-nb0_between=9;
+nb0_between=7;
 
-nb0_init=1;
+nb0_init=0;
+nb0_end=3;
+
 nb0_implicit=0;
 
-nb0=nb0_init+nb0_between+nb0_implicit;
+
+nb0=nb0_init+nb0_between+nb0_implicit+nb0_end;
 
 
 %intersperse the b0's..
@@ -29,13 +34,17 @@ spacing=ceil(ndir/nb0);
 % siemens scanner puts a b0 automatically, so don't need this..
  %put first zero
 
+  sampling_withb0=optimal.data;
+ 
  if(nb0_init>0);
- sampling_withb0=[zeros(nb0_init,4); optimal.data];
- else
- sampling_withb0=optimal.data;
+ sampling_withb0=[zeros(nb0_init,4);  sampling_withb0];
  end
  
 
+ if(nb0_end>0);
+ sampling_withb0=[sampling_withb0; zeros(nb0_end,4)];
+ end
+ 
 
 for i=1:nb0_between
     
