@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ "$#" -lt 3 ]
+then
+  echo "This program computes surface distances between two label map nifti files, using the specified label numbers (can be any number of label numbers)"
+  echo "Usage: $0 <nifti label map 1> <nifti label map 2> <out_csv_file>  <input label num 1> <input label num 2> ... "
+  exit 0
+fi
 
 seg1=$1
 seg2=$2

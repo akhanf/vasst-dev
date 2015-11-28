@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+  echo "Usage: <output image> <input images ...>"
+  exit 0
+fi
+
+
+out=$1
+shift 1
+
+N=$#
+cmd="fslmaths $1"
+shift 1
+
+for im in $@
+do
+
+ cmd="$cmd -add $im"
+
+done
+
+cmd="$cmd -div $N $out"
+
+echo $cmd
+$cmd

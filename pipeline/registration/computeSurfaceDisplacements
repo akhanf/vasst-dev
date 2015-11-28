@@ -1,5 +1,28 @@
 #!/bin/bash
 
+# takes a surfdisp cfg file in , e.g.: ~/vasst-dev-local/pipeline/cfg/surf_disp/hippAmyg.cfg
+
+
+#config file will set:
+
+#surfdisp_name=   #name of config file (for creating output dir)
+#template_4d=  #path to template 4D seg  (absolute path) -- could potentially be MNI atlas 
+#
+#index_list=		#label list file for selecting what channels to use? -- would enable shape analysis from any MNI atlas
+#			#name,index (into 4D image)
+#target_4d_path=   #path to 4D segmentations (will be prepended with subjid)
+#resample_res=  #isotropic resolution to resample images
+#isothreshold=  #threshold for generating isosurface
+#genpbs_opts=  #options for generatePBSfluidmatch
+		#presmoothing??
+
+
+
+
+# provide segs that are already coregistered to some common (e.g. MNI152_1mm) space
+
+
+
 function usage {
  echo "Usage $0 <subjid/list> <config_file> <options>"
  echo "   -o output_dir		Set output directory (default .)"
@@ -28,8 +51,13 @@ if [ -f $1 ]
 then
   source $cfg_file
 else
+  if [ -f $PIPELINE_CFG_DIR/surf_disp/$1 ]
+  then
+   source $PIPELINE_CFG_DIR/surf_disp/$1 
+  else
   echo "config file doesn't exist!"
   exit 0
+  fi
 fi
  
 shift 1
@@ -45,25 +73,6 @@ while getopts "o:" options; do
  esac
 done
 
-
-
-#config file will set:
-
-#surfdisp_name=   #name of config file (for creating output dir)
-#template_4d=  #path to template 4D seg  (absolute path) -- could potentially be MNI atlas 
-#
-#index_list=		#label list file for selecting what channels to use? -- would enable shape analysis from any MNI atlas
-#			#name,index (into 4D image)
-#target_4d_path=   #path to 4D segmentations (will be prepended with subjid)
-#resample_res=  #isotropic resolution to resample images
-#isothreshold=  #threshold for generating isosurface
-#genpbs_opts=  #options for generatePBSfluidmatch
-		#presmoothing??
-
-
-
-
-# provide segs that are already coregistered to some common (e.g. MNI152_1mm) space
 
 
 out_dir=surfdisp_$surfdisp_name
@@ -102,17 +111,24 @@ do
 
 done
 
+nind=`cat $index_list | wc -l`
 
 #get crop params 
 avgall=$template_dir/avgAll.img
 avgall_crop=$template_dir/avgAll_crop.img
 paddim=20
 cropparam=$template_dir/crop_param.txt
+zdiv=8 # divisibility for MPI parallel
 
 if [ ! -e $cropparam ]
 then
+if [ "$nind" == "1" ]
+then
+CropImageToSegExtents $ana $ana $avgall_crop  $paddim $cropparam 
+else
 AverageImage $avgall $template_dir/*_ana.img
-CropImageToSegExtents $avgall $avgall $avgall_crop $paddim $cropparam 
+CropImageToSegExtents $avgall $avgall $avgall_crop $paddim $cropparam $zdiv
+fi
 fi
 
 nstruct=`cat $index_list | wc -l`
@@ -158,7 +174,8 @@ do
 
 subj_dir=$output_dir/$subj
 
-target_dir=$output_dir/$subj/surfdisp_$surfdisp_name
+#put everything in the same surfdisp root dir
+target_dir=$out_dir/$subj
 mkdir -p $target_dir
 
 echo $subj
@@ -214,11 +231,18 @@ done
  #run lddmm
  echo "runLDDMM -o "$genpbs_opts" `pwd`/$template_img_list `pwd`/$target_img_list $lddmm_dir"
  runLDDMM -o "$genpbs_opts" `pwd`/$template_img_list `pwd`/$target_img_list $lddmm_dir
+
+ hmap=$lddmm_dir/Hmap.vtk 
+ kimap=$lddmm_dir/Kimap.vtk 
+
+if [ ! -e $kimap ]
+ then
  pushd $lddmm_dir
  sh $cmd
- popd 
 
- map=$lddmm_dir/HmapGreedy000.vtk 
+ gatherData Hmap Kimap
+  popd 
+fi
 
 for line in `cat $index_list`
 do
@@ -243,7 +267,7 @@ do
 
 
  #propagate surface
- TransformSurfaceWithMaps $template_byu_cpp $map $prop_surf
+ TransformSurfaceWithMaps $template_byu_cpp $kimap $prop_surf
  ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`
  
  #generate inout displacements

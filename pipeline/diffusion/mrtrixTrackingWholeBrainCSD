@@ -1,0 +1,74 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+ if [ -e $subj_dir/dti/distortCorrect ]
+ then  
+   dti_dir=$subj_dir/dti/distortCorrect
+ else
+ 
+  if [ -e $subj_dir/dti/eddyCorrect ]
+  then
+    dti_dir=$subj_dir/dti/eddyCorrect 
+  else
+   echo "Eddy corrected or Distortion corrected DTI data does not exist for $subj"
+   continue
+  fi
+ fi
+
+ mrtrix_dir=$dti_dir/mrtrix
+ out_dir=$dti_dir/mrtrixTractographyCSD
+
+mkdir -p $out_dir
+
+brain_mask=$dti_dir/brainmask.nii.gz
+
+dwi=$mrtrix_dir/dwi.mif
+response=$mrtrix_dir/csd_response.txt
+fod=$mrtrix_dir/fod.mif
+
+tract_name=wholebrain
+tract=$out_dir/$tract_name.tck
+tract_vtk=$out_dir/$tract_name.vtk
+tract_camino=$out_dir/$tract_name.Bfloat
+
+fa=$dti_dir/dti_FA.nii.gz
+fa_thresh=0.15
+seed=$out_dir/seed.$tract_name.nii.gz
+
+#resample to 2mm iso for uniform seeding
+echo c3d $fa -resample-mm 2x2x2mm -o $seed
+c3d $fa -resample-mm 2x2x2mm -o $seed
+echo fslmaths $seed -thr $fa_thresh -bin $seed 
+fslmaths $seed -thr $fa_thresh -bin $seed 
+
+ntracts=100000
+ echo tckgen $fod $tract -seed_image $seed -mask $brain_mask -number $ntracts
+ tckgen -algorithm SD_Stream $fod $tract -seed_image $seed -mask $brain_mask -number $ntracts
+
+ runMatlabCmd convertTractsMRTrixToVTK "'$tract'" "'$tract_vtk'"
+ runMatlabCmd  convertTractsMRTrixToCamino "'$tract'" "'$tract_camino'"
+
+done #subj
+
+
