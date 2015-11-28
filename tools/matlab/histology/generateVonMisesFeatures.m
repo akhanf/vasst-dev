@@ -20,16 +20,30 @@ vm_mu2=zeros(size(hist_counts));
 vm_mix_adjrsquare=zeros(size(hist_counts));
 
 
+trace=featureVec(:,:,3);
 
 for i=1:size(hist_counts,1)
     for j=1:size(hist_counts,2)
-        
+ 
+
+if (trace(i,j)<1e-3)
+ continue;
+end
+
+       
+try
         [vm_a(i,j),vm_k(i,j),vm_mu(i,j),vm_adjrsquare(i,j)]=computeVonMisesFeatures(hist_counts{i,j},hist_centers{i,j});
 
         [vm_a1(i,j),vm_k1(i,j),vm_mu1(i,j),vm_a2(i,j),vm_k2(i,j),vm_mu2(i,j),vm_mix_adjrsquare(i,j)]=computeMixtureVonMisesFeatures(hist_counts{i,j},hist_centers{i,j});
-        
+
+catch
+
+		
+	continue;
+end
+
     end
-    i
+i
 end
 
 

@@ -8,9 +8,7 @@ function [a,k,mu,adjrsquare]=computeVonMisesFeatures(hist_counts,hist_centers)
 
     vmEqn='a*exp(k*cos(2*(x-mu)))./(2*pi*besseli(0,k))';
     [vm_fit,vm_gof,vm_out]=fit(theta, rho,vmEqn,'Lower',[0,0,-pi/2],'Upper',[Inf,Inf,pi/2]);
-    coeffnames(vm_fit);
 
-    [vm_fit,vm_gof,vm_out]=fit(theta, rho,vmEqn);
 
 
     a=vm_fit.a;
