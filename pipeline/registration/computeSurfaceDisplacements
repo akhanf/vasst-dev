@@ -263,7 +263,7 @@ do
  disp_vtk=$target_dir/templateSurface_${struct}_inout.vtk
 
  #now compute surface vector displacements
- GenSurfDisplacementTxt $template_byu_cpp $map $disp_csv
+ GenSurfDisplacementTxt $template_byu_cpp $kimap $disp_csv
 
 
  #propagate surface
