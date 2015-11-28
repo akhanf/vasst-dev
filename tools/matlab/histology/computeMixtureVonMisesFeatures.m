@@ -7,10 +7,6 @@ function [a1,k1,mu1,a2,k2,mu2,adjrsquare]=computeMixtureVonMisesFeatures(hist_co
     rho=reshape(hist_counts,length(hist_counts),1);
 
     
-    
-    vmEqn='a*exp(k*cos(2*(x-mu)))./(2*pi*besseli(0,k))';
-    [vm_fit,vm_gof,vm_out]=fit(theta, rho,vmEqn,'Lower',[0,0,-pi/2],'Upper',[Inf,Inf,pi/2]);
-    
     vmMixEqn='a1*exp(k1*cos(2*(x-mu1)))./(2*pi*besseli(0,k1))+a2*exp(k2*cos(2*(x-mu2)))./(2*pi*besseli(0,k2))';
     [vm_fit,vm_gof,vm_out]=fit(theta, rho,vmMixEqn,'Lower',[0,0,0,0,-pi/2,-pi/2],'Upper',[Inf,Inf,Inf,Inf,pi/2,pi/2]);
     
