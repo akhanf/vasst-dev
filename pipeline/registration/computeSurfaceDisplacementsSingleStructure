@@ -26,6 +26,7 @@
 function usage {
  echo "Usage $0 <subjid/list> <config_file> <options>"
  echo "   -o output_dir		Set output directory (default .)"
+ echo "   -t 			Run template job only"
  echo ""
 }
 
@@ -62,12 +63,16 @@ fi
  
 shift 1
 
+template_only=0
+
 
 #flag o with argument "o:"
-while getopts "o:" options; do
+while getopts "o:t" options; do
  case $options in
     o ) echo "Using output directory: $OPTARG"
 	output_dir=$OPTARG;;
+    t ) echo "Running template job only"
+ 	template_only=1;;
     * ) usage
 	exit 0;;
  esac
@@ -75,7 +80,7 @@ done
 
 
 
-out_dir=surfdisp_$surfdisp_name
+out_dir=surfdisp_singlestruct_$surfdisp_name
 mkdir -p $out_dir
 
 
@@ -97,6 +102,9 @@ do
  struct=${line%%,*}
  index=${line##*,}
 
+ template_img_list=$template_dir/template_images.$struct.txt
+
+ 
  nii=$template_dir/$struct.nii.gz
  ana=$template_dir/${struct}_ana.img
 
@@ -109,45 +117,21 @@ do
  mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
  fi
 
-done
 
-nind=`cat $index_list | wc -l`
 
 #get crop params 
-avgall=$template_dir/avgAll.img
-avgall_crop=$template_dir/avgAll_crop.img
 paddim=20
-cropparam=$template_dir/crop_param.txt
+cropparam=$template_dir/${struct}_crop_param.txt
 zdiv=8 # divisibility for MPI parallel
+crop=$template_dir/${struct}_ana_crop.img 
 
 if [ ! -e $cropparam ]
 then
-if [ "$nind" == "1" ]
-then
-CropImageToSegExtents $ana $ana $avgall_crop  $paddim $cropparam 
-else
-AverageImage $avgall $template_dir/*_ana.img
-CropImageToSegExtents $avgall $avgall $avgall_crop $paddim $cropparam $zdiv
-fi
+CropImageToSegExtents $ana $ana $crop  $paddim $cropparam 
 fi
 
-nstruct=`cat $index_list | wc -l`
- template_img_list=$template_dir/template_images.txt
- echo $nstruct > $template_img_list
 
-#now crop each template seg
-for line in `cat $index_list`
-do
- 
- struct=${line%%,*}
- index=${line##*,}
 
- ana=$template_dir/${struct}_ana.img
- crop=$template_dir/${struct}_ana_crop.img 
- if [ ! -e $crop ]
- then
- CropImage $ana `cat $cropparam` $crop
- fi
 
  byu_noext=$template_dir/${struct}_ana_crop
  byu=$template_dir/${struct}_ana_crop.byu
@@ -160,11 +144,29 @@ do
   ConvertBYU_BW-CPP $byu $byu_cpp `GetImageDims $crop`
  fi
 
- #add to image list for lddmm
+ if [ ! -e $template_img_list ]
+ then
+ echo 1 > $template_img_list
  echo `pwd`/$crop >> $template_img_list
- 
+ fi
+
 
 done
+
+
+
+
+
+
+
+
+if [ "$template_only" = "1" ]
+then
+
+exit 0
+
+fi
+
 
 
 
@@ -181,9 +183,6 @@ mkdir -p $target_dir
 echo $subj
 #put pipeline commands here
 
- nstruct=`cat $index_list | wc -l`
- target_img_list=$target_dir/target_images.txt
- echo $nstruct > $target_img_list
 
 #read index_list to pull out indices of interest
 #pull out indices of interest
@@ -194,37 +193,59 @@ do
  index=${line##*,}
 
  nii=$target_dir/$struct.nii.gz
- ana=$target_dir/${struct}_ana.img
+
+ template_img_list=$template_dir/template_images.$struct.txt
+ target_img_list=$target_dir/target_images.$struct.txt
+ echo 1 > $target_img_list
 
 if [ ! -e $nii ]
 then 
  fslroi $subj_dir/$target_4d_path $nii $index 1
 fi
+ 
+ template_nii=$template_dir/${struct}.nii.gz
+ reg=$target_dir/${struct}_reg.nii.gz
+
+ rigid_xfm=$target_dir/${struct}_to_template.xfm
+
+ #perform registration to template 
+ if [ ! -e $rigid_xfm ]
+then
+ echo reg_aladin -flo $nii -ref $template_nii -res $reg -rigOnly -aff $rigid_xfm 
+ reg_aladin -flo $nii -ref $template_nii -res $reg -rigOnly -aff $rigid_xfm 
+fi
+
+
+ ana=$target_dir/${struct}_reg_ana.img
 
  if [ ! -e $ana ]
 then
- mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
+ mri_convert $reg $ana -vs $resample_res $resample_res $resample_res
 fi
 
- crop=$target_dir/${struct}_ana_crop.img 
+ crop=$target_dir/${struct}_reg_ana_crop.img 
+ cropparam=$template_dir/${struct}_crop_param.txt
+
  if [ ! -e $crop ]
  then
  CropImage $ana `cat $cropparam` $crop
  fi
 
-#don't need target surfaces for quantification, but creating just in case
 
- byu_noext=$target_dir/${struct}_ana_crop
- byu=$target_dir/${struct}_ana_crop.byu
+ byu_noext=$target_dir/${struct}_reg_ana_crop
+ byu=$target_dir/${struct}_reg_ana_crop.byu
 
  #create surfaces
   AnalyzeToBYU  $crop $isothreshold $byu_noext
 
+
+
+
  #add to image list for lddmm
  echo `pwd`/$crop >> $target_img_list
-done 
 
- lddmm_dir=$target_dir/lddmm
+ lddmm_dir=$target_dir/lddmm_${struct}
+ 
  cmd=`pwd`/$lddmm_dir/cmd.pbs 
 
  rm -f $cmd
@@ -235,6 +256,8 @@ done
  hmap=$lddmm_dir/Hmap.vtk 
  kimap=$lddmm_dir/Kimap.vtk 
 
+
+#here, lddmm job can be submitted
 if [ ! -e $kimap ]
  then
  pushd $lddmm_dir
@@ -244,11 +267,8 @@ if [ ! -e $kimap ]
   popd 
 fi
 
-for line in `cat $index_list`
-do
  
- struct=${line%%,*}
- index=${line##*,}
+ #surface and displacement processing
 
  template_byu=$template_dir/${struct}_ana_crop.byu
  template_byu_cpp=$template_dir/${struct}_ana_crop_cpp.byu
@@ -286,12 +306,10 @@ echo GenSurfDisplacementTxt $template_byu_cpp $hmap $disp_csv
  ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
 
 
-done
+done #structure
 
 
 
-
-
-done
+done #subj
 
 
