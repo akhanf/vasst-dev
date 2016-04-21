@@ -2,7 +2,7 @@ function [nmask,L] = watershed2(I,reconR)
 %% compute gradient magnitude
 
 %Neo default is 5, Hp is 6.
-if ~exist(reconR)
+if ~exist('reconR')
     reconR=5;
 end
 
