@@ -5,12 +5,12 @@ function  generateFeatureMaps(tif,res_microns,pad_microns)
 %default uses 100um+5um pad -- Maged's 20um used 50um pad -- 
 
 
-if ~exist(res_microns)
+if ~exist('res_microns')
     %resolution of output feature maps, in microns
     res_microns=100;
 end
 
-if ~exist(pad_microns)
+if ~exist('pad_microns')
     %padding of each chunk, in microns -- default is ~approx radius of neuron
     pad_microns=5;
 end
