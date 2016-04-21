@@ -1,5 +1,19 @@
-function  generateFeatureMaps(tif)
+function  generateFeatureMaps(tif,res_microns,pad_microns)
 %subj,specimen,slice,stain)
+
+
+%default uses 100um+5um pad -- Maged's 20um used 50um pad -- 
+
+
+if ~exist(res_microns)
+    %resolution of output feature maps, in microns
+    res_microns=100;
+end
+
+if ~exist(pad_microns)
+    %padding of each chunk, in microns -- default is ~approx radius of neuron
+    pad_microns=5;
+end
 
 
 %tif='F:\Histology\EPI_P040\tif\EPI_P040_Neo_06_NEUN.tif';
@@ -7,46 +21,37 @@ function  generateFeatureMaps(tif)
 
 [path,name,ext]=fileparts(tif);
 
+split=strsplit(name,'_');
+
 %get stain type at end of name:
 s=name;
-for i=1:5
-    [token,s]=strtok(s,'_');
-end
-stain_type=token;
-    
-subj=name(1:8);
-strct=name(10:12);
 
-lores_png=sprintf('%s/../100um_png/%s.png',path,name);
+subj=name(1:8);
+stain_type=split{end};
+strct=split{end-2}; %Hp or Neo
+
+
+lores_png=sprintf('%s/../%dum_png/%s.png',path,res_microns,name);
 
 if ~exist(lores_png)
-  system(sprintf('echo %s >> Missing_100um_png.txt',lores_png))
-  exit
+  system(sprintf('echo %s >> Missing_%dum_png.txt',lores_png,res_microns))
+else
+lores=imread(lores_png);
 end
 
-lores=imread(lores_png);
 
-
-SF = strcmp(strct,'Neo');
     
-%if (SF == 1);
-%outdir=sprintf('%s/../100um_FeatureMaps',path);
-%outdir=sprintf('%s/../20um_FeatureMaps',path);
-
-%mkdir(outdir);
-
-%else
-
-%outdir=sprintf('%s/../100um_FeatureMaps_HpDG',path);
-outdir=sprintf('%s/../100um_FeatureMaps',path);
+outdir=sprintf('%s/../%dum_FeatureMaps',path,res_microns);
 mkdir(outdir);
 
 %end
 
 outmap=sprintf('%s/%s.mat',outdir,name);
 
+%0.5um/pixel
+hist_res=0.5;
 
-scalefac=200;
+scalefac=res_microns./hist_res;
 
 
 imgSizes=mexAperioTiff(tif);
@@ -116,7 +121,7 @@ featureVec_big=zeros(Nx,Ny,length(features_bysize));
 
 
 %padwidth should be radius of pyramidal neuron (say 10um/2 = 5um)
-padWidth=5./0.5; %in pixels
+padWidth=pad_microns./hist_res; %in pixels
 
 
 %figure; 
@@ -157,15 +162,14 @@ for i=1:Nx
             continue
         end
         
-        SF = strcmp(strct,'Neo');
+           
+        if (strcmp(strct,'Neo'))
     
-        if (SF == 1);
-    
-        [wL] = watershed2(preWS); 
+        [wL] = watershed2(preWS,5); 
 
-        else 
+        else if (strcmp(strct,'Hp'));
             
-        [wL] = watershed_hp(preWS); 
+        [wL] = watershed2(preWS,6); 
 
 
         end 
@@ -180,7 +184,7 @@ for i=1:Nx
             
             props= regionprops(neuronCC,'Eccentricity','Area','Perimeter','Orientation','Centroid');  
             
-            featureVec(i,j,2)=mean(cat(1,props.Area)).*0.25;  %in units of um^2
+            featureVec(i,j,2)=mean(cat(1,props.Area)).*hist_res^2;  %in units of um^2
             featureVec(i,j,3)=mean(cat(1,props.Perimeter));
 
           
