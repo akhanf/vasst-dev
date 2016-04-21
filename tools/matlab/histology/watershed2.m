@@ -1,5 +1,10 @@
-function [nmask,L] = watershed2(I) 
+function [nmask,L] = watershed2(I,reconR) 
 %% compute gradient magnitude
+
+%Neo default is 5, Hp is 6.
+if ~exist(reconR)
+    reconR=5;
+end
 
 hy = fspecial('sobel');
 hx = hy';
@@ -12,13 +17,15 @@ gradmag = sqrt(Ix.^2 + Iy.^2);
 %Lrgb = label2rgb(L);
 %figure, imshow(Lrgb), title('Watershed transform of gradient magnitude (Lrgb)')
 
-%% Morphological reconstruction with disk r=4 -- clean up outside of neurons
+%% Morphological reconstruction with disk r=reconR -- clean up outside of neurons
 
-se = strel('disk',5);
+% Algorithm for Hippocampus used r=6 instead of r=5.. 
+
+se = strel('disk',reconR);
 Ie = imerode(I, se);
 Iobr = imreconstruct(Ie, I);
 
-%% Morphological reconstruction in opposite direction (dilation), r=4,  clean up inside of neurons
+%% Morphological reconstruction in opposite direction (dilation), r=reconR,  clean up inside of neurons
 
 Iobrd = imdilate(Iobr, se);
 Iobrcbr = imreconstruct(imcomplement(Iobrd), imcomplement(Iobr));
