@@ -29,19 +29,19 @@ lores=imread(lores_png);
 
 SF = strcmp(strct,'Neo');
     
-if (SF == 1);
+%if (SF == 1);
 %outdir=sprintf('%s/../100um_FeatureMaps',path);
-outdir=sprintf('%s/../20um_FeatureMaps',path);
+%outdir=sprintf('%s/../20um_FeatureMaps',path);
 
-mkdir(outdir);
+%mkdir(outdir);
 
-else
+%else
 
 %outdir=sprintf('%s/../100um_FeatureMaps_HpDG',path);
 outdir=sprintf('%s/../100um_FeatureMaps',path);
 mkdir(outdir);
 
-end
+%end
 
 outmap=sprintf('%s/%s.mat',outdir,name);
 
