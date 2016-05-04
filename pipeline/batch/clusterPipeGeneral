@@ -1,0 +1,74 @@
+#!/bin/bash
+
+#run a pipeline job on the cluster
+#pipeline jobs take subjids as args
+
+if [ "$#" -lt 5 ]
+then 
+ echo "PBS pipeline submit script. For optional args, use \"\" to set to blank" 
+ echo "Usage: $0 <name of pipeline script (required)>  \"<pre_subjid_args (optional)>\" \"<post_id_args (optional)>\" \"<PBS opts (optional)>\" \"<subjids or subjlist (required)>\""
+  exit 0
+fi
+
+output_dir=.
+
+pipeline_script=$1
+pre_args=$2
+post_args=$3
+pbs_opts=$4
+
+
+shift 4
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$@
+fi
+
+
+echo "pipeline: $pipeline_script"
+echo "pre_args: $pre_args"
+echo "post_args: $post_args"
+echo "pbs_opts: $pbs_opts"
+echo "subjids: $subjids"
+
+echo ""
+echo "Running with the following arguments:"
+echo "  Pipeline script:  $pipeline_script"
+echo "  Additional arguments: $@"
+echo "  Subjects: "
+echo "$subjids"
+echo ""
+echo "If correct, enter y"
+read check
+if [ ! "$check" = "y" ]
+then
+  echo "Quitting..."
+  exit 0
+else
+  echo "Running Jobs..."
+
+fi
+
+for subj in $subjids
+do
+
+
+
+pbs_dir=$output_dir/$subj/pbs
+mkdir -p $pbs_dir
+
+
+scriptname=${pipeline_script##*/} #strip leading path
+name=$scriptname.$subj
+job=$pbs_dir/$name
+
+echo $pipeline_script $pre_args $subj $post_args > $job
+
+qsub -N $name -w `pwd`/$pbs_dir -d `pwd` -l "walltime=72:00:00" -l "mem=6gb" $pbs_opts $job
+
+done
+
+
+
