@@ -2,7 +2,8 @@
 
 if [ "$#" -lt 1 ]
 then
- echo "Usage $0 <subjid/list>"
+ echo "Usage $0 <subjid/list> <opts>"
+ echo "  -l <lmax>  : default 6"
  exit 0
 fi
 
@@ -14,6 +15,17 @@ then
 else
  subjids=$1
 fi
+
+shift 1
+
+while getopts "l:" options; do
+ case $options in
+    l ) echo "Using custom lmax=$OPTARG"
+       lmax=$OPTARG;;
+ esac
+done
+
+
 
 
 for subj in $subjids
@@ -45,10 +57,18 @@ dwi_bval=$dti_dir/dwi.bval
 dwi_vol=$dti_dir/dwi.nii.gz
 brain_mask=$dti_dir/brainmask.nii.gz
 
+nlines=`cat $dwi_bvec | wc -l`
+
+if [ "$nlines" = "3" ]
+then
+dwi_bvec_t=$dwi_bvec
+dwi_bval_t=$dwi_bval
+else
 dwi_bvec_t=$dti_dir/dwi.bvec_t
 dwi_bval_t=$dti_dir/dwi.bval_t
 runMatlabCmd transposeBvec "'$dwi_bvec'" "'$dwi_bvec_t'"
 runMatlabCmd transposeBvec "'$dwi_bval'" "'$dwi_bval_t'"
+fi
 
 dwi=$out_dir/dwi.mif
 response=$out_dir/csd_response.txt
@@ -56,10 +76,10 @@ fod=$out_dir/fod.mif
 
 echo mrconvert -fslgrad $dwi_bvec_t $dwi_bval_t $dwi_vol $dwi
 mrconvert -fslgrad $dwi_bvec_t $dwi_bval_t $dwi_vol $dwi
-echo dwi2response $dwi $response -mask $brain_mask
-dwi2response $dwi $response -mask $brain_mask
-echo dwi2fod $dwi $response $fod -mask $brain_mask
-dwi2fod $dwi $response $fod -mask $brain_mask
+echo dwi2response $dwi $response -mask $brain_mask -lmax $lmax
+dwi2response $dwi $response -mask $brain_mask -lmax $lmax
+echo dwi2fod $dwi $response $fod -mask $brain_mask -lmax $lmax
+dwi2fod $dwi $response $fod -mask $brain_mask -lmax $lmax
 
 
 done #subj
