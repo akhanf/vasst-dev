@@ -3,8 +3,15 @@
 function usage {
  echo "Usage $0 <subjid/list>  <options>"
  echo "   -o output_dir		Set output directory (default .)"
+ echo "   -L <label file>   Use custom label (segmentation) nifti file"
+ echo "   -T <label txt>   Use custom label text file"
+ echo "   -b <bfloat>     Use custom tractography streamlines input, relative to subj dir"
+
  echo ""
 }
+
+
+#inputs bfloat
 
 if [ "$#" -lt 1 ]
 then
@@ -25,8 +32,10 @@ fi
 
 shift 1 #shift by number of required arguments (incl subjid/list)
 
+use_custom_bfloat=0
+
 #flag o with argument "o:"
-while getopts "o:L:" options; do
+while getopts "o:L:T:b:" options; do
  case $options in
     o ) echo "Using output directory: $OPTARG"
 	output_dir=$OPTARG;;
@@ -34,6 +43,9 @@ while getopts "o:L:" options; do
 	label_path=$OPTARG;;
     T ) echo "Using custom label name txt file: $OPTARG"
 	label_txt_name=$OPTARG;;
+    b ) echo "Using custom bfloat tracts: $OPTARG"
+	use_custom_bfloat=1
+	tract_bfloat_relative=$OPTARG;;
     * ) usage
 	exit 0;;
  esac
@@ -67,13 +79,17 @@ echo $subj
 
 
  camino_dir=$dti_dir/caminoDTI
- track_dir=$dti_dir/caminoTractographyDTI
  fa=$camino_dir/fa.nii.gz
  md=$camino_dir/md.nii.gz
 
-tract_name=wholebrain
 
-tract_bfloat=$track_dir/$tract_name.Bfloat
+
+if [ "$use_custom_bfloat" = "0" ]
+then
+tract_bfloat=$dti_dir/caminoTractographyDTI/wholebrain.Bfloat
+else
+tract_bfloat=$subj_dir/$tract_bfloat_relative
+fi
 
 
 labels=$subj_dir/$label_path
@@ -109,13 +125,14 @@ else
  continue
 fi
 
-out_dir=$camino_dir/connectivity
+in_tract_dir=${tract_bfloat%/*}
+out_dir=$in_tract_dir/connectivity
 mkdir -p $out_dir
 
 labels_clean=$out_dir/labels_clean.nii.gz
 
-if false
-then
+#if false
+#then
 #remove unused labels 
 runMatlabCmd removeUnusedLabels "'$labels'" "'$labels_clean'" "'$label_txt'"
 
@@ -129,7 +146,7 @@ mv $out_dir/conmat_ts.csv $out_dir/conmat_FA.csv
 runMatlabCmd reorderCaminoConnectivityMatrix "'$out_dir/conmat_sc.csv'" "'$label_txt'" "'$out_dir/connectivity_ntracts.mat'"
 runMatlabCmd reorderCaminoConnectivityMatrix "'$out_dir/conmat_FA.csv'" "'$label_txt'" "'$out_dir/connectivity_meanFA.mat'"
 
-fi
+#fi
 
 vol_txt=$out_dir/label_volumes.txt
 rm -f $vol_txt
