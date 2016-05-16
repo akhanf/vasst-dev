@@ -1,0 +1,38 @@
+#!/bin/bash
+
+subjlist=$1
+
+#--------
+# Prerequisite: need to import data first
+#--------
+
+#importT1 <dicom/nifti>  <subjid>
+
+
+#this atlas should exist in $PIPELINE_ATLAS_DIR
+atlas=MNI152_1mm
+
+#this label group should exist as a folder in $PIPELINE_ATLAS_DIR/$atlas/labels/t1
+labelgroup=HarvardOxford 
+
+for subj in `cat $subjlist`
+do
+
+
+#T1 and label processing
+preprocT1 $subj
+reg_intersubj_aladin  t1 $atlas $subj
+reg_bspline_f3d  t1 $atlas $subj
+propLabels_reg_bspline_f3d  t1 $labelgroup $atlas $subj
+
+
+done
+
+#generate QC
+genOverlay_brainmask $subjlist
+genOverlay_affine_atlasReg $atlas $subjlist 
+genOverlay_bspline_atlasReg $atlas $subjlist 
+
+
+
+
