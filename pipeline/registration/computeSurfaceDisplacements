@@ -8,8 +8,9 @@
 #surfdisp_name=   #name of config file (for creating output dir)
 #template_4d=  #path to template 4D seg  (absolute path) -- could potentially be MNI atlas 
 #
-#index_list=		#label list file for selecting what channels to use? -- would enable shape analysis from any MNI atlas
+#index_list=		#label list file for selecting what channels to use
 #			#name,index (into 4D image)
+# optional (template_index_list, target_index_list)
 #target_4d_path=   #path to 4D segmentations (will be prepended with subjid)
 #resample_res=  #isotropic resolution to resample images
 #isothreshold=  #threshold for generating isosurface
@@ -91,7 +92,15 @@ fi
 
 #read index_list to pull out indices of interest
 #pull out indices of interest
-for line in `cat $index_list`
+if [ -e $template_index_list ]
+then
+  t_index_list=$template_index_list
+else
+  t_index_list=$index_list
+fi
+
+
+for line in `cat $t_index_list`
 do
  
  struct=${line%%,*}
@@ -111,7 +120,7 @@ do
 
 done
 
-nind=`cat $index_list | wc -l`
+nind=`cat $t_index_list | wc -l`
 
 #get crop params 
 avgall=$template_dir/avgAll.img
@@ -131,12 +140,12 @@ CropImageToSegExtents $avgall $avgall $avgall_crop $paddim $cropparam $zdiv
 fi
 fi
 
-nstruct=`cat $index_list | wc -l`
+nstruct=`cat $t_index_list | wc -l`
  template_img_list=$template_dir/template_images.txt
  echo $nstruct > $template_img_list
 
 #now crop each template seg
-for line in `cat $index_list`
+for line in `cat $t_index_list`
 do
  
  struct=${line%%,*}
@@ -166,6 +175,13 @@ do
 
 done
 
+if [ -e $target_index_list ]
+then
+  t_index_list=$target_index_list
+else
+  t_index_list=$index_list
+fi
+
 
 
 for subj in $subjids
@@ -181,13 +197,13 @@ mkdir -p $target_dir
 echo $subj
 #put pipeline commands here
 
- nstruct=`cat $index_list | wc -l`
+ nstruct=`cat $t_index_list | wc -l`
  target_img_list=$target_dir/target_images.txt
  echo $nstruct > $target_img_list
 
 #read index_list to pull out indices of interest
 #pull out indices of interest
-for line in `cat $index_list`
+for line in `cat $t_index_list`
 do
  
  struct=${line%%,*}
@@ -244,7 +260,7 @@ if [ ! -e $kimap ]
   popd 
 fi
 
-for line in `cat $index_list`
+for line in `cat $t_index_list`
 do
  
  struct=${line%%,*}
