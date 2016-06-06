@@ -28,6 +28,7 @@ function usage {
  echo "Usage $0 <subjid/list> <config_file> <options>"
  echo "   -o output_dir		Set output directory (default .)"
  echo "   -t 			Run template job only"
+ echo "   -N			Do not perform rigid registration"
  echo ""
 }
 
@@ -65,15 +66,17 @@ fi
 shift 1
 
 template_only=0
-
+no_reg=0
 
 #flag o with argument "o:"
-while getopts "o:t" options; do
+while getopts "o:tN" options; do
  case $options in
     o ) echo "Using output directory: $OPTARG"
 	output_dir=$OPTARG;;
     t ) echo "Running template job only"
  	template_only=1;;
+    N ) echo "Disabling rigid reg"
+	no_reg=1;;
     * ) usage
 	exit 0;;
  esac
@@ -222,7 +225,20 @@ fi
 
  rigid_xfm=$target_dir/${struct}_to_template.xfm
 
+
+if [ "$no_reg" = "1" ]
+then
+  reg_suffix="_"
+else
+  reg_suffix="_reg_"
+fi
+
+
+ ana=$target_dir/${struct}${reg_suffix}ana.img
  #perform registration to template 
+if [ "$no_reg" = "0" ]
+then
+
  if [ ! -e $rigid_xfm ]
 then
  echo reg_aladin -flo $nii -ref $template_nii -res $reg -rigOnly -aff $rigid_xfm 
@@ -230,14 +246,25 @@ then
 fi
 
 
- ana=$target_dir/${struct}_reg_ana.img
-
- if [ ! -e $ana ]
+if [ ! -e $ana ]
 then
  mri_convert $reg $ana -vs $resample_res $resample_res $resample_res
 fi
 
- crop=$target_dir/${struct}_reg_ana_crop.img 
+else
+ 
+
+if [ ! -e $ana ]
+then
+ mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
+fi
+
+fi
+
+
+
+ 
+ crop=$target_dir/${struct}${reg_suffix}ana_crop.img 
  cropparam=$template_dir/${struct}_crop_param.txt
 
  if [ ! -e $crop ]
@@ -246,8 +273,8 @@ fi
  fi
 
 
- byu_noext=$target_dir/${struct}_reg_ana_crop
- byu=$target_dir/${struct}_reg_ana_crop.byu
+ byu_noext=$target_dir/${struct}${reg_suffix}ana_crop
+ byu=$target_dir/${struct}${reg_suffix}ana_crop.byu
 
  #create surfaces
   AnalyzeToBYU  $crop $isothreshold $byu_noext
