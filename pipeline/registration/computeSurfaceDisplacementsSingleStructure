@@ -83,9 +83,9 @@ while getopts "o:tN" options; do
 done
 
 
-
 out_dir=surfdisp_singlestruct_$surfdisp_name
 mkdir -p $out_dir
+
 
 
 #prep template seg
@@ -100,10 +100,12 @@ fi
 
 #read index_list to pull out indices of interest
 #pull out indices of interest
-if [ -e $template_index_list ]
+if [ -n "$template_index_list" ]
 then
+  echo template_index_list defined
   t_index_list=$template_index_list
 else
+  echo template_index_list not defined, using index_list
   t_index_list=$index_list
 fi
 
@@ -115,16 +117,18 @@ do
 
  template_img_list=$template_dir/template_images.$struct.txt
 
- 
+ echo line: $line
  nii=$template_dir/$struct.nii.gz
  ana=$template_dir/${struct}_ana.img
 
  if [ ! -e $nii ]
  then
- fslroi $template_4d $nii $index 1
+echo  fslroi $template_4d $nii $index 1
+  fslroi $template_4d $nii $index 1
  fi
  if [ ! -e $ana ]
  then
+ echo mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
  mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
  fi
 
@@ -138,6 +142,7 @@ crop=$template_dir/${struct}_ana_crop.img
 
 if [ ! -e $cropparam ]
 then
+echo CropImageToSegExtents $ana $ana $crop  $paddim $cropparam 
 CropImageToSegExtents $ana $ana $crop  $paddim $cropparam 
 fi
 
@@ -151,7 +156,9 @@ fi
  if [ ! -e $byu_cpp ]
  then
  #create surfaces
+  echo AnalyzeToBYU  $crop $isothreshold $byu_noext
   AnalyzeToBYU  $crop $isothreshold $byu_noext
+  echo ConvertBYU_BW-CPP $byu $byu_cpp `GetImageDims $crop`
   ConvertBYU_BW-CPP $byu $byu_cpp `GetImageDims $crop`
  fi
 
@@ -162,10 +169,24 @@ fi
  fi
 
 
+
+ byu_nii_xfm=$template_dir/${struct}_byuToNifti.xfm
+
+ #create surfaces in template nifti space
+ if [ -e $crop -a -e $cropparam -a ! -e $byu_nii_xfm ]
+ then
+  echo runMatlabCmd genBYUtoNiftiTransformFromCroppedAnalyze "'$crop'" "'$cropparam'" "'$byu_nii_xfm'"
+ runMatlabCmd genBYUtoNiftiTransformFromCroppedAnalyze "'$crop'" "'$cropparam'" "'$byu_nii_xfm'"
+ fi
+
+ byu_niispace=$template_dir/${struct}_nii.byu
+ if [ ! -e $byu_niispace -a -e $byu_nii_xfm ]
+ then
+  echo runMatlabCmd  transformByuLinearXfm "'$byu'" "'$byu_nii_xfm'" "'$byu_niispace'"
+  runMatlabCmd  transformByuLinearXfm "'$byu'" "'$byu_nii_xfm'" "'$byu_niispace'"
+ fi
+
 done
-
-
-
 
 
 
@@ -194,7 +215,7 @@ mkdir -p $target_dir
 echo $subj
 #put pipeline commands here
 
-if [ -e $target_index_list ]
+if [ -n "$target_index_list" ]
 then
   t_index_list=$target_index_list
 else
@@ -314,6 +335,9 @@ fi
  template_byu=$template_dir/${struct}_ana_crop.byu
  template_byu_cpp=$template_dir/${struct}_ana_crop_cpp.byu
 
+ byu_nii_xfm=$template_dir/${struct}_byuToNifti.xfm
+
+
  disp_csv=$target_dir/${struct}.surf_disp.csv
  disp_txt=$target_dir/${struct}.surf_disp.txt
  disp_vtk=$target_dir/templateSurface_${struct}_disp.vtk
@@ -323,29 +347,58 @@ fi
  inout_txt=$target_dir/${struct}.surf_inout.txt
  inout_vtk=$target_dir/templateSurface_${struct}_inout.vtk
 
+ prop_surf_template_nii=$target_dir/propSurface_${struct}_nii.byu
+ prop_surf_subj_nii=$target_dir/propSurface_${struct}_nii_regSubj.byu
+
+if [ ! -e $disp_csv ]
+then
  #now compute surface vector displacements
 echo GenSurfDisplacementTxt $template_byu_cpp $hmap $disp_csv
  GenSurfDisplacementTxt $template_byu_cpp $hmap $disp_csv
+fi
 
-
+if [ ! -e $prop_surf ]
+then
  #propagate surface
  echo TransformSurfaceWithMaps $template_byu_cpp $kimap $prop_surf
  TransformSurfaceWithMaps $template_byu_cpp $kimap $prop_surf
  echo ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`
  ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`
- 
+ fi
+
  #generate inout displacements
 
+if [ ! -e $inout_txt ]
+then
  echo "compdisp $template_byu $prop_surf > $inout_txt"
  compdisp $template_byu $prop_surf > $inout_txt
+fi
 
+if [ ! -e $inout_vtk ]
+then
  echo CombineBYUandSurfDist $template_byu $inout_txt $inout_vtk
  CombineBYUandSurfDist $template_byu $inout_txt $inout_vtk
+fi
 
+if [ ! -e $disp_vtk ]
+then
  sed 's/,/\ /g' $disp_csv > $disp_txt
  echo ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
  ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
+fi
 
+if [ ! -e $prop_surf_template_nii ]
+then
+ echo runMatlabCmd  transformByuLinearXfm "'$prop_surf'" "'$byu_nii_xfm'" "'$prop_surf_template_nii'"
+ runMatlabCmd  transformByuLinearXfm "'$prop_surf'" "'$byu_nii_xfm'" "'$prop_surf_template_nii'"
+fi
+
+
+if [ "$no_reg" = "0" -a ! -e $prop_surf_subj_nii ]
+then
+ echo runMatlabCmd  transformByuLinearXfm "'$prop_surf_template_nii'" "'$rigid_xfm'" "'$prop_surf_subj_nii'" "1"  # extra 1 is to invert, since the xfm is from subj to template, and we want template to subj
+ runMatlabCmd  transformByuLinearXfm "'$prop_surf_template_nii'" "'$rigid_xfm'" "'$prop_surf_subj_nii'" "1"
+fi
 
 done #structure
 
