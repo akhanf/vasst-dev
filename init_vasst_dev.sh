@@ -1,5 +1,16 @@
 #!/bin/bash
 
+#
+#  To install, add the following to your ~/.bashrc
+#
+# VASST_DEV_HOME=<path to your repository>/vasst-dev
+# if [ -f $VASST_DEV_HOME/init_vasst_dev.sh ]
+# then
+#  . $VASST_DEV_HOME/init_vasst_dev.sh
+# fi
+#
+#
+
 
 if [ ! -n "$PIPELINE_ATLAS_DIR" ]
 then
