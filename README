@@ -1,6 +1,15 @@
 vasst-dev repository
 
 
+Add the following to your ~/.bashrc file to set-up paths:
+
+VASST_DEV_HOME=<path to your repository>/vasst-dev
+if [ -f $VASST_DEV_HOME/init_vasst_dev.sh ]
+then
+ . $VASST_DEV_HOME/init_vasst_dev.sh 
+fi
+
+
 
 
 pipelines/
