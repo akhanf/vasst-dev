@@ -97,7 +97,7 @@ if (~skip_sweep)
     
 
 %sweep 1:
-for i=1:Nx
+parfor i=1:Nx
     
     for j=1:Ny
         
@@ -112,7 +112,7 @@ for i=1:Nx
         
         
     end
-    
+    i
 end
 
 threshold=getStainThreshold(xout,total_counts,stain_type);

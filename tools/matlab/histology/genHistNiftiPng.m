@@ -1,5 +1,5 @@
 % generate 100um png and nifti files
-function genHistNiftiPng ( datadir, varargin )
+function genHistNiftiPng ( datadir, out_res, varargin )
 
 
 %addpath('~/epilepsy/shared_data/scripts/histology');
@@ -9,7 +9,7 @@ subjs=varargin;
 
 
 %only generate 2um pngs for NEUN
-resolutions={100,20,2}; %100
+%resolutions={100,20,2}; %100
 %nii or png?
 %stain?
 %resolution?
@@ -19,9 +19,9 @@ resolutions={100,20,2}; %100
 
 %resolutions={2,100,10};
 
-for res=1:length(resolutions)
+%for res=1:length(resolutions)
     
-    out_res=resolutions{res};
+%    out_res=resolutions{res};
     
     out_res_mm=out_res/1000;
     
@@ -206,6 +206,6 @@ proceed=true;
         end
         
         
-    end
+%    end
 
 end

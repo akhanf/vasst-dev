@@ -44,6 +44,7 @@ mkdir(slice_dir);
 
 for slice=1:nslices
     
+
     
      coreg_nii=sprintf('%s/%s_%s_%02d_%s_regHE.nii.gz',coreg_dir,subj,struct,slice,stain);
 

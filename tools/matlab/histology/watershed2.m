@@ -74,6 +74,11 @@ if(cc.NumObjects==1)
     
     %no need for watershed, as no splitting required
     cc=bwconncomp(Iobrcbr>0);
+    if (cc.NumObjects==0)
+            nmask=zeros(size(I));
+            return;
+    end
+    
     numPix=cellfun(@numel,cc.PixelIdxList);
     [m_area,m_ind]=max(numPix);
     nmask=zeros(size(I));

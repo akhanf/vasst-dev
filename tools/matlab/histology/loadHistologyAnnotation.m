@@ -7,8 +7,18 @@ ds=res_microns./hist_microns;
 
 [path,annot_name,ext]=fileparts(annot_folder);
 
-out_dir=sprintf('%s/../%dum_nii_annot/histspace/%s',path,res_microns,annot_name);
+out_dir=sprintf('%s/../%dum_Annotations_%s',path,res_microns,annot_name);
 mkdir(out_dir);
+
+
+%for later, if we decide to add this..
+%d=dir(sprintf('%s/*',annot_folder));
+%isub = [d(:).isdir]; %# returns logical vector
+%annot_names = {d(isub).name}';
+%annot_names(ismember(annot_names,{'.','..'})) = [];
+
+
+
 
 files=dir(sprintf('%s/*.xml',annot_folder));
 
@@ -45,6 +55,8 @@ orientflag=orientflags(index);
 ds_size=ceil(imsize./ds);
 roi_ds=uint8(zeros(ds_size(1),ds_size(2)));
 
+features=cell(1,1);
+features{1}=annot_name;
 
 
 [contours,contoursClosed,names,names_alt]=readAperioXMLContours(xml);
@@ -73,35 +85,16 @@ end
             
 
 
-noRot_dir=sprintf('%s/../%dum_nii_annot/%s',path,res_microns,annot_name);
-mkdir(noRot_dir);
-out_mat=sprintf('%s/%s.mat',noRot_dir,name);
-roi=roi_ds;
-save(out_mat,'roi');
 
 
-
-mkdir(out_dir);
-
-roi=rotateImgTiffSpaceWithOrient(roi_ds,tif,orientcsv);
+%roi=roi_ds;
+featureVec=roi_ds;
 
 out_mat=sprintf('%s/%s.mat',out_dir,name);
-save(out_mat,'roi');
-
-
-%save as nifti
-nii=make_nii(imrotate(roi,-90),[res_microns./1000,res_microns./1000,4.4],[0,0,0],16);
-
-niifile=sprintf('%s/%s.nii',out_dir,name);
-save_nii(nii,niifile);
-gzip(niifile);
-delete(niifile);
-
-
-
-end
-
+save(out_mat,'features','res_microns','featureVec');
     
+
+end 
  
     
 end
