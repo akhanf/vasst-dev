@@ -1,0 +1,57 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0 <subjid/list>"
+ exit 0
+fi
+
+output_dir=`pwd`
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+
+in_dir=$subj_dir/dti/uncorrected
+out_dir=$subj_dir/dti/distortCorrect_eddy
+
+mkdir -p $out_dir
+
+
+#req'd images: dwi_1, dwi_2, hifi, 
+
+fslmaths $in_dir/hifi.nii.gz -Tmean $out_dir/hifi_Tmean.nii.gz
+bet $out_dir/hifi_Tmean.nii.gz $out_dir/hifi_Tmean_brain.nii.gz -m
+
+fslmerge  -t  $out_dir/dwi_uncorrected.nii.gz $in_dir/dwi_1.nii.gz $in_dir/dwi_2.nii.gz
+cat $in_dir/dwi_1.bval > $out_dir/dwi_uncorrected.bval
+cat $in_dir/dwi_1.bvec > $out_dir/dwi_uncorrected.bvec
+cat $in_dir/dwi_2.bval >> $out_dir/dwi_uncorrected.bval
+cat $in_dir/dwi_2.bvec >> $out_dir/dwi_uncorrected.bvec
+
+N=`fslval $in_dir/dwi_1.nii.gz dim4`
+
+indx=""; for i in `seq 1 $N`; do indx="$indx 1"; done; for i in `seq 1 $N`; do indx="$indx 2"; done; echo $indx > $out_dir/index.txt
+
+eddy --imain=$out_dir/dwi_uncorrected --mask=$out_dir/hifi_Tmean_brain_mask --acqp=$in_dir/pedir.txt --index=$out_dir/index.txt --bvecs=$out_dir/dwi_uncorrected.bvec --bvals=$out_dir/dwi_uncorrected.bval --topup=$in_dir/topup --out=$out_dir/dwi -v
+
+dwi_bvec=$out_dir/dwi.eddy_rotated_bvecs
+dwi_bval=$out_dir/dwi_uncorrected.bval
+dwi_vol=$out_dir/dwi.nii.gz
+brain_mask=$out_dir/hifi_Tmean_brain_mask.nii.gz
+
+
+dtifit -k $dwi_vol -o $out_dir/dti -m $brain_mask -r $dwi_bvec -b $dwi_bval
+
+done
