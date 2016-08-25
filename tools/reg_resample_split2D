@@ -1,0 +1,74 @@
+#!/bin/bash
+
+
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage: <in flo nii> <in reg_f3d_split2d_dir>  <out res nii> <any additional reg_resample options>"
+ exit
+fi
+
+flo=$1
+reg_dir=$2
+res=$3
+
+shift 3
+reg_resample_opts=$@
+
+#z=3
+dimsplit=z
+dimsplitn=3
+
+
+ref=$reg_dir/ref.nii.gz
+
+Nref=`fslval $ref dim$dimsplitn`
+Nflo=`fslval $flo dim$dimsplitn`
+
+echo Nref=$Nref Nflo=$Nflo
+
+if [ ! "$Nref" = "$Nflo" ]
+then
+ echo Ref and flo images do not have the same $dimsplit dimensions!
+ exit 0
+fi
+
+work_dir=/tmp/work_reg_resample_split2D_$RANDOM
+mkdir -p $work_dir
+
+mkdir -p $work_dir
+fslsplit $flo $work_dir/flo_ -z 
+
+for i in `seq 0 $((Nref-1))`
+do
+
+num=`printf %04d $i`
+
+refi=$reg_dir/ref_$num.nii.gz 
+floi=$work_dir/flo_$num.nii.gz 
+resi=$work_dir/res_$num.nii.gz 
+cppi=$reg_dir/cpp_$num.nii.gz 
+
+
+#in order for reg_f3d to work on 2D images, need to reset their orientations
+fslorient -deleteorient $floi
+fslorient -setsformcode 1 $floi
+
+reg_resample -ref $refi -flo $floi -res $resi -cpp $cppi $reg_resample_opts
+
+done
+
+fslmerge -z $res $work_dir/res_*.nii.gz
+
+#reset orientation back to the reference image
+sform=`fslorient -getsform $ref`
+fslorient -setsform $sform $res
+fslorient -setqform $sform $res
+
+
+#done
+#done
+
+rm -rf $work_dir
+
+

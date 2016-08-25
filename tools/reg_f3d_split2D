@@ -1,0 +1,117 @@
+#!/bin/bash
+
+
+
+
+
+
+
+
+
+if [ "$#" -lt 4 ]
+then
+ echo "Usage: <ref nii> <flo nii> <res nii> <out_dir>"
+ exit
+fi
+
+ref=$1
+flo=$2
+res=$3
+out_dir=$4
+#z=3
+dimsplit=z
+dimsplitn=3
+
+
+#for bending_energy in 0.005 0.01 0.02
+#do
+
+#for splinespacing in 1 2 4
+#do
+
+bending_energy=0.01 #this value was used previously for HE-exMRI registration
+splinespacing=1  
+
+#out_dir=$root_out_dir/reg_be${bending_energy}_ss${splinespacing}
+
+#res=$root_out_dir/res_be${bending_energy}_ss${splinespacing}
+
+
+
+Nref=`fslval $ref dim$dimsplitn`
+Nflo=`fslval $flo dim$dimsplitn`
+
+echo Nref=$Nref Nflo=$Nflo
+
+if [ ! "$Nref" = "$Nflo" ]
+then
+ echo Ref and flo images do not have the same $dimsplit dimensions!
+ exit 0
+fi
+
+
+mkdir -p $out_dir
+fslsplit $ref $out_dir/ref_ -z 
+fslsplit $flo $out_dir/flo_ -z 
+
+#clear log
+rm -f $out_dir/log.txt
+
+for i in `seq 0 $((Nref-1))`
+do
+
+num=`printf %04d $i`
+
+refi=$out_dir/ref_$num.nii.gz 
+floi=$out_dir/flo_$num.nii.gz 
+resi=$out_dir/res_$num.nii.gz 
+cppi=$out_dir/cpp_$num.nii.gz 
+
+defi=$out_dir/def_$num.nii.gz 
+dispi=$out_dir/disp_$num.nii.gz 
+jaci=$out_dir/jac_$num.nii.gz 
+jacLi=$out_dir/jacL_$num.nii.gz 
+
+#in order for reg_f3d to work on 2D images, need to reset their orientations
+fslorient -deleteorient $refi
+fslorient -deleteorient $floi
+fslorient -setsformcode 1 $refi
+fslorient -setsformcode 1 $floi
+
+echo "Running reg_f3d, saving stdout to $out_dir/log.txt..."
+echo "reg_f3d -ref $refi -flo $floi -res $resi -cpp $cppi -be $bending_energy -sx $splinespacing  >> $out_dir/log.txt"
+reg_f3d -ref $refi -flo $floi -res $resi -cpp $cppi -be $bending_energy -sx $splinespacing  >> $out_dir/log.txt
+
+
+ reg_transform -ref $refi -cpp2def $cppi $defi
+ reg_transform -ref $refi -def2disp $defi $dispi
+ reg_jacobian -ref $refi -cpp $cppi -jac $jaci
+ reg_jacobian -ref $refi -cpp $cppi -jacL $jacLi
+
+
+
+done
+
+
+#get original orientation to reset orientation back to the reference image
+sform=`fslorient -getsform $ref`
+
+#create 3D vols for all input and output files
+for im in ref flo res cpp def disp jac jacL
+do
+fslmerge -z $out_dir/$im.nii.gz $out_dir/${im}_*.nii.gz
+fslorient -setsform $sform $out_dir/$im.nii.gz
+fslorient -setqform $sform $out_dir/$im.nii.gz
+done
+
+
+cp -v $out_dir/res.nii.gz $res
+
+
+
+#done
+#done
+
+
+
+
