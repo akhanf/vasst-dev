@@ -6,7 +6,9 @@ function out_img=computeColourDeconvolve(in_img,MOD)
 
 %now to apply to RGB:
 
-od_img=- ( 255.*log(double(in_img)./255) ./ log(255) );
+% added +1 to avoid log(0) becoming Inf - Aug 30,2016
+
+od_img=- ( 255.*log(double(in_img+1)./255) ./ log(255) );
 
 %out_img=zeros(size(od_img));
 D=inv(MOD)';

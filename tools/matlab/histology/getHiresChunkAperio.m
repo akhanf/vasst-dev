@@ -22,11 +22,15 @@ bsizex=floor(dim(1)./Nx);
 bsizey=floor(dim(2)./Ny);
 
 beginx=[1:bsizex:dim(1)];
-beginx(end)=[];
+if(size(beginx,2)==(Nx+1))
+    beginx(end)=[];
+end
 endx=[beginx(2:end)-1,dim(1)];
 
 beginy=[1:bsizey:dim(2)];
+if(size(beginy,2)==(Ny+1))
 beginy(end)=[];
+end
 endy=[beginy(2:end)-1,dim(2)];
 
 

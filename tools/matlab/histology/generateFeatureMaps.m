@@ -112,7 +112,7 @@ parfor i=1:Nx
         
         
     end
-    i
+    %i;
 end
 
 threshold=getStainThreshold(xout,total_counts,stain_type);
