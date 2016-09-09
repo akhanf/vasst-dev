@@ -32,7 +32,8 @@ mkdir -p $out_dir
 #req'd images: dwi_1, dwi_2, hifi, 
 
 fslmaths $in_dir/hifi.nii.gz -Tmean $out_dir/hifi_Tmean.nii.gz
-bet $out_dir/hifi_Tmean.nii.gz $out_dir/hifi_Tmean_brain.nii.gz -m
+bet $out_dir/hifi_Tmean.nii.gz $out_dir/hifi_Tmean_brain.nii.gz -m -f 0.1
+cp $out_dir/hifi_Tmean_brain.nii.gz $out_dir/brainmask.nii.gz
 
 fslmerge  -t  $out_dir/dwi_uncorrected.nii.gz $in_dir/dwi_1.nii.gz $in_dir/dwi_2.nii.gz
 cat $in_dir/dwi_1.bval > $out_dir/dwi_uncorrected.bval
@@ -49,9 +50,16 @@ eddy --imain=$out_dir/dwi_uncorrected --mask=$out_dir/hifi_Tmean_brain_mask --ac
 dwi_bvec=$out_dir/dwi.eddy_rotated_bvecs
 dwi_bval=$out_dir/dwi_uncorrected.bval
 dwi_vol=$out_dir/dwi.nii.gz
-brain_mask=$out_dir/hifi_Tmean_brain_mask.nii.gz
+brain_mask=$out_dir/brainmask.nii.gz
+
+cp -v $dwi_bvec $out_dir/dwi.bvec
+cp -v $dwi_bval $out_dir/dwi.bval
 
 
 dtifit -k $dwi_vol -o $out_dir/dti -m $brain_mask -r $dwi_bvec -b $dwi_bval
+
+
+dwi_bvec_camino=$out_dir/dwi.bvec_camino
+runMatlabCmd flipdimBvec "'$dwi_bvec'" "[2,3]" "'$dwi_bvec_camino'"
 
 done

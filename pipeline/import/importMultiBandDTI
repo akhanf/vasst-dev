@@ -94,7 +94,8 @@ bval_in=$uncorr_dir/dwi_$i.bval
 
 #apply fix to the nifti volumes, which have an inherent Z (up/down) flip
 fixSiemensDiffusionNifti $dwi $dwi 
-runMatlabCmd fixSiemensDiffusionBvec "'$bvec_in'" "'$bvec_in'"
+#runMatlabCmd fixSiemensDiffusionBvec "'$bvec_in'" "'$bvec_in'"
+runMatlabCmd flipdimBvec "'$bvec_in'" "[2,3]" "'$bvec_in'"
 
 
 nslices=`fslval $dwi dim3`
@@ -159,6 +160,10 @@ dwi=$distort_dir/dwi.nii.gz
 brainmask=$distort_dir/brainmask.nii.gz
 
 
+bvec_camino=$distort_dir/dwi.bvec_camino
+runMatlabCmd flipdimBvec "'$bvec'" "[2,3]" "'$bvec_camino'"
+
+
 indices=`seq -s , 1 $N`
 
 
@@ -167,7 +172,7 @@ applytopup --imain=$dwi_list --datain=$petxt --inindex=$indices -t $uncorr_dir/t
 
 cp $bvec_in $bvec
 cp $bval_in $bval
-bet $dwi $brainmask
+bet $dwi $brainmask -f 0.1
 fslmaths $brainmask -bin $brainmask
 
 dtifit -k $dwi -o $distort_dir/dti -m $brainmask -r $bvec -b $bval
