@@ -1,0 +1,49 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo "Generates  Camino, VTK, and Probability Connectivity maps from existing Trackvis .trk file.  Writes files into <input_name>_..."
+  echo "Usage: $0 <in_trk> <in_ref_nii>"
+  exit 0
+fi
+
+in_trk=$1
+in_nii=$2
+
+if [ ! -e $in_trk ]
+then
+ echo "input $in_trk does not exist!"
+ exit 0
+fi
+
+if [ ! -e $in_nii ]
+then
+ echo "input $in_nii does not exist!"
+ exit 0
+fi
+
+
+bfloat=${in_trk%%.trk}.Bfloat
+bfloat_corr=${in_trk%%.trk}.corr.Bfloat
+vtk=${in_trk%%.trk}.vtk
+
+echo trackvis_to_camino -i $in_trk -o $bfloat
+trackvis_to_camino -i $in_trk -o $bfloat
+
+echo runMatlabCmd fixCaminoTrackvisOrigin "'$bfloat'" "'$in_nii'" "'$bfloat_corr'"
+runMatlabCmd fixCaminoTrackvisOrigin "'$bfloat'" "'$in_nii'" "'$bfloat_corr'"
+
+echo "vtkstreamlines  < $bfloat_corr > $vtk"
+vtkstreamlines  < $bfloat_corr > $vtk
+
+echo procstreamlines -header $in_nii -outputacm -outputsc -outputroot ${in_trk%%.trk}_  < $bfloat_corr
+procstreamlines -header $in_nii -outputacm -outputsc -outputroot ${in_trk%%.trk}_  < $bfloat_corr
+
+
+
+
+## working:
+
+
+
+
