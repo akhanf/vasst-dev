@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+echo "Usage: $0 <in trk file> <out vtk file>"
+exit 0
+fi
+
+trk=$1
+vtk=$2
+
+bfloat=${trk%%.trk}.bfloat
+
+trackvis_to_camino  -i $trk -o $bfloat
+
+vtkstreamlines < $bfloat > $vtk
+
