@@ -49,9 +49,9 @@ output_list="$output_list $img $mask"
 
 done
 
-echo slicesdir -o $output_list
+ slicesdir -o $output_list
 
-echo mv slicesdir $qc_dir/${out_name}_`timestamp`
+ mv slicesdir $qc_dir/${out_name}_`timestamp`
 
 echo "Use this to view:"
 echo "chromium-browser $qc_dir/${out_name}_`timestamp`/index.html"
