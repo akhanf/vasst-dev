@@ -37,6 +37,10 @@ desc=`dcmdump $first | grep SeriesDescription`
 desc_strip=${desc##*[}
 desc_strip=${desc_strip%%]*}
 
+#convert spaces and hyphens to underscores
+desc_strip=${desc_strip// /_}
+desc_strip=${desc_strip//-/_}
+
 out_name=${series}_${desc_strip}
 
  out_dir=$out/$out_name
