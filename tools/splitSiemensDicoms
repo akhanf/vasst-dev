@@ -32,11 +32,23 @@ do
 
  echo $first: $series
 
- mkdir -p $out/$series
- echo "copying series $series to $out/$series"
-  cp  $in/$prefix.$series.* $out/$series
+ #get series description from first image:
+desc=`dcmdump $first | grep SeriesDescription`
+desc_strip=${desc##*[}
+desc_strip=${desc_strip%%]*}
+
+out_name=${series}_${desc_strip}
+
+ out_dir=$out/$out_name
+ mkdir -p $out_dir
+ echo "copying series $series to $out_dir"
+  cp  $in/$prefix.$series.* $out_dir
  
-echo mri_convert $first $out/$series.nii.gz
- mri_convert $first $out/$series.nii.gz
+
+ 
+ first_outdir=`ls $out_dir/$prefix.*.0001.* | head -n 1`
+ mri_convert $first_outdir $out/$out_name.nii.gz
+
+
 
 done
