@@ -1,0 +1,33 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 2 ]
+then
+  echo "Usage: $0 <input folder> <output folder>"
+  exit 0
+fi
+
+
+in=$1
+
+out=$2
+
+if [ ! -e $in ]
+then 
+ echo "Input folder does not exist!"
+ exit 0
+fi
+
+echo ""
+echo "Importing dicoms from $in into $out ..."
+echo ""
+
+mkdir -p $out
+
+dcm2niix -b y -f '%s_%d' -o $out $in
+
+#add leading zero for naming
+pushd $out
+for f in `ls [0-9]_*`; do mv $f 0$f; done
+popd
+

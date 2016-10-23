@@ -1,0 +1,34 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "This script will import all subjects from a BIDS dataset"
+ echo "Usage $0 <input BIDS dataset> "
+ exit 0
+fi
+
+
+in_dir=$1
+
+if [ ! -e $in_dir ]
+then
+ echo "$in_dir does not exist!"
+ exit 0
+fi
+
+
+#first, get path to anat dir (could be sub-_/anat or sub-_/ses-_/anat)
+for subj in `awk 'NR>1 {print $1}' $in_dir/participants.tsv`
+do
+
+ echo subj: $subj
+ in_t1=$in_dir/$subj/anat/${subj}_T1w.nii.gz
+ mkdir -p $subj/t1
+ out_t1=$subj/t1/t1.nii.gz
+ echo fslreorient2std $in_t1 $out_t1
+ fslreorient2std $in_t1 $out_t1
+
+done
+
+
+
