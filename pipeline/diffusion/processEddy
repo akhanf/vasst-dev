@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#dependencies: fsl (eddy, fslmerge)
+#precondition: processTopup
+
 if [ "$#" -lt 1 ]
 then
  echo "Usage $0 <subjid/list>"
@@ -23,43 +26,58 @@ do
 subj_dir=$output_dir/$subj
 
 
-in_dir=$subj_dir/dti/uncorrected
-out_dir=$subj_dir/dti/distortCorrect_eddy
+uncorr_dir=$subj_dir/dwi/uncorrected
+topup_dir=$subj_dir/dwi/distortCorrect_topup  #change this just to topup and eddy later..
+eddy_dir=$subj_dir/dwi/distortCorrect_eddy
 
-mkdir -p $out_dir
 
+eddy_work=$eddy_dir/work
+topup_work=$topup_dir/work
 
+mkdir -p $eddy_dir $eddy_work
 #req'd images: dwi_1, dwi_2, hifi, 
+brainmask=$topup_dir/brainmask.nii.gz
 
-fslmaths $in_dir/hifi.nii.gz -Tmean $out_dir/hifi_Tmean.nii.gz
-bet $out_dir/hifi_Tmean.nii.gz $out_dir/hifi_Tmean_brain.nii.gz -m -f 0.1
-cp $out_dir/hifi_Tmean_brain.nii.gz $out_dir/brainmask.nii.gz
+echo fslmerge  -t  $eddy_work/dwi_uncorrected.nii.gz $uncorr_dir/dwi_?.nii.gz 
+fslmerge  -t  $eddy_work/dwi_uncorrected.nii.gz $uncorr_dir/dwi_?.nii.gz 
+rm -f $eddy_work/dwi_uncorrected.bval
+rm -f $eddy_work/dwi_uncorrected.bvec
 
-fslmerge  -t  $out_dir/dwi_uncorrected.nii.gz $in_dir/dwi_1.nii.gz $in_dir/dwi_2.nii.gz
-cat $in_dir/dwi_1.bval > $out_dir/dwi_uncorrected.bval
-cat $in_dir/dwi_1.bvec > $out_dir/dwi_uncorrected.bvec
-cat $in_dir/dwi_2.bval >> $out_dir/dwi_uncorrected.bval
-cat $in_dir/dwi_2.bvec >> $out_dir/dwi_uncorrected.bvec
+#now need to merge bval/bvec
+for val in $( for bval in `ls $uncorr_dir/dwi_?.bval`; do cat $bval; done; ) 
+do
+echo $val >> $eddy_work/dwi_uncorrected.bval
+done
 
-N=`fslval $in_dir/dwi_1.nii.gz dim4`
+for i in `seq 1 3`
+do
 
-indx=""; for i in `seq 1 $N`; do indx="$indx 1"; done; for i in `seq 1 $N`; do indx="$indx 2"; done; echo $indx > $out_dir/index.txt
+for vec in  $( for bvec in `ls $uncorr_dir/dwi_?.bvec`; do  cat $bvec | head -n $i | tail -n 1; done; ) 
+do
+echo -n "$vec " >> $eddy_work/dwi_uncorrected.bvec
+done
+echo "" >> $eddy_work/dwi_uncorrected.bvec
 
-eddy --imain=$out_dir/dwi_uncorrected --mask=$out_dir/hifi_Tmean_brain_mask --acqp=$in_dir/pedir.txt --index=$out_dir/index.txt --bvecs=$out_dir/dwi_uncorrected.bvec --bvals=$out_dir/dwi_uncorrected.bval --topup=$in_dir/topup --out=$out_dir/dwi -v
-
-dwi_bvec=$out_dir/dwi.eddy_rotated_bvecs
-dwi_bval=$out_dir/dwi_uncorrected.bval
-dwi_vol=$out_dir/dwi.nii.gz
-brain_mask=$out_dir/brainmask.nii.gz
-
-cp -v $dwi_bvec $out_dir/dwi.bvec
-cp -v $dwi_bval $out_dir/dwi.bval
-
-
-dtifit -k $dwi_vol -o $out_dir/dti -m $brain_mask -r $dwi_bvec -b $dwi_bval
+done
 
 
-dwi_bvec_camino=$out_dir/dwi.bvec_camino
-runMatlabCmd flipdimBvec "'$dwi_bvec'" "[2,3]" "'$dwi_bvec_camino'"
+N=`fslval $uncorr_dir/dwi_1.nii.gz dim4`
+
+indx=""; for i in `seq 1 $N`; do indx="$indx 1"; done; for i in `seq 1 $N`; do indx="$indx 2"; done; echo $indx > $eddy_work/index.txt
+echo eddy --imain=$eddy_work/dwi_uncorrected --mask=$brainmask --acqp=$topup_work/pedir.txt --index=$eddy_work/index.txt --bvecs=$eddy_work/dwi_uncorrected.bvec --bvals=$eddy_work/dwi_uncorrected.bval --topup=$topup_work/topup --out=$eddy_dir/dwi -v
+eddy --imain=$eddy_work/dwi_uncorrected --mask=$brainmask --acqp=$topup_work/pedir.txt --index=$eddy_work/index.txt --bvecs=$eddy_work/dwi_uncorrected.bvec --bvals=$eddy_work/dwi_uncorrected.bval --topup=$topup_work/topup --out=$eddy_dir/dwi -v
+
+dwi_bvec=$eddy_dir/dwi.eddy_rotated_bvecs
+dwi_bval=$eddy_work/dwi_uncorrected.bval
+dwi_vol=$eddy_dir/dwi.nii.gz
+brain_mask=$eddy_dir/brainmask.nii.gz
+
+cp -v $dwi_bvec $eddy_dir/dwi.bvec
+cp -v $dwi_bval $eddy_dir/dwi.bval
+
+
+echo dtifit -k $dwi_vol -o $eddy_dir/dwi -m $brain_mask -r $dwi_bvec -b $dwi_bval
+dtifit -k $dwi_vol -o $eddy_dir/dwi -m $brain_mask -r $dwi_bvec -b $dwi_bval
+
 
 done

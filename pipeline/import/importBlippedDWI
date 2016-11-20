@@ -1,0 +1,63 @@
+#!/bin/bash
+
+
+# dependencies: none
+
+if [ "$#" -lt 4 ]
+then
+ echo "Command-line Usage: $0 <number of dwi acquisitions> <input DWI blip 1 > <input DWI blip 2 > ..   <subjid>"
+ exit 0
+fi
+
+
+N=$1
+
+
+
+
+shift 1
+for i in `seq 1 $N`
+do
+ in_dwi[$i]=$1
+ in_json[$i]=${1%%.nii.gz}.json
+ in_bvec[$i]=${1%%.nii.gz}.bvec
+ in_bval[$i]=${1%%.nii.gz}.bval
+
+ shift 1
+done
+
+subj=$1
+
+
+
+
+
+
+output_dir=.
+
+
+subj_dir=$output_dir/$subj
+
+
+#put pipeline commands here
+dwi_dir=$subj_dir/dwi
+
+
+uncorr_dir=$dwi_dir/uncorrected
+mkdir -p $uncorr_dir
+
+for i in `seq 1 $N`
+do
+
+cp -v ${in_dwi[$i]} $uncorr_dir/dwi_$i.nii.gz
+cp -v ${in_json[$i]} $uncorr_dir/dwi_$i.json
+cp -v ${in_bvec[$i]} $uncorr_dir/dwi_$i.bvec
+cp -v ${in_bval[$i]} $uncorr_dir/dwi_$i.bval
+
+done
+
+
+
+
+
+
