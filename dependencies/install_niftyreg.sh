@@ -12,8 +12,9 @@ mkdir -p $INSTALL
 NIFTY_VER=1.3.9
 NIFTY_SRC=$INSTALL/niftyreg-src
 NIFTY_DIR=$INSTALL/niftyreg
-BIN_DIR=$INSTALL/bin
+BIN_DIR=$INSTALL/local_install
 mkdir -p $BIN_DIR
+
 
 #RUN apt-get update && apt-get install -qy \
 #build-essential \
@@ -36,3 +37,7 @@ cmake $NIFTY_SRC \
   make install && \
   ldconfig
 
+echo ""
+echo "Add the following to your start-up script (.bashrc, .tcshrc):"
+echo "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:$BIN_DIR/lib"
+echo "export PATH=\${PATH}:$BIN_DIR/bin "
