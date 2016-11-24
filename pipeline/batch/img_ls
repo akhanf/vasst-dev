@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage $0: <subjids ...>"
+ exit 0
+fi
+
+bold=$(tput bold)
+normal=$(tput sgr0)
+
+maxchar=20
+
+for subj in $@
+do
+
+for cfg in `ls  $PIPELINE_CFG_DIR/img_types/*`; 
+do
+
+  if [ -e ${subj}/`cat $cfg` ]
+  then
+    name=${bold}${cfg##*/}
+    value=${subj}/`cat $cfg`
+   
+nchars=`echo $name | wc -m`
+
+if [ "$nchars" -gt $maxchar ]
+then
+ spacing=1
+else
+ spacing=$((maxchar-nchars))
+fi
+
+
+    echo -n "${bold}${name}"
+    for i in `seq 1 $spacing`; do echo -n " "; done
+    echo "${normal}${value}"; 
+
+
+
+  fi
+
+done
+
+done
+
+
