@@ -24,7 +24,7 @@ echo ""
 
 mkdir -p $out
 
-dcm2niix -b y -f '%s_%d' -o $out $in
+dcm2niix -z y -b y -f '%s_%d' -o $out $in
 
 #add leading zero for naming
 pushd $out
