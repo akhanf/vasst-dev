@@ -6,15 +6,16 @@
 
 if [ "$#" -lt 1 ]
 then
- echo "Command-line Usage: $0 <subjid>"
+ echo " writes output to dwi/<input>_topup"
+ echo ""
+ echo "Command-line Usage: $0 <in_uncorrected>  <subjid>"
  exit 0
 fi
 
 output_dir=.
 
-
-
-
+in_uncorrected=$1
+out_name=${in_uncorrected}_topup
 
 for subj in $@
 do
@@ -23,7 +24,7 @@ do
 subj_dir=$output_dir/$subj
 dwi_dir=$subj_dir/dwi
 
-uncorr_dir=$dwi_dir/uncorrected
+uncorr_dir=$dwi_dir/$in_uncorrected
 
 N=`ls $uncorr_dir/dwi_[0-9].nii.gz | wc -l`
 
@@ -33,7 +34,7 @@ then
   continue
 fi
 
-distort_dir=$dwi_dir/distortCorrect_topup
+distort_dir=$dwi_dir/$out_name
 mkdir -p $distort_dir
 
 work_dir=$distort_dir/work
@@ -168,3 +169,4 @@ dtifit -k $dwi -o $distort_dir/dti -m $brainmask -r $bvec -b $bval
 
 done
 
+return $out_name
