@@ -35,6 +35,16 @@ export PIPELINE_DIR=$VASST_DEV_HOME/pipeline
 export PIPELINE_TOOL_DIR=$VASST_DEV_HOME/tools
 
 export PIPELINE_CFG_DIR=$PIPELINE_DIR/cfg
+
 export PATH="$PIPELINE_DIR:$PIPELINE_DIR/fmri:$PIPELINE_DIR/diffusion:$PIPELINE_DIR/registration:$PIPELINE_DIR/t1:$PIPELINE_DIR/batch:$PIPELINE_DIR/import:$PIPELINE_DIR/qc:$PIPELINE_TOOL_DIR:$PATH"
 
 
+pushd $PIPELINE_DIR > /dev/null
+echo -n "adding to path: "
+for name in `ls -d *`
+do
+ echo -n "$name "
+ export PATH="$PIPELINE_DIR/$name:$PATH"
+done
+popd > /dev/null
+echo ""
