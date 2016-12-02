@@ -4,11 +4,16 @@ dwi_nii=load_nifti(sprintf('%s.nii.gz',in_dwi_prefix));
 bvec=importdata(sprintf('%s.bvec',in_dwi_prefix));
 bval=importdata(sprintf('%s.bval',in_dwi_prefix));
 
+%transpose if needed
+if(size(bvec,2)==3)
+bvec=bvec';
+end
+
 %sort by bval
 [bval_sorted,ind_sorted]=sort(bval);
 
 
-bvec_sorted=bvec(ind_sorted,:);
+bvec_sorted=bvec(:,ind_sorted);
 dwi_vol_sorted=dwi_nii.vol(:,:,:,ind_sorted);
 
 
@@ -21,7 +26,7 @@ dwi_new(:,:,:,1)=avgb0;
 dwi_new(:,:,:,2:end)=dwi_vol_sorted(:,:,:,bval_sorted>100);
 
 bval_new=[0; bval_sorted(bval_sorted>100,:)];
-bvec_new=[0,0,0; bvec_sorted(bval_sorted>100,:)];
+bvec_new=[[0; 0; 0;], bvec_sorted(:,bval_sorted>100)];
 
 dwi_nii.vol=dwi_new;
 
