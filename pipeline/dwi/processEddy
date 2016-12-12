@@ -29,13 +29,12 @@ for subj in $subjids
 do
 
 
-in_name=$1
-shift 1subj_dir=$output_dir/$subj
+subj_dir=$output_dir/$subj
 
 
 uncorr_dir=$subj_dir/dwi/${in_uncorrected}
 topup_dir=$subj_dir/dwi/${in_topup}  #change this just to topup and eddy later..
-eddy_dir=$subj_dir/dwi/${out_eddy}
+eddy_dir=$subj_dir/dwi/${out_name}
 
 
 eddy_work=$eddy_dir/work
@@ -89,5 +88,4 @@ dtifit -k $dwi_vol -o $eddy_dir/dwi -m $brain_mask -r $dwi_bvec -b $dwi_bval
 
 done
 
-return $out_name
 
