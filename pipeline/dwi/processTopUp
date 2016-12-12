@@ -169,4 +169,3 @@ dtifit -k $dwi -o $distort_dir/dti -m $brainmask -r $bvec -b $bval
 
 done
 
-return $out_name
