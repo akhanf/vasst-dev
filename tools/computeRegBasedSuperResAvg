@@ -1,0 +1,149 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 4 ]
+then 
+ echo "Usage: $0 <output folder> <out iso res (e.g. 0.375)> <input 4D images..>"
+ echo " Performs rigid/affine registration to repeat 4D images, using upsampled initial image as a reference, to generate super-res average"
+ exit 0
+fi
+#create super-res averages of 4D DWI data
+
+# N 4D images, M volumes in each
+work=$1
+mkdir $work
+
+out_res=$2
+
+shift 2
+
+N=$#
+
+echo number of 4D images: N=$N
+
+
+for i in `seq  1 $N`
+do
+
+ in_vol[$i]=$1
+
+ mkdir -p $work/scan$i
+
+ echo fslsplit ${in_vol[$i]} $work/scan$i/input_ -t
+ fslsplit ${in_vol[$i]} $work/scan$i/input_ -t
+
+ scanM=`fslval ${in_vol[$i]}  dim4`
+ echo number of volumes each: M=$scanM
+ 
+ if [ "$i" = "1" ]
+ then
+   M=$scanM
+ else
+   if [ ! "$scanM" = "$M" ]
+   then
+    echo "different number of volumes in ${in_vol[$i]}!"
+    exit 0
+   fi
+ fi
+
+ shift 1
+ 
+done #i
+
+
+
+
+for i in `seq  1 $N`
+do
+
+for j in `seq  0 $((M-1))`
+do
+
+ jf=`printf %04d $j`
+ 
+ input=$work/scan$i/input_$jf.nii.gz
+ upsampled_ref=$work/scan1/input_upsampled_$jf.nii.gz
+
+ xfm=$work/scan$i/rigid_to_scan1_$jf.xfm
+ xfm_affine=$work/scan$i/affine_to_scan1_$jf.xfm
+
+ reg=$work/scan$i/input_rigid_$jf.nii.gz
+ reg_affine=$work/scan$i/input_affine_$jf.nii.gz
+
+ if [ "$i" = "1" ]
+ then
+  upsampled=$work/scan$i/input_upsampled_$jf.nii.gz
+
+  #resample each to half res  
+  echo mri_convert $input $upsampled -vs $out_res $out_res $out_res
+  mri_convert $input $upsampled -vs $out_res $out_res $out_res
+
+ else
+  
+  echo reg_aladin -flo $input -ref $upsampled_ref -res $reg -rigOnly -aff $xfm
+  reg_aladin -flo $input -ref $upsampled_ref -res $reg -rigOnly -aff $xfm
+  echo reg_aladin -flo $input -ref $upsampled_ref -res $reg_affine -aff $xfm_affine
+  reg_aladin -flo $input -ref $upsampled_ref -res $reg_affine -aff $xfm_affine
+
+ fi
+
+
+
+
+
+done #j
+
+
+
+done # i
+
+
+
+
+#average over all scans
+
+for j in `seq  0 $((M-1))`
+do
+
+
+ jf=`printf %04d $j`
+
+
+for reg in rigid affine
+do
+
+ avg_dir=$work/avg_$reg
+ mkdir -p $avg_dir 
+ avg_scan=$avg_dir/avg_superres_${reg}_$jf.nii.gz
+
+
+ in_scans=$work/scan1/input_upsampled_$jf.nii.gz
+
+for i in `seq  2 $N`
+do
+
+ scan=$work/scan$i/input_${reg}_$jf.nii.gz
+ in_scans="$in_scans $scan"
+
+
+done #i
+
+echo averageImages $avg_scan $in_scans
+averageImages $avg_scan $in_scans
+done #reg type
+
+done # j
+
+
+for reg in rigid affine
+do
+
+
+echo fslmerge -t $work/avg4D_superres_$reg.nii.gz $work/avg_$reg/avg_superres_${reg}_*.nii.gz
+fslmerge -t $work/avg4D_superres_$reg.nii.gz $work/avg_$reg/avg_superres_${reg}_*.nii.gz
+
+done
+
+
+
+
