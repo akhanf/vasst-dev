@@ -81,9 +81,11 @@ do
  else
   
   echo reg_aladin -flo $input -ref $upsampled_ref -res $reg -rigOnly -aff $xfm
-  reg_aladin -flo $input -ref $upsampled_ref -res $reg -rigOnly -aff $xfm
+  flirt -in $input -ref $upsampled_ref -out $reg -dof 6 -omat $xfm -v
+
+
   echo reg_aladin -flo $input -ref $upsampled_ref -res $reg_affine -aff $xfm_affine
-  reg_aladin -flo $input -ref $upsampled_ref -res $reg_affine -aff $xfm_affine
+  flirt -in $input -ref $upsampled_ref -out $reg_affine -omat $xfm_affine -v
 
  fi
 
