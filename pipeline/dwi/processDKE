@@ -50,8 +50,8 @@ mkdir -p $out_dwi_dir
 in_dwi_prefix=$in_dwi_dir/dwi
 out_dwi_prefix=$out_dwi_dir/dwi_prep
 
-echo octave --eval "prepForKurtosisDWI('$in_dwi_prefix','$out_dwi_prefix')"
-octave --eval "prepForKurtosisDWI('$in_dwi_prefix','$out_dwi_prefix')"
+echo octave --eval "prepForKurtosisDWI('$in_dwi_prefix','$out_dwi_prefix',[1300, 2600])"
+octave --eval "prepForKurtosisDWI('$in_dwi_prefix','$out_dwi_prefix',[1300, 2600])"
 
 dke_param=${out_dwi_prefix}.dke_params
 
