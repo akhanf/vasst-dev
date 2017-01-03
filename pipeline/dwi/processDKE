@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# dependencies: octave, dke
+# precondition:  processEddy
+
+if [ "$#" -lt 4 ]
+then
+ echo "Reads data from <in_project_folder>/<subjid>/dwi/<in_dwi>, writes output to <out_project_folder>/<subjid>/dwi/<in_dwi_name>_dke"
+ echo "Usage $0 <in_project_folder> <out_project_folder> <in_dwi_name> <subjid/list>"
+ exit 0
+fi
+
+input_dir=$1
+output_dir=$2
+
+in_name=$3
+out_name=${in_name}_dke
+shift 3
+
+
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi  
+
+
+
+
+for subj in $subjids
+do
+
+
+in_subj_dir=$input_dir/$subj
+out_subj_dir=$output_dir/$subj
+
+in_dwi_dir=$in_subj_dir/dwi/$in_name
+out_dwi_dir=$out_subj_dir/dwi/$out_name
+
+echo $subj
+echo in_dwi_dir $in_dwi_dir
+echo out_dwi_dir $out_dwi_dir
+#put pipeline commands here
+
+
+mkdir -p $out_dwi_dir
+
+in_dwi_prefix=$in_dwi_dir/dwi
+out_dwi_prefix=$out_dwi_dir/dwi_prep
+
+echo octave --eval "prepForKurtosisDWI('$in_dwi_prefix','$out_dwi_prefix')"
+octave --eval "prepForKurtosisDWI('$in_dwi_prefix','$out_dwi_prefix')"
+
+dke_param=${out_dwi_prefix}.dke_params
+
+echo dke $dke_param
+dke $dke_param
+
+
+done
+
+
