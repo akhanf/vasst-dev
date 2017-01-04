@@ -16,6 +16,8 @@ output_dir=.
 
 in_uncorrected=$1
 out_name=${in_uncorrected}_topup
+shift 1
+
 
 for subj in $@
 do
