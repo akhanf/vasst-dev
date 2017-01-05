@@ -5,7 +5,7 @@
 
 if [ "$#" -lt 2 ]
 then 
-  echo "Usage: $0 <name of pipeline script>  <subjid/list> <additional arguments ... if any> "
+  echo "Usage: $0 <name of pipeline script>  <subjid/list> <additional arguments ... if any - placed after the subjid> "
   exit 0
 fi
 
@@ -41,7 +41,7 @@ then
   echo "Quitting..."
   exit 0
 else
-  echo "Running Jobs... (with 30 sec interval between each submission)"
+  echo "Running Jobs..."
 
 fi
 
@@ -58,11 +58,9 @@ scriptname=${pipeline_script##*/} #strip leading path
 name=$scriptname.$subj
 job=$pbs_dir/$name
 
-echo $pipeline_script $add_args $subj > $job
+echo $pipeline_script $subj $add_args > $job
 
 qsub -N $name -w `pwd`/$pbs_dir -d `pwd` -l "walltime=72:00:00" -l "mem=6gb" $job
-#wait 30 sec before sending another..
-sleep 30
 
 done
 

@@ -35,8 +35,7 @@ echo "subjids: $subjids"
 
 echo ""
 echo "Running with the following arguments:"
-echo "  Pipeline script:  $pipeline_script"
-echo "  Additional arguments: $@"
+echo "$pipeline_script $pre_args <subj> $post_args "
 echo "  Subjects: "
 echo "$subjids"
 echo ""
@@ -47,7 +46,7 @@ then
   echo "Quitting..."
   exit 0
 else
-  echo "Running Jobs..."
+  echo "Running Jobs... (with 30 sec interval between each submission)"
 
 fi
 
@@ -56,7 +55,7 @@ do
 
 
 
-pbs_dir=$output_dir/$subj/pbs
+pbs_dir=$output_dir/pbs
 mkdir -p $pbs_dir
 
 
@@ -64,9 +63,12 @@ scriptname=${pipeline_script##*/} #strip leading path
 name=$scriptname.$subj
 job=$pbs_dir/$name
 
-echo $pipeline_script $pre_args $subj $post_args > $job
+echo cd `pwd` > $job
+echo $pipeline_script $pre_args $subj $post_args >> $job
 
 qsub -N $name -w `pwd`/$pbs_dir -d `pwd` -l "walltime=72:00:00" -l "mem=6gb" $pbs_opts $job
+#wait 30 sec before sending another..
+sleep 30
 
 done
 
