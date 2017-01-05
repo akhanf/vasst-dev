@@ -1,0 +1,15 @@
+6 brainstem
+2 L_thalamus
+3 L_caudate
+4 L_putamen
+5 L_pallidum
+8 L_amygdala
+9 L_accumbens
+7 L_hippocampus
+11 R_thalamus
+12 R_caudate
+13 R_putamen
+14 R_pallidum
+16 R_amygdala
+17 R_accumbens
+15 R_hippocampus
