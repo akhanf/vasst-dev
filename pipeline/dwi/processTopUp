@@ -85,6 +85,10 @@ dwi=$work_dir/dwi_$i.nii.gz
 cp -v ${in_dwi[$i]} $dwi
 
 
+#keep number of directions, and volume wiht greatest number of directions
+num_dirs[$i]=`fslval $dwi dim4`
+
+
 if [ "$i" = "1" ]
 then 
   dwi_list=$dwi
@@ -139,6 +143,8 @@ fslmerge -t $avg_b0 $work_dir/avg_b0_?.nii.gz
 
 
 
+
+
 echo topup --imain=$avg_b0 --datain=$petxt --config=b02b0.cnf --out=$work_dir/topup -v --iout=$work_dir/hifi
 topup --imain=$avg_b0 --datain=$petxt --config=b02b0.cnf --out=$work_dir/topup -v --iout=$work_dir/hifi
 
@@ -148,14 +154,35 @@ dwi=$distort_dir/dwi.nii.gz
 brainmask=$distort_dir/brainmask.nii.gz
 
 
-indices=`seq -s , 1 $N`
+#if num directions of final dwi is less than first, then assume we are only using the first scan
 
+echo numdirs N: ${num_dirs[$N]}
+echo numdirs 1: ${num_dirs[1]}
+if [ "${num_dirs[$N]}" -lt "${num_dirs[1]}" ]
+then
+  #use first vol as ind
+  indices=1
+  dwi_list=$work_dir/dwi_1.nii.gz
+
+echo applytopup --imain=$dwi_list --datain=$petxt --inindex=$indices -t $work_dir/topup -o $distort_dir/dwi -v --method=jac
+applytopup --imain=$dwi_list --datain=$petxt --inindex=$indices -t $work_dir/topup -o $distort_dir/dwi -v --method=jac
+cp -v ${in_bvec[1]} $bvec
+cp -v ${in_bval[1]} $bval
+
+
+else
+
+  
+
+indices=`seq -s , 1 $N`
 
 echo applytopup --imain=$dwi_list --datain=$petxt --inindex=$indices -t $work_dir/topup -o $distort_dir/dwi -v
 applytopup --imain=$dwi_list --datain=$petxt --inindex=$indices -t $work_dir/topup -o $distort_dir/dwi -v
-
 cp -v ${in_bvec[$N]} $bvec
 cp -v ${in_bval[$N]} $bval
+
+fi
+
 echo bet $dwi $brainmask -f 0.1
 bet $dwi $brainmask -f 0.1
 echo fslmaths $brainmask -bin $brainmask
