@@ -19,13 +19,19 @@ mkdir -p $t1_dir
 t1=$t1_dir/t1.nii.gz
 
 ext=${in_t1##*.}
+if [ "$ext" = "nii.gz" ]
+then
+  cp $in_t1 $t1
+else
+
 if [ "$ext" = "mha" -o "$ext" = "mhd" -o "$ext" = "nrrd" -o "$ext" = "nhdr" ]
 then
 c3d $in_t1 -o $t1
 else
 mri_convert $in_t1 $t1
 fi
-fslreorient2std $t1 $t1
+fi
+#fslreorient2std $t1 $t1
 
 
 
