@@ -20,7 +20,7 @@ mri=$mri_dir/$sequence.nii.gz
 
 ext=${in_mri##*.}
 
-if [ "$ext" = "nii.gz" ]
+if [ "$ext" = "gz" ]
 then
   cp $in_t1 $t1
 else

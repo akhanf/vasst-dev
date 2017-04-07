@@ -19,7 +19,7 @@ mkdir -p $t1_dir
 t1=$t1_dir/t1.nii.gz
 
 ext=${in_t1##*.}
-if [ "$ext" = "nii.gz" ]
+if [ "$ext" = "gz" ]
 then
   cp $in_t1 $t1
 else
