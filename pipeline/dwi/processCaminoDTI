@@ -1,0 +1,73 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage $0 <dwi_name> <subjid/list>"
+ exit 0
+fi
+
+dwi_name=$1
+shift 1
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+dwi_dir=$subj_dir/dwi/$dwi_name
+
+if [ ! -e $dwi_dir ]
+then
+ echo "$dwi_dir does not exist!"
+ continue
+fi
+
+out_dir=${dwi_dir}_caminoDTI
+
+mkdir -p $out_dir
+
+dwi_bvec=$dwi_dir/dwi.bvec
+dwi_bval=$dwi_dir/dwi.bval
+dwi_vol=$dwi_dir/dwi.nii.gz
+brain_mask=$dwi_dir/brainmask.nii.gz
+
+scheme=$out_dir/4Ddwi_bvec.scheme
+dwi=$out_dir/dwi.Bfloat
+dt=$out_dir/dt.Bdouble
+dteig=$out_dir/dteig.Bdouble
+dt_rgb=$out_dir/dt_rgb.nii.gz
+fa=$out_dir/fa.nii.gz
+dteig_pd1=$out_dir/dteig_pd1.nii.gz
+
+#diffusion tensor fitting
+fsl2scheme  -bvecfile $dwi_bvec -bvalfile $dwi_bval > $scheme
+image2voxel -4dimage $dwi_vol -outputfile $dwi
+modelfit -inversion 1 -schemefile $scheme -inputfile $dwi  -bgmask $brain_mask  > $dt
+cat $dt | fa  | voxel2image -outputroot $out_dir/fa -header $dwi_vol
+cat $dt | dteig > $dteig
+rgbscalarimg -inputfile $dteig -scalarfile $fa -outputfile $dt_rgb
+voxel2image -components 12 -outputroot $out_dir/dteig_components_ -header $fa <$dteig
+fslmerge  -t $dteig_pd1 $out_dir/dteig_components_000[234].nii.gz
+rm $out_dir/dteig_components_*
+
+
+#picoPDFS for DTI
+#dtlutgen -lrange 1 15 -step 0.2 -snr 16 -schemefile $scheme > $out_dir/dt_lut.Bdouble
+#picopdfs -inputmodel dt -luts $out_dir/dt_lut.Bdouble -numpds 1 -pdf bingham < $dt > $out_dir/dt_picopdf.Bdouble
+
+
+
+done #subj
+
+

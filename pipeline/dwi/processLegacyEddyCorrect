@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# dependencies:
+#		 fsl (bet, topup, dtifit, ...)
+# precondition:  importDWI
+
+if [ "$#" -lt 1 ]
+then
+ echo " writes output to dwi/<input>_topup"
+ echo ""
+ echo "Command-line Usage: $0 <in_uncorrected>  <subjid>"
+ exit 0
+fi
+
+output_dir=.
+
+in_uncorrected=$1
+out_name=${in_uncorrected}_eddyCorrect
+shift 1
+
+
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+dwi_dir=$subj_dir/dwi
+uncorr_dir=$dwi_dir/$in_uncorrected
+
+
+eddy_dir=$dwi_dir/$out_name
+mkdir -p $eddy_dir
+
+
+dwi=$uncorr_dir/dwi.nii.gz
+bvec=$uncorr_dir/dwi.bvec
+bval=$uncorr_dir/dwi.bval
+
+ if [ ! -e $in_dwi ]
+ then 
+   echo "input dwi does not exist! must import a single dwi first" 
+   continue
+ fi
+
+#first perform eddy current corr
+ mask=$eddy_dir/brainmask.nii.gz
+
+ echo bet $dwi $mask -f 0.1 -v -m 
+ bet $dwi $mask -f 0.1 -v -m 
+
+ eddy_dwi=$eddy_dir/dwi.nii.gz
+ eddy_bvec=$eddy_dir/dwi.bvec
+ eddy_bval=$eddy_dir/dwi.bval
+ eddy_mask=$eddy_dir/brainmask.nii.gz
+
+ mkdir -p $eddy_dir
+ if [ ! -e $eddy_dwi ]
+ then
+ echo eddy_correct $dwi $eddy_dwi 0
+ eddy_correct $dwi $eddy_dwi 0
+ fi
+ cp -v $bvec $eddy_bvec
+ cp -v $bval $eddy_bval
+ 
+ echo dtifit -k $eddy_dwi -m $mask -o $eddy_dir/dti -r $eddy_bvec -b $eddy_bval -V
+ dtifit -k $eddy_dwi -m $mask -o $eddy_dir/dti -r $eddy_bvec -b $eddy_bval -V
+
+done
+
+
