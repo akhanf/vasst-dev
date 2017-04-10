@@ -61,10 +61,37 @@ voxel2image -components 12 -outputroot $out_dir/dteig_components_ -header $fa <$
 fslmerge  -t $dteig_pd1 $out_dir/dteig_components_000[234].nii.gz
 rm $out_dir/dteig_components_*
 
+tract_name=wholebrain
 
-#picoPDFS for DTI
-#dtlutgen -lrange 1 15 -step 0.2 -snr 16 -schemefile $scheme > $out_dir/dt_lut.Bdouble
-#picopdfs -inputmodel dt -luts $out_dir/dt_lut.Bdouble -numpds 1 -pdf bingham < $dt > $out_dir/dt_picopdf.Bdouble
+#run tracking
+tract_unproc=$out_dir/${tract_name}_unproc.Bfloat
+tract=$out_dir/${tract_name}_tracts.Bfloat
+tract_vtk_fa=$out_dir/${tract_name}_tracts_col-fa.vtk
+tract_vtk_rgb=$out_dir/${tract_name}_tracts_col-rgb.vtk
+tract_sc=$out_dir/${tract_name}_tractdensity.nii.gz
+
+fa_thresh=0.15
+seed=$out_dir/${tract_name}_seed.nii.gz
+
+#resample to 2mm iso for uniform seeding
+echo fslmaths $fa -thr $fa_thresh -bin $seed 
+fslmaths $fa -thr $fa_thresh -bin $seed 
+
+
+#single tensor - FACT
+track $track_opts -inputmodel dt -tracker fact -interpolator nn  -header $fa -anisfile $fa -anisthresh $fa_thresh -seedfile $seed < $dt > $tract_unproc
+
+#throw out very small meaningless tracts
+procstreamlines -mintractpoints 5 -header $fa < $tract_unproc > $tract
+
+cat $tract | vtkstreamlines -scalarfile $fa -interpolate > $tract_vtk_fa
+cat $tract | vtkstreamlines -header $fa -colourorient -interpolate > $tract_vtk_rgb
+cat $tract | procstreamlines -outputacm -outputsc -outputroot $out_dir/${tract_name}. -seedfile $seed  
+
+mv $out_dir/${tract_name}.acm_sc.nii.gz $tract_sc
+
+
+rm -f $tract_unproc
 
 
 
