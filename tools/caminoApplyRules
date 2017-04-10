@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+  echo "Given camino whole brain tracts, uses rule.<bundle>.contains.nii.gz and rule.<bundle>.excludes.nii.gz rules (synaptive atlas nii format) to generate bundles in camino & vtk format"
+  echo "Usage: $0 <in_wholebrain_tracts> <in_rules_nii_dir> <out_bundles_dir>"
+  exit 0
+fi
+
+tracts=$1
+rules_dir=$2
+out_dir=$3
+
+mkdir -p $out_dir
+
+#get all rules
+for contains_nii in `ls $rules_dir/rule.*.contains.nii.gz`
+do
+ prefix=${contains_nii%%.contains.nii.gz}
+ excludes_nii=${prefix}.excludes.nii.gz
+ bundle=${prefix##*rule.}
+
+ if [ -e $excludes_nii ]
+ then 
+   exclude="-exclusionfile $excludes_nii" 
+ else
+   exclude=""
+ fi
+
+
+ echo contains: $contains_nii
+ ls $contains_nii
+ echo excludes: $excludes_nii 
+ ls $excludes_nii
+ echo bundle: $bundle
+
+ out_tracts=$out_dir/$bundle.Bfloat
+ out_tracts_vtk=$out_dir/$bundle.vtk
+ cat $tracts | procstreamlines -waypointfile $contains_nii $exclude > $out_tracts 
+ cat $out_tracts | vtkstreamlines -colourorient -interpolate > $out_tracts_vtk 
+ cat $out_tracts | procstreamlines -outputacm -outputsc -header $contains_nii -outputroot $out_dir/$bundle.  
+
+done

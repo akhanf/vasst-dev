@@ -10,7 +10,7 @@ function protocol = EpLinkSiemens2Protocol(bvalfile, bvecfile,B)
 % author: Gary Hui Zhang (gary.zhang@ucl.ac.uk)
 %
 % modified by Ali Khan, to include predefined shells and fuzziness in
-% selecting b-value, as well as not transposing bvecs
+% selecting b-value, and non-gui progress bar for headless batch jobs
 
 bfuzzy=200;
 
@@ -22,7 +22,7 @@ protocol.teststrategy = 'fixed';
 
 % load bval
 bval = load(bvalfile);
-
+bval=bval';
 
 % set total number of measurements
 protocol.totalmeas = length(bval);
@@ -74,7 +74,7 @@ protocol.grad_dirs = bvec';
 
 % make the gradient directions for b=0's [1 0 0]
 for i=1:length(protocol.b0_Indices)
-    protocol.grad_dirs(protocol.b0_Indices(i),:) = [1 0 0];
+   protocol.grad_dirs(protocol.b0_Indices(i),:) = [1 0 0];
 end
 
 % make sure the gradient directions are unit vectors

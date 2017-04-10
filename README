@@ -10,6 +10,11 @@ then
 fi
 
 
+Add the following to your ~/.octaverc file:
+
+addpath(genpath('<path to your repository>/tools/matlab'));
+
+
 
 
 pipelines/

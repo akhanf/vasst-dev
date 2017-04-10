@@ -1,7 +1,6 @@
 function fitNODDI_general(in_dwi,in_mask,out_noddi_folder);
 
 %determine what the shells are based on bvalues
-shells=[1300,2600];
 
 mkdir(out_noddi_folder);
 zipdwi=0;
@@ -44,7 +43,7 @@ if (zipmask)
     gzip(in_mask);
 end
 
-protocol=EpLinkSiemens2Protocol(in_bval,in_bvec,shells);
+protocol=MultiShell2Protocol(in_bval,in_bvec);
 noddi=MakeModel('WatsonSHStickTortIsoV_B0');
 batch_fitting(out_roi,protocol,noddi,out_params);
 SaveParamsAsNIfTI(out_params,out_roi,in_mask,out_prefix);

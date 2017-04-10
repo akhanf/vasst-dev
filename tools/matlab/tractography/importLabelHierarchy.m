@@ -24,7 +24,7 @@ system(sprintf('grep -a label %s > %s',in_nrrd,filename));
 fid=fopen(filename);
 
 i=1;
-
+labels=[];
 while ~feof(fid)
     
     
@@ -72,7 +72,7 @@ system(sprintf('grep -a edge %s > %s',in_nrrd,filename));
 fid=fopen(filename);
 
 i=1;
-
+edges=[];
 while ~feof(fid)
     
     
@@ -184,7 +184,6 @@ system(sprintf('grep -a rule %s > %s',in_nrrd,filename));
 fid=fopen(filename);
 
 i=1;
-
 
 
 
