@@ -45,6 +45,16 @@ mkdir -p $eddy_dir $eddy_work
 #req'd images: dwi_1, dwi_2, hifi, 
 brainmask=$topup_dir/brainmask.nii.gz
 
+
+Nacq=`ls -1 $uncorr_dir/dwi_[0-9].nii.gz | wc -l`
+
+#if repeat dwi exist:
+if [ "$Nacq" -lt 2 ]
+then
+ echo "multiple dwi acquisitions do not exist, unable to continue!"
+ exit 0
+fi
+
 echo fslmerge  -t  $eddy_work/dwi_uncorrected.nii.gz $uncorr_dir/dwi_?.nii.gz 
 fslmerge  -t  $eddy_work/dwi_uncorrected.nii.gz $uncorr_dir/dwi_?.nii.gz 
 rm -f $eddy_work/dwi_uncorrected.bval
@@ -67,10 +77,25 @@ echo "" >> $eddy_work/dwi_uncorrected.bvec
 
 done
 
+for iacq in `seq 1 $Nacq`
+do
 
-N=`fslval $uncorr_dir/dwi_1.nii.gz dim4`
+Ni[$iacq]=`fslval $uncorr_dir/dwi_${iacq}.nii.gz dim4`
 
-indx=""; for i in `seq 1 $N`; do indx="$indx 1"; done; for i in `seq 1 $N`; do indx="$indx 2"; done; echo $indx > $eddy_work/index.txt
+done
+
+
+#creates index without assumption of same N repeated across each acquisition
+indx=""; 
+for iacq in `seq 1 $Nacq`
+do
+	for i in `seq 1 ${Ni[$iacq]}`; do indx="$indx $iacq"; done; 
+done
+
+echo $indx > $eddy_work/index.txt
+
+
+
 echo eddy --imain=$eddy_work/dwi_uncorrected --mask=$brainmask --acqp=$topup_work/pedir.txt --index=$eddy_work/index.txt --bvecs=$eddy_work/dwi_uncorrected.bvec --bvals=$eddy_work/dwi_uncorrected.bval --topup=$topup_work/topup --out=$eddy_dir/dwi -v
 eddy --imain=$eddy_work/dwi_uncorrected --mask=$brainmask --acqp=$topup_work/pedir.txt --index=$eddy_work/index.txt --bvecs=$eddy_work/dwi_uncorrected.bvec --bvals=$eddy_work/dwi_uncorrected.bval --topup=$topup_work/topup --out=$eddy_dir/dwi -v
 
