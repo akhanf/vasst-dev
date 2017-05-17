@@ -1,0 +1,5 @@
+cp common.custom /etc/vnc/config.d/common.custom 
+cp vncserver.custom /etc/pam.d/vncserver.custom
+cp xstartup.custom /etc/vnc/xstartup.custom
+chmod a+x /etc/vnc/xstartup.custom
+apt-get install gnome-session-flashback
