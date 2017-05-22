@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo "Exports nrrd file to target vasst-dev subject/atlas"
+ echo "Usage: <in_label_nrrd> <output_subj_dir>"
+ exit 0
+fi
+
+
+nrrd=$1
+subj_dir=$2
+
+if [ ! -e $nrrd ]
+then 
+ echo "input nrrd $nrrd does not exist!
+ exit 0
+fi
+
+if [ ! -e $subj_dir ]
+then 
+ echo "subject folder $subj_dir does not exist!
+ exit 0
+fi
+
+
+
+atlas_name=${nrrd##*/}
+atlas_name=${atlas_name%%.nrrd}
+
+label_dir=$subj_dir/labels/t1/${atlas_name}
+mkdir -p $label_dir
+
+#to do: find alternative for digraph object in octave
+#octave --eval "importLabelHierarchy('$nrrd', '$label_dir')"
+runMatlabCmd  importLabelHierarchy "'$nrrd'" "'$label_dir'"

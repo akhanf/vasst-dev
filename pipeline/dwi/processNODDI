@@ -1,0 +1,50 @@
+#!/bin/bash
+
+#dependencies: runNODDI MCR
+#precondition: 
+
+if [ "$#" -lt 2 ]
+then
+ echo "Writes output to dwi/<in_dwi>_noddi"
+ echo "Usage $0 <in_dwi> <subjid/list>"
+ exit 0
+fi
+
+output_dir=`pwd`
+
+in_dwi=$1
+out_name=${in_dwi}_noddi
+shift 1
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+
+dwi_dir=$subj_dir/dwi/${in_dwi}
+out_dir=$subj_dir/dwi/${out_name}
+
+fit_noddi=$VASST_DEV_HOME/noddi_mcr/fitNODDI_general/run_fitNODDI_general_MCRv901.sh
+
+
+dwi_vol=$dwi_dir/dwi.nii.gz
+brain_mask=$dwi_dir/brainmask.nii.gz
+
+echo $fit_noddi $MCR_V901 $dwi_vol $brain_mask $out_dir
+$fit_noddi $MCR_V90 $dwi_vol $brain_mask $out_dir
+
+
+done
+
+

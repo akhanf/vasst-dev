@@ -30,7 +30,7 @@ if [ -f $1 ]
 then
  subjids=`cat $1`
 else
- subjids=$1
+ subjids=$@
 fi
 
 

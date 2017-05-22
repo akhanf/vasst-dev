@@ -1,0 +1,68 @@
+#!/bin/bash
+
+#dependencies: fsl bedpostx
+#precondition: 
+
+if [ "$#" -lt 2 ]
+then
+ echo "Writes output to dwi/<in_dwi>_bedpost"
+ echo "Usage $0 <in_dwi> <subjid/list>"
+ exit 0
+fi
+
+output_dir=`pwd`
+
+in_dwi=$1
+out_name=${in_dwi}_bedpost
+shift 1
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+
+
+dwi_dir=$subj_dir/dwi/${in_dwi}
+out_dir=$subj_dir/dwi/${out_name}
+
+
+bedpost_work=$out_dir/work
+bedpost_data=$bedpost_work/data
+
+mkdir -p $bedpost_data
+
+dwi_bvec=$dwi_dir/dwi.bvec
+dwi_bval=$dwi_dir/dwi.bval
+dwi_vol=$dwi_dir/dwi.nii.gz
+brain_mask=$dwi_dir/brainmask.nii.gz
+
+
+
+#copy files necessary for bedpost command:
+bvals=$bedpost_data/bvals
+bvecs=$bedpost_data/bvecs
+data=$bedpost_data/data.nii.gz
+nodif_brain_mask=$bedpost_data/nodif_brain_mask.nii.gz
+
+cp -v $dwi_bvec $bvecs
+cp -v $dwi_bval $bvals
+cp -v $dwi_vol $data
+cp -v $brain_mask $nodif_brain_mask
+
+bedpostx $bedpost_data/ -c
+
+
+
+done
+
+

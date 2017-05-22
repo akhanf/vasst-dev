@@ -47,6 +47,17 @@ dwi_dir=$subj_dir/dwi
 uncorr_dir=$dwi_dir/$out_name
 mkdir -p $uncorr_dir
 
+if [ "$N" = 1 ]
+then
+i=1
+cp -v ${in_dwi[$i]} $uncorr_dir/dwi.nii.gz
+cp -v ${in_json[$i]} $uncorr_dir/dwi.json
+cp -v ${in_bvec[$i]} $uncorr_dir/dwi.bvec
+cp -v ${in_bval[$i]} $uncorr_dir/dwi.bval
+
+else
+
+
 for i in `seq 1 $N`
 do
 
@@ -59,6 +70,5 @@ done
 
 
 
-
-return $out_name
+fi
 

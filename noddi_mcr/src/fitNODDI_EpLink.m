@@ -1,5 +1,6 @@
-function fitNODDI_EpLink(in_dwi,in_mask,out_noddi_folder);
+function fitNODDI_general(in_dwi,in_mask,out_noddi_folder);
 
+%determine what the shells are based on bvalues
 shells=[1300,2600];
 
 mkdir(out_noddi_folder);

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+  echo "Usage $0 <new hostname>"
+  exit 0
+fi
+
+host=$1
+
+
+ip=`ssh $host "hostname -I"`
+
+echo "/cluster/software $ip(rw,sync,no_subtree_check)" | sudo tee --append /etc/exports > /dev/null
+echo "/cluster/users $ip(rw,sync,no_subtree_check)" | sudo tee --append /etc/exports > /dev/null
+
+
+sudo exportfs -ra
+sudo service nfs-kernel-server restart

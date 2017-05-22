@@ -7,6 +7,9 @@ if [ "$#" -lt 4 ]
 then
  echo "Reads data from <in_project_folder>/<subjid>/dwi/<in_dwi>, writes output to <out_project_folder>/<subjid>/dwi/<in_dwi_name>_dke"
  echo "Usage $0 <in_project_folder> <out_project_folder> <in_dwi_name> <subjid/list>"
+ echo " "
+ echo " e.g.: "
+ echo "   $0 ~/EpilepsyDatabase/EPL14B ~/test_dke multiband_topup_eddy EPL14_LHS_0066"
  exit 0
 fi
 

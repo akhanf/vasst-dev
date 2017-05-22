@@ -19,6 +19,13 @@ mkdir -p $mri_dir
 mri=$mri_dir/$sequence.nii.gz
 
 ext=${in_mri##*.}
+
+if [ "$ext" = "gz" ]
+then
+  cp $in_t1 $t1
+else
+
+
 if [ "$ext" = "mha" -o "$ext" = "mhd" -o "$ext" = "nrrd" -o "$ext" = "nhdr" ]
 then
 c3d $in_mri -o $mri
@@ -26,7 +33,8 @@ else
 mri_convert $in_mri $mri --no_scale 1
 fi
 
-fslreorient2std $mri $mri
+fi
+#fslreorient2std $mri $mri
 
 
 

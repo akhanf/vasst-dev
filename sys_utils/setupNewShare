@@ -1,0 +1,37 @@
+#!/bin/bash
+if [ "$#" -lt 2 ]
+then
+  echo "This script must be run by an administrator."
+  echo "Usage: $0 <share_name> <usernames> ..." 
+  exit 0
+fi
+
+share=$1
+
+shift 1
+
+for newuser in $@
+do
+
+echo user: $newuser
+
+
+#create folder for petergrp mount
+fs=$share
+
+sudo mkdir -p /eq-nas/$newuser/$fs
+echo "//eq-nas.imaging.robarts.ca/$fs /eq-nas/$newuser/$fs cifs username=$newuser,domain=robarts,noauto,user 0 0" | sudo tee --append /etc/fstab
+
+#change ownership
+sudo chown $newuser /eq-nas/$newuser/$fs
+sudo chgrp domain\ users /eq-nas/$newuser/$fs
+
+#link to it
+sudo ln -s /eq-nas/$newuser/$fs /home/ROBARTS/$newuser/$fs
+
+
+
+
+
+done
+

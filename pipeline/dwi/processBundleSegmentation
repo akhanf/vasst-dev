@@ -1,0 +1,67 @@
+#!/bin/bash
+
+dwi_type=dwi_singleband  # this is currently hardcoded.. need to have way of generating img cfg files on the fly
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage $0 <dwi_name> <subjid/list>"
+ exit 0
+fi
+
+dwi_name=$1
+shift 1
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+
+subj_dir=$output_dir/$subj
+dwi_dir=$subj_dir/dwi/$dwi_name
+
+if [ ! -e $dwi_dir ]
+then
+ echo "$dwi_dir does not exist!"
+ continue
+fi
+
+out_dir=${dwi_dir}_bundleSeg
+
+mkdir -p $out_dir
+
+tract_name=wholebrain
+
+tracts=$dwi_dir/${tract_name}_tracts.Bfloat
+
+syn_labels=Atlas_2017_04_09_bspline_f3d_synaptive
+atlas=MNI152_1mm
+
+#reg to MNI space
+#--- need to ensure this is done -- 3 steps (intersubj affine, reg_bspline, intrasubj rigid) -- later this could be a single module..
+#or could be part of minimal preprocessing
+
+
+rules_dir=$subj_dir/labels/${dwi_type}/${syn_labels}_bspline_f3d_rigid_aladin_${atlas}
+if [ ! -e $rules_dir ]
+then
+  echo propLabels_compose_inter_bspline_intra_aladin t1 t1 $dwi_type $syn_labels $atlas $subj -r
+  propLabels_compose_inter_bspline_intra_aladin t1 t1 $dwi_type $syn_labels $atlas $subj -r
+fi
+
+
+echo caminoApplyRules $tracts $rules_dir $out_dir
+caminoApplyRules $tracts $rules_dir $out_dir
+
+done #subj
+
+

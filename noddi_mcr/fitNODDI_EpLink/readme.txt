@@ -3,7 +3,7 @@ MATLAB Compiler
 1. Prerequisites for Deployment 
 
 . Verify the MATLAB Runtime is installed and ensure you    
-  have installed version 9.0 (R2015b).   
+  have installed version 9.0.1 (R2016a).   
 
 . If the MATLAB Runtime is not installed, do the following:
   (1) enter
@@ -15,7 +15,7 @@ MATLAB Compiler
 
   (2) run the MATLAB Runtime installer.
 
-Or download the Linux 64-bit version of the MATLAB Runtime for R2015b 
+Or download the Linux 64-bit version of the MATLAB Runtime for R2016a 
 from the MathWorks Web site by navigating to
 
    http://www.mathworks.com/products/compiler/mcr/index.html
@@ -30,27 +30,27 @@ in the MathWorks Documentation Center.
 
 Files to package for Standalone 
 ================================
--fitNODDI_EpLink 
--run_fitNODDI_EpLink.sh (shell script for temporarily setting environment variables and 
-                         executing the application)
+-fitNODDI_EpLink_MCRv901 
+-run_fitNODDI_EpLink_MCRv901.sh (shell script for temporarily setting environment 
+                                 variables and executing the application)
    -to run the shell script, type
    
-       ./run_fitNODDI_EpLink.sh <mcr_directory> <argument_list>
+       ./run_fitNODDI_EpLink_MCRv901.sh <mcr_directory> <argument_list>
        
     at Linux or Mac command prompt. <mcr_directory> is the directory 
-    where version 9.0 of the MATLAB Runtime is installed or the directory where 
+    where version 9.0.1 of the MATLAB Runtime is installed or the directory where 
     MATLAB is installed on the machine. <argument_list> is all the 
     arguments you want to pass to your application. For example, 
 
-    If you have version 9.0 of the MATLAB Runtime installed in 
-    /mathworks/home/application/v90, run the shell script as:
+    If you have version 9.0.1 of the MATLAB Runtime installed in 
+    /mathworks/home/application/v901, run the shell script as:
     
-       ./run_fitNODDI_EpLink.sh /mathworks/home/application/v90
+       ./run_fitNODDI_EpLink_MCRv901.sh /mathworks/home/application/v901
        
     If you have MATLAB installed in /mathworks/devel/application/matlab, 
     run the shell script as:
     
-       ./run_fitNODDI_EpLink.sh /mathworks/devel/application/matlab
+       ./run_fitNODDI_EpLink_MCRv901.sh /mathworks/devel/application/matlab
 -MCRInstaller.zip
    -if end users are unable to download the MATLAB Runtime using the above  
     link, include it when building your component by clicking 
@@ -74,24 +74,24 @@ In the following directions, replace MCR_ROOT by the directory where the MATLAB 
 
 (1) Set the environment variable XAPPLRESDIR to this value:
 
-    MCR_ROOT/v90/X11/app-defaults
+    MCR_ROOT/v901/X11/app-defaults
 
 
 (2) If the environment variable LD_LIBRARY_PATH is undefined, set it to the concatenation 
    of the following strings:
 
-    MCR_ROOT/v90/runtime/glnxa64:
-    MCR_ROOT/v90/bin/glnxa64:
-    MCR_ROOT/v90/sys/os/glnxa64:
-    MCR_ROOT/v90/sys/opengl/lib/glnxa64
+    MCR_ROOT/v901/runtime/glnxa64:
+    MCR_ROOT/v901/bin/glnxa64:
+    MCR_ROOT/v901/sys/os/glnxa64:
+    MCR_ROOT/v901/sys/opengl/lib/glnxa64
 
     If it is defined, set it to the concatenation of these strings:
 
     ${LD_LIBRARY_PATH}: 
-    MCR_ROOT/v90/runtime/glnxa64:
-    MCR_ROOT/v90/bin/glnxa64:
-    MCR_ROOT/v90/sys/os/glnxa64:
-    MCR_ROOT/v90/sys/opengl/lib/glnxa64
+    MCR_ROOT/v901/runtime/glnxa64:
+    MCR_ROOT/v901/bin/glnxa64:
+    MCR_ROOT/v901/sys/os/glnxa64:
+    MCR_ROOT/v901/sys/opengl/lib/glnxa64
 
    For more detail information about setting the MATLAB Runtime paths, see Package and 
    Distribute in the MATLAB Compiler documentation in the MathWorks Documentation Center.
@@ -104,7 +104,7 @@ In the following directions, replace MCR_ROOT by the directory where the MATLAB 
         NOTE: The environment variable syntax utilizes forward 
               slashes (/), delimited by colons (:).  
         NOTE: When deploying standalone applications, it is possible 
-              to run the shell script file run_fitNODDI_EpLink.sh 
+              to run the shell script file run_fitNODDI_EpLink_MCRv901.sh 
               instead of setting environment variables. See 
               section 2 "Files to Deploy and Package".    
 

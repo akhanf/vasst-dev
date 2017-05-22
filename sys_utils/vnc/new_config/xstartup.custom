@@ -1,0 +1,10 @@
+#!/bin/sh
+DESKTOP_SESSION=gnome-fallback.desktop
+export DESKTOP_SESSION
+gnome-session --session=gnome-flashback --disable-acceleration-check
+vncserver-virtual -kill $DISPLAY
+
+
+
+
+

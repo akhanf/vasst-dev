@@ -1,0 +1,45 @@
+#!/bin/bash
+if [ "$#" -lt 1 ]
+then
+  echo "Usage: $0 <username>" 
+  exit 0
+fi
+
+
+
+newuser=$1
+
+gid=260 #petergrp
+sudo addgroup --gid $gid petergrp
+
+echo user: $newuser
+
+#Create user
+sudo adduser --gid $gid $newuser 
+
+homedir=/home/$newuser
+
+
+#create folder for petergrp mount
+for fs in petergrp EpilepsyDatabase EpilepsyHistology
+do
+
+sudo mkdir -p /eq-nas/$newuser/$fs
+echo "//eq-nas.imaging.robarts.ca/$fs /eq-nas/$newuser/$fs cifs username=$newuser,domain=robarts,noauto,user 0 0" | sudo tee --append /etc/fstab
+
+#link to it
+sudo ln -s /eq-nas/$newuser/$fs /home/$newuser/$fs
+
+done
+
+#profile=/home/$newuser/.bashrc
+#
+#echo "if [ -f /cluster/software/etc/init.sh ]"  | sudo tee --append $profile
+#echo "then" |  sudo tee --append $profile
+#echo " . /cluster/software/etc/init.sh"  | sudo tee --append $profile
+#echo "fi"  | sudo tee --append $profile
+
+#sudo mkdir -p /home/$newuser/.vnc
+#sudo cp -v /cluster/software/etc/vnc/xstartup /home/$newuser/.vnc/xstartup
+
+sudo chown $newuser -R /home/$newuser

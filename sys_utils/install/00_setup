@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+  echo "Usage $0 <hostname> <username> "
+  exit 0
+fi
+
+host=$1
+user=$2
+
+
+tar -cvf  /tmp/remote.tar remote
+scp /tmp/remote.tar $host:~$USER/remote.tar
+ssh -t $host "tar -xvf remote.tar"
+ssh -t $host "cd remote; ./createUser $user"
+ssh -t $host "cd remote; ./install $user"
+ssh -t $host "cd remote; sudo mv profile /home/$user/.profile; sudo mv bashrc /home/$user/.bashrc"
+

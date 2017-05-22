@@ -67,13 +67,9 @@ if current_split_start == 1
     end
 end
 
-% set up the PARFOR Progress Monitor
-[mypath myname myext] = fileparts(mfilename('fullpath'));
-mypath = [mypath '/../ParforProgMonv2/java'];
-pctRunOnAll(['javaaddpath '  mypath]);
 progressStepSize = 100;
-ppm = ParforProgMon(['Fitting ' roifile, ' : '], numOfVoxels-current_split_start+1,...
-                    progressStepSize, 400, 80);
+parfor_progress(numOfVoxels-current_split_start+1);
+
 
 tic
 
@@ -102,7 +98,7 @@ for split_start=current_split_start:progressStepSize:numOfVoxels
         
         % report to the progress monitor
         if mod(i, progressStepSize)==0
-            ppm.increment();
+            parfor_progress;
         end
         
     end
@@ -117,8 +113,7 @@ for split_start=current_split_start:progressStepSize:numOfVoxels
 end
 
 toc
-
-ppm.delete();
+parfor_progress(0);
 
 % save the fitted parameters
 if model.noOfStages == 2

@@ -1,0 +1,9 @@
+emacs23
+vim
+qtcreator
+g++ build-essential cmake cmake-curses-gui
+git subversion
+vnc4server
+openslide-tools imagemagick
+cifs-utils
+nfs-common

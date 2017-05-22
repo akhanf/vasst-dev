@@ -1,0 +1,22 @@
+
+
+sudo apt-get install winbind samba libpam-winbind libpam-krb5 ssh libnss-winbind libpam-winbind realmd krb5-user samba-common packagekit samba-common-bin samba-libs adcli ntp
+
+# use domain: ROBARTS.CA   # all caps!
+
+sudo cp ntp.conf krb5.conf nsswitch.conf sudoers /etc/
+sudo cp smb.conf /etc/samba/
+sudo /etc/init.d/samba restart;
+sudo /etc/init.d/winbind restart
+sudo pam-auth-update 
+
+
+
+# add following to /etc/pam.d/common-session
+session optional pam_mkhomedir.so
+
+
+sudo net ads join -U alik
+wbinfo –u 
+getent passwd ROBARTS\\alik
+

@@ -12,8 +12,6 @@ mkdir -p $INSTALL
 NIFTY_VER=1.3.9
 NIFTY_SRC=$INSTALL/niftyreg-src
 NIFTY_DIR=$INSTALL/niftyreg
-BIN_DIR=$INSTALL/local_install
-mkdir -p $BIN_DIR
 
 
 #RUN apt-get update && apt-get install -qy \
@@ -32,12 +30,18 @@ cmake $NIFTY_SRC \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_TESTING=OFF \
-    -DCMAKE_INSTALL_PREFIX=$BIN_DIR  && \
+    -DCMAKE_INSTALL_PREFIX=$NIFTY_DIR  && \
   make -j$(nproc) && \
   make install && \
   ldconfig
 
-echo ""
-echo "Add the following to your start-up script (.bashrc, .tcshrc):"
-echo "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:$BIN_DIR/lib"
-echo "export PATH=\${PATH}:$BIN_DIR/bin "
+
+INIT=$INSTALL/init.d
+INIT_NIFTYREG=$INIT/niftyreg.sh
+mkdir -p $INIT
+
+#create init script
+echo "#/bin/bash" > $INIT_NIFTYREG
+echo "export LD_LIBRARY_PATH=$NIFTY_DIR/lib:\$LD_LIBRARY_PATH" >> $INIT_NIFTYREG
+echo "export PATH=$NIFTY_DIR/bin:\$PATH" >> $INIT_NIFTYREG
+
