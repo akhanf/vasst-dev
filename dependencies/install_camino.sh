@@ -32,3 +32,4 @@ mkdir -p $INIT
 echo "#/bin/bash" > $INIT_CAMINO
 echo "export MANPATH=$INSTALL/camino/man:\$MANPATH" >> $INIT_CAMINO
 echo "export PATH=$INSTALL/camino/bin:\$PATH" >> $INIT_CAMINO
+echo "export CAMINO_HEAP_SIZE=12000"  >> $INIT_CAMINO

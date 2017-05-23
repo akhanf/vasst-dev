@@ -32,8 +32,7 @@ cmake $NIFTY_SRC \
     -DBUILD_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=$NIFTY_DIR  && \
   make -j$(nproc) && \
-  make install && \
-  ldconfig
+  make install 
 
 
 INIT=$INSTALL/init.d
