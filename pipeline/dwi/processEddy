@@ -3,19 +3,19 @@
 #dependencies: fsl (eddy, fslmerge)
 #precondition: processTopup
 
-if [ "$#" -lt 3 ]
+if [ "$#" -lt 2 ]
 then
  echo "Writes output to dwi/<in_topup>_eddy"
- echo "Usage $0 <in_uncorrected> <in_topup> <subjid/list>"
+ echo "Usage $0 <in_uncorrected> <subjid/list>"
  exit 0
 fi
 
 output_dir=`pwd`
 
 in_uncorrected=$1
-in_topup=$2
+in_topup=${in_uncorrected}_topup
 out_eddy=${in_topup}_eddy
-shift 2
+shift 1
 
 if [ -f $1 ]
 then
