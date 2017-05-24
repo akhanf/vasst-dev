@@ -47,20 +47,39 @@ do
 
 bvec=${dwi%%.nii.gz}.bvec
 bval=${dwi%%.nii.gz}.bval
+json=${dwi%%.nii.gz}.json
 
 suffix=${dwi##*/}
 
  denoise_dwi=$denoise_dir/$suffix
  denoise_bvec=${denoise_dwi%%.nii.gz}.bvec
  denoise_bval=${denoise_dwi%%.nii.gz}.bval
+ denoise_json=${denoise_dwi%%.nii.gz}.json
 
  mkdir -p $denoise_dir
- echo dwidenoise $dwi $denoise_dwi
 
-echo  cp -v $bvec $denoise_bvec
-echo  cp -v $bval $denoise_bval
+ 
+ minvols=10
+
+ nvols=`fslval $dwi dim4`
+ if [ "$nvols" -lt "$minvols" ]
+ then
+  echo "skipping denoise on $denoise_dwi since $nvols is less than minimum $minvols volumes"
+  cp -v $dwi $denoise_dwi
+
+  else
+ 
+ echo  dwidenoise $dwi $denoise_dwi -force
+  dwidenoise $dwi $denoise_dwi -force
+
+
+ fi
+
+  cp -v $bvec $denoise_bvec
+  cp -v $bval $denoise_bval
+  cp -v $json $denoise_json
  
 
 done
 
-
+done
