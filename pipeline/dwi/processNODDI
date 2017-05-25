@@ -35,14 +35,17 @@ subj_dir=$output_dir/$subj
 dwi_dir=$subj_dir/dwi/${in_dwi}
 out_dir=$subj_dir/dwi/${out_name}
 
-fit_noddi=$VASST_DEV_HOME/noddi_mcr/fitNODDI_general/run_fitNODDI_general_MCRv901.sh
 
 
 dwi_vol=$dwi_dir/dwi.nii.gz
 brain_mask=$dwi_dir/brainmask.nii.gz
 
-echo $fit_noddi $MCR_V901 $dwi_vol $brain_mask $out_dir
-$fit_noddi $MCR_V90 $dwi_vol $brain_mask $out_dir
+
+#had some problems with MCR version -- run MATLAB directly for now
+#fit_noddi=$VASST_DEV_HOME/noddi_mcr/fitNODDI_general/run_fitNODDI_general_MCRv901.sh
+#echo $fit_noddi $MCR_V901 $dwi_vol $brain_mask $out_dir
+runMatlabCmd fitNODDI_general "'$dwi_vol'" "'$brain_mask'" "'$out_dir'"
+
 
 
 done

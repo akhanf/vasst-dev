@@ -14,7 +14,7 @@ apt-get update && apt-get install -y libeigen3-dev zlib1g-dev && apt-get clean
 
 #download source and install
 git clone https://github.com/MRtrix3/mrtrix3.git $INSTALL/mrtrix3
-cd $INSTALL/mrtrix3
+pushd $INSTALL/mrtrix3
 ./configure -nogui
 ./build
 
@@ -26,3 +26,4 @@ mkdir -p $INIT
 echo "#/bin/bash" > $INIT_MRTRIX
 echo "export PATH=$INSTALL/mrtrix3/bin:\$PATH" >> $INIT_MRTRIX
 
+popd
