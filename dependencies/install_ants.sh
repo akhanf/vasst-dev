@@ -17,5 +17,6 @@ mkdir -p $INIT
 
 #create init script
 echo "#/bin/bash" > $INIT_ANTS
+echo "export ANTSPATH=$INSTALL/ants" >> $INIT_ANTS
 echo "export PATH=$INSTALL/ants:\$PATH" >> $INIT_ANTS
 
