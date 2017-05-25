@@ -123,5 +123,5 @@ else
 end
 
 % close the parallel pool
-
+%add check to see if exists!
 delete(pool);
