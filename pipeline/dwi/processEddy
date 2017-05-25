@@ -103,11 +103,10 @@ eddy --imain=$eddy_work/dwi_uncorrected --mask=$brainmask --acqp=$topup_work/ped
 dwi_bvec=$eddy_dir/dwi.eddy_rotated_bvecs
 dwi_bval=$eddy_work/dwi_uncorrected.bval
 dwi_vol=$eddy_dir/dwi.nii.gz
-brain_mask=$eddy_dir/brainmask.nii.gz
 
 cp -v $dwi_bvec $eddy_dir/dwi.bvec
 cp -v $dwi_bval $eddy_dir/dwi.bval
-
+cp -v $brainmask $eddy_dir/brainmask.nii.gz
 
 echo dtifit -k $dwi_vol -o $eddy_dir/dwi -m $brain_mask -r $dwi_bvec -b $dwi_bval
 dtifit -k $dwi_vol -o $eddy_dir/dwi -m $brain_mask -r $dwi_bvec -b $dwi_bval
