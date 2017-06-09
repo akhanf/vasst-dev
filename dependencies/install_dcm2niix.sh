@@ -11,7 +11,6 @@ mkdir -p $INSTALL
 
 DCMNII_SRC=$INSTALL/dcm2niix-src
 DCMNII_DIR=$INSTALL/dcm2niix
-mkdir -p $BIN_DIR
 
 
 git clone https://github.com/rordenlab/dcm2niix.git $DCMNII_SRC

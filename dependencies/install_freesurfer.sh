@@ -12,8 +12,8 @@ mkdir -p $INSTALL
 VERSION=6.0.0
 
 pushd $INSTALL
-if false
-then
+#if false
+#then
 wget  ftp://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/$VERSION/freesurfer-Linux-centos6_x86_64-stable-pub-v${VERSION}.tar.gz
 tar -xvzf freesurfer-Linux-centos6_x86_64-stable-pub-v$VERSION.tar.gz \
     --exclude='freesurfer/trctrain' \
@@ -30,7 +30,7 @@ tar -xvzf freesurfer-Linux-centos6_x86_64-stable-pub-v$VERSION.tar.gz \
     --exclude='freesurfer/lib/cuda' \
     --exclude='freesurfer/lib/qt'
 rm freesurfer-Linux-centos6_x86_64-stable-pub-v$VERSION.tar.gz
-fi
+#fi
 popd
 
 INIT=$INSTALL/init.d
