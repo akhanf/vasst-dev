@@ -12,6 +12,12 @@ newuser=$1
 
 echo user: $newuser
 
+if [ ! -e /home/ROBARTS/$newuser ]
+then
+  echo "making new home directory for user: $newuser"
+  sudo mkhomedir_helper $newuser
+fi 
+
 
 #create folder for petergrp mount
 for fs in petergrp EpilepsyDatabase EpilepsyHistology khangrp
@@ -27,14 +33,21 @@ done
 
 profile=/home/ROBARTS/$newuser/.bashrc
 
-echo "if [ -f /cluster/software/etc/init.sh ]"  | sudo tee --append $profile
+#echo "if [ -f /cluster/software/etc/init.sh ]"  | sudo tee --append $profile
+#echo "then" |  sudo tee --append $profile
+#echo " . /cluster/software/etc/init.sh"  | sudo tee --append $profile
+#echo "fi"  | sudo tee --append $profile
+
+sw_dir=/opt
+
+echo "if [ -f $sw_dir/init.sh ]"  | sudo tee --append $profile
 echo "then" |  sudo tee --append $profile
-echo " . /cluster/software/etc/init.sh"  | sudo tee --append $profile
+echo " . $sw_dir/init.sh"  | sudo tee --append $profile
 echo "fi"  | sudo tee --append $profile
 
-sudo mkdir -p /home/$newuser/.vnc
+#sudo mkdir -p /home/$newuser/.vnc
 
-sudo cp /cluster/software/etc/startup.m /home/ROBARTS/$newuser/startup.m
+sudo cp startup.m /home/ROBARTS/$newuser/startup.m
 
 
 
