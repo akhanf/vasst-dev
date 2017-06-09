@@ -10,7 +10,7 @@ fi
 INSTALL=$1
 mkdir -p $INSTALL
 
-apt-get install fsl-core fsl-atlases fsl-5.0-eddy-nonfree afni
+apt-get install -y fsl-core fsl-atlases fsl-5.0-eddy-nonfree afni
 INIT=$INSTALL/init.d
 mkdir -p $INIT
 
