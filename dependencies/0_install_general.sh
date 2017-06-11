@@ -8,6 +8,7 @@ exit 0
 fi
 
 #note: install folder is not used..
+apt-get update
 apt-get install  -y \
   bison \
   build-essential \
