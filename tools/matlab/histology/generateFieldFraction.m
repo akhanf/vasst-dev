@@ -74,7 +74,9 @@ hist_res=0.5;
 scalefac=res_microns./hist_res;
 
 
-imgSizes=mexAperioTiff(tif);
+%imgSizes=mexAperioTiff(tif);
+imgSizes=getAperioImgSizes(tif);
+
 
 ds_size=ceil(imgSizes(1,:)./scalefac);
 Nx=ds_size(1);

@@ -82,8 +82,9 @@ proceed=true;
         if ( proceed )
                 
                 %read in tif
-                imgSizes=mexAperioTiff(histFile);
-                
+             %   imgSizes=mexAperioTiff(histFile);
+                imgSizes=getAperioImgSizes(tif);
+
                 
                 origvox=[0.0005,0.0005];
                 
@@ -109,8 +110,9 @@ proceed=true;
                 end              
 
                 %whichImg = size(imgSizes,1)-1;
-                img=mexAperioTiff(histFile,whichImg,1,imgSizes(whichImg,1),1,imgSizes(whichImg,2));
-                
+                %img=mexAperioTiff(histFile,whichImg,1,imgSizes(whichImg,1),1,imgSizes(whichImg,2));
+                img=imread(histFile,whichImg,'PixelRegion',{[1,imgSizes(whichImg,1)],[1,imgSizes(whichImg,2)]});
+
                 %flip according to orientation
                 
                 % Legend of Orientation positions:

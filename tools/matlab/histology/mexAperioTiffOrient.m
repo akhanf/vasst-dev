@@ -7,8 +7,10 @@ function img=mexAperioTiffOrient(tif,imselect,begX,endX,begY,endY,orient_flag);
 % accordingly..
 
 
-               imgSizes=mexAperioTiff(tif);
-               
+          %     imgSizes=mexAperioTiff(tif);
+               imgSizes=getAperioImgSizes(tif);
+                               
+
                nx=imgSizes(imselect,1);
                ny=imgSizes(imselect,2);
         
@@ -20,8 +22,9 @@ switch orient_flag
         o_begY=begY;
         o_endY=endY;
         
-        img=mexAperioTiff(tif,imselect,o_begX,o_endX,o_begY,o_endY);
-        
+       % img=mexAperioTiff(tif,imselect,o_begX,o_endX,o_begY,o_endY);
+        img=imread(tif,imselect,'PixelRegion',{[o_begX,o_endX],[o_begY,o_endY]});
+
     case 2
         % 90 deg right
        % imgRot=imrotate(img,-90);
@@ -36,8 +39,10 @@ switch orient_flag
         o_endY=ny-begY;
         o_begY=ny-endY;
 
-        img=mexAperioTiff(tif,imselect,o_begX,o_endX,o_begY,o_endY);
-        img=imrotate(img,180);
+        %img=mexAperioTiff(tif,imselect,o_begX,o_endX,o_begY,o_endY);
+        img=imread(tif,imselect,'PixelRegion',{[o_begX,o_endX],[o_begY,o_endY]});
+
+                img=imrotate(img,180);
                 
     case 4
         % 90 deg left
@@ -53,7 +58,9 @@ switch orient_flag
         o_begY=begY;
         o_endY=endY;
              
-        img=mexAperioTiff(tif,imselect,o_begX,o_endX,o_begY,o_endY);
+        %img=mexAperioTiff(tif,imselect,o_begX,o_endX,o_begY,o_endY);
+        img=imread(tif,imselect,'PixelRegion',{[o_begX,o_endX],[o_begY,o_endY]});
+
         img=img(end:-1:1,1:1:end,:);
       
 
@@ -71,7 +78,8 @@ switch orient_flag
         o_endY=ny-begY;
         o_begY=ny-endY;
  
-        img=mexAperioTiff(tif,imselect,o_begX,o_endX,o_begY,o_endY);
+       % img=mexAperioTiff(tif,imselect,o_begX,o_endX,o_begY,o_endY);
+        img=imread(tif,imselect,'PixelRegion',{[o_begX,o_endX],[o_begY,o_endY]});
 
         img=img(1:1:end,end:-1:1,:);
 

@@ -48,7 +48,9 @@ tif=sprintf('%s/../tif/%s.tif',path,name);
 index=find(strcmp(tifs,sprintf('%s.tif',name)));
     
 
-imgSizes=mexAperioTiff(tif);
+%imgSizes=mexAperioTiff(tif);
+imgSizes=getAperioImgSizes(tif);
+
 imsize=imgSizes(1,:);
 orientflag=orientflags(index);
 

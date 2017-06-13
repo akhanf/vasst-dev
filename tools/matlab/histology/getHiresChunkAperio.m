@@ -13,7 +13,8 @@ function [img,ds_pix_x,ds_pix_y]=getHiresChunkAperio(tif,Nx, Ny, i, j,scalefac,p
 % i=202;
 % j=199;
 
-imgSizes=mexAperioTiff(tif);
+%imgSizes=mexAperioTiff(tif);
+imgSizes=getAperioImgSizes(tif);
 
 
 
@@ -62,7 +63,9 @@ if(nargin>5)
 end
 
 %get (i,j)-th block
-img=mexAperioTiff(tif,1,bx,ex,by,ey);
+%img=mexAperioTiff(tif,1,bx,ex,by,ey);
+img=imread(tif,1,'PixelRegion',{[bx,ex],[by,ey]});
+
 if(scalefac ~=0)
 
 ds_pix_x=[beginx_ds(i):endx_ds(i)];

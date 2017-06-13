@@ -33,7 +33,8 @@ sigma=5;
 scalefac=200;
 
 
-imgSizes=mexAperioTiff(tif);
+%imgSizes=mexAperioTiff(tif);
+imgSizes=getAperioImgSizes(tif);
 
 ds_size=ceil(imgSizes(1,:)./scalefac);
 Nx=ds_size(1);
