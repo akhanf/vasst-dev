@@ -1,0 +1,62 @@
+#!/bin/bash
+
+
+if [ "$#" -lt "2" ]
+then
+ echo "Script to robustly strip skull by processing Mo Map from despot1"
+ echo ""
+ echo "Usage: $0 <session_id> <subject IDs>"
+
+ exit 0
+fi
+
+session_id=$1
+shift 1
+
+for subj in $@
+do
+
+datadir=/eq-nas/$USER/EpilepsyDatabase
+bindir=/eq-nas/$USER/EpilepsyDatabase/scripts
+
+echo "Processing subject $subj"
+
+despotdir=$data_dir/$subj/$session_id/Despot
+outdir=$data_dir/$subj/$session_id/Processed/BrainMask
+
+
+mkdir -p $outdir
+mkdir -p $outdir/work
+
+m0map=$despotdir/DESPOT1HIFI_MoMap.nii.gz
+
+m0brain=$outdir/work/MoMap_bet.nii.gz
+
+#if [ ! -e $m0brain ]
+#then
+#bet $m0map $m0brain -R -v
+bet $m0map $m0brain -v -f 0.3  ###  changed on Oct 29, 2012 -- found that previous setting undersegments the brain sometimes
+#fi
+
+#if [ ! -e $outdir/BrainMask.nii.gz ]
+#then
+m0binary=$outdir/work/MoMap_bet_th.nii.gz
+thval=10000
+#threshold Mo map 
+fslmaths $m0brain -thr $thval -bin $m0binary
+
+m0morph=$outdir/work/MoMap_bet_th_morph.nii.gz
+fslmaths $m0binary  -ero $m0morph
+fslmaths $m0morph  -dilM $m0morph
+fslmaths $m0morph  -dilM $m0morph
+fslmaths $m0morph  -ero $m0morph
+
+cp $m0morph $outdir/BrainMask.nii.gz
+#fi
+
+#if [ ! -e $outdir/BrainMask_distmap.nii.gz ]
+#then
+
+mri_distance_transform $outdir/BrainMask.nii.gz 0 256 1 $outdir/BrainMask_distmap.nii.gz
+#fi
+done

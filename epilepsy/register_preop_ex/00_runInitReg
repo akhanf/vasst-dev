@@ -1,0 +1,45 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage: <structure -- Hp or Neo>  <subjids> ..."
+ echo "If all files present, will run 1.0_InitRegExToPre"
+ exit
+fi
+
+#checks for the side, and session of the subjects
+#checks if MRI_PreExReg.nii.gz exists
+#runs 1.0 with the information it gathered
+
+struct=$1
+
+shift 1
+
+DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
+
+for subj in $@
+do
+
+ side=`grep $subj lists/subjects_side.csv`
+
+ side=${side##*,}
+
+  
+ in_mri=`ls $DATA_DIR/$subj/Ex/*/$struct/MRI_PreExReg.nii.gz | tail -n 1`
+ 
+if [ ! -n "$in_mri" ]
+ then 
+  echo $subj does not have MRI_PreExReg.nii.gz
+  continue
+ fi
+
+ session=${in_mri##*Ex/}
+ session=${session%%/*}
+
+#  echo subj $subj
+# echo side $side
+# echo session $session
+
+ ./1.0_InitRegExToPre $subj $struct $session $side
+
+done

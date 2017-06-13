@@ -1,0 +1,66 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then 
+echo "Reorients ex DTI images using existing reorientation string"
+echo "  To find orientation string, open imported NIFTI in fslview, and look at existing labels where {R A S} should be; orientation string is the sequence of 3 letters corresponding to these labels."
+echo "Usage: $0 <struct> <orient> <subjids ...> "
+exit 0
+fi
+
+struct=$1
+orient=$2
+
+shift 2
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+session=9.4T
+
+for subjid in $@
+do
+
+
+subj_dir=$data_dir/$subjid/Ex/$session/${struct}_ScannerOrient
+out_dir=$data_dir/$subjid/Ex/$session/${struct}
+
+echo "$subjid $session $struct $orient" > $out_dir/reorient_parameters.DTI12.txt
+
+for nii in `ls $subj_dir/DTI12*.nii.gz`
+do
+ 
+ 
+ nii_prefix=${nii%%.nii.gz}
+ nii_prefix=${nii_prefix##*/}
+ outfile=$out_dir/${nii_prefix}.reorient.nii.gz
+ sform=$out_dir/${nii_prefix}.sform.txt
+
+if [  -e $outfile ]
+ then
+    echo "Overwriting existing $outfile!"
+ fi
+
+echo runMatlabCmd getReorientedSform "'$nii'" "'$orient'" "'$sform'"
+ runMatlabCmd getReorientedSform "'$nii'" "'$orient'" "'$sform'"
+
+echo cp -v $nii $outfile
+ cp -v $nii $outfile
+
+## added below 3 lines (deleteorient, setsform/qform code to 1) before setting sform/qform to deal with problem cases where sform code is not correctly set
+ echo fslorient -deleteorient  $outfile
+ fslorient -deleteorient  $outfile
+ echo fslorient -setsformcode 1 $outfile
+ fslorient -setsformcode 1 $outfile
+ echo fslorient -setqformcode 1 $outfile
+ fslorient -setqformcode 1 $outfile
+
+
+
+ echo fslorient -setsform `cat $sform` $outfile
+ fslorient -setsform `cat $sform` $outfile
+ echo fslorient -setqform `cat $sform` $outfile
+ fslorient -setqform `cat $sform` $outfile
+
+done
+
+
+done

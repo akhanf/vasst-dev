@@ -1,0 +1,35 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage: $0 <subj> <structure> <histology study (e.g. Histology)>"  #<session>"
+ echo ""
+ echo " e.g.:  $0 EPI_P014 Neo" #Post_fix"
+ echo ""
+ exit
+fi
+
+subj=$1
+struct=$2
+histology_study=$3
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase/$subj/Processed/Ex-Hist_Reg
+mri=`ls $data_dir/*/$struct/3drigid_iter5/reg_ex_mri.nii.gz | head -n 1`
+if [ ! -n "$mri" ]
+then 
+ echo $subj mri does not exist!
+ exit 0
+fi
+
+session=${mri##*Ex-Hist_Reg/}
+session=${session%%/*}
+
+for png_res in 20 #100 20
+do
+
+runMatlabCmd genAlignedNiftiRGB "'$subj'" "'$struct'" "'$session'" "$png_res" "'$histology_study'"
+
+done
+
+

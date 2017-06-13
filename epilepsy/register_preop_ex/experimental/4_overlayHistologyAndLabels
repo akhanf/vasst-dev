@@ -1,0 +1,51 @@
+#!/bin/bash
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+subj=EPI_P040
+
+struct=Hp
+out_dir=$data_dir/$subj/Processed/reg7Tto3T/$struct
+
+
+echo ""
+echo " copy-paste to view:"
+echo ""
+
+label_descrip=hipp_subfields_itksnap.label
+
+hist_rgb=~/EpilepsyDatabase/EPI_P040/Processed/Ex-Hist_Reg/9.4T/Hp/aligned_rgb_100um_Histology_Hp/NEUN_rigid_rgb_100um.nii.gz
+
+#hist_grayscale=/home/ROBARTS/alik/EpilepsyHistology/Histology_Hp/EPI_P040/100um_Grayscale/aligned/Hp_NEUN/grayscale_deformable_100um.nii.gz
+hist_subfields=/home/ROBARTS/alik/EpilepsyHistology/Histology_Hp/EPI_P040/100um_Annotations_subfields/aligned/Hp_NEUN/subfields_deformable_100um.nii.gz
+
+echo "compare histology with histo_subfields"
+echo "itksnap -m $hist_rgb -s $hist_subfields  -l $label_descrip --compact c & "
+#itksnap -m $hist_rgb -s $hist_subfields  -l $label_descrip  & 
+echo ""
+
+for segtype in unfold ding wisse winterburn
+do
+
+mri_subfields=$out_dir/subfields_${segtype}/hist_aligned/hipp.$segtype.tps.aligned_100um.nii.gz
+echo "compare histology with 7T $segtype"
+echo "itksnap -m $hist_rgb -s $mri_subfields -l $label_descrip --compact c&"
+#itksnap -m $hist_rgb -s $mri_subfields -l $label_descrip &
+echo ""
+
+done
+
+
+ex_mri=~/EpilepsyDatabase/EPI_P040/Processed/Ex-Hist_Reg/9.4T/Hp/aligned_Ex_100um/reg_ex_mri_100um.nii.gz
+
+echo "compare 9.4T with histology:"
+echo "itksnap -m $hist_rgb -o $ex_mri &"
+
+echo ""
+
+#hist_grayscale_rigid=/home/ROBARTS/alik/EpilepsyHistology/Histology_Hp/EPI_P040/100um_Grayscale/aligned/Hp_NEUN/grayscale_rigid_100um.nii.gz
+#echo "compare 9.4T with histology_noDeformable:"
+#echo "itksnap -m $ex_mri -o $hist_grayscale_rigid&"
+
+hist_rgb_20um=~/EpilepsyDatabase/EPI_P040/Processed/Ex-Hist_Reg/9.4T/Hp/aligned_rgb_20um_Histology_Hp/NEUN_rigid_rgb_20um.nii.gz
+echo itksnap -m $hist_rgb_20um

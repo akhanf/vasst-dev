@@ -1,0 +1,41 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+ then
+ echo "$0 <structure (Neo, Hp)>  <SUBJIDs ...> "
+ exit 0
+fi
+
+
+DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
+struct=$1
+shift 1
+
+for subj in $@
+do
+
+out_dir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/Ex_warpedToPre
+init_dir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/Init_images
+
+ref_04mm=$init_dir/T1map_crop_res0.4.nii.gz
+reg_04mm=$out_dir/Ex_RegToPre04.nii.gz
+nreg_04mm=$out_dir/Ex_NregToPre04.nii.gz
+
+
+ 
+echo $subj
+
+if [ ! -e $reg_04mm ]
+then
+  echo "  rigid registration not done yet!"
+  echo "$reg_04mm does not exist"
+ continue
+fi
+
+  echo "pre: $ref_04mm"
+  echo "ex: $reg_04mm" 
+  fslview $ref_04mm $reg_04mm
+
+echo ""
+
+done

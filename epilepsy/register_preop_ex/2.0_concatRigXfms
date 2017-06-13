@@ -1,0 +1,138 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+ then
+ echo "$0 <subjID> <structure>"
+ echo "Concatenates rigid warps for Pre-Ex registration"
+echo ""
+ exit 0
+fi
+
+
+subj=$1
+struct=$2
+
+DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
+
+xfm_dir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/Init_xfms
+
+slicer=$xfm_dir/Slicer_RAS.xfm
+trans=$xfm_dir/trans.xfm
+
+
+#Convert slicer transform to RAS
+
+if [ ! -e $xfm_dir/Sim_Ex_T1.tfm ]
+then
+  echo "$xfm_dir/Sim_Ex_T1.tfm does not exist!" 
+  exit 0
+fi
+
+
+echo runMatlabCmd convertSlicerTfmToRAS "'$xfm_dir/Sim_Ex_T1.tfm'" "'$xfm_dir/Slicer_RAS.xfm'"
+runMatlabCmd convertSlicerTfmToRAS "'$xfm_dir/Sim_Ex_T1.tfm'" "'$xfm_dir/Slicer_RAS.xfm'"
+
+
+#bug in trans xfm, need to negate Z
+#echo "negating z-trans in $trans"
+#cat $trans
+row1=`cat $trans | head -n 1 | tail -n 1`
+row2=`cat $trans | head -n 2 | tail -n 1`
+row3=`cat $trans | head -n 3 | tail -n 1`
+row4=`cat $trans | head -n 4 | tail -n 1`
+
+ztrans=${row3##*\ }
+ztrans=`bashcalc "$ztrans*-1"`
+row3="0 0 1 $ztrans"
+
+
+outxfmdir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/final_xfm
+mkdir -p $outxfmdir
+
+transn=$xfm_dir/trans_negZ.xfm
+echo "$row1" > $transn
+echo "$row2" >> $transn
+echo "$row3" >> $transn
+echo "$row4" >> $transn
+
+
+#echo "after negate:"
+#cat $transn
+
+
+slicer_inv=$xfm_dir/Slicer_RAS_inverse.xfm
+
+#invert slicer tfm
+echo convert_xfm -omat $slicer_inv -inverse $slicer
+convert_xfm -omat $slicer_inv -inverse $slicer
+
+pre_ex=$outxfmdir/pre-ex.xfm
+
+#concat inv(slicer)*transn
+echo convert_xfm -omat $pre_ex -concat $slicer_inv $transn
+convert_xfm -omat $pre_ex -concat $slicer_inv $transn
+
+
+ex_pre=$outxfmdir/ex-pre.xfm
+echo convert_xfm -omat $ex_pre -inverse $pre_ex 
+convert_xfm -omat $ex_pre -inverse $pre_ex 
+
+ex_pre_tfm=$outxfmdir/ex-pre.tfm
+pre_ex_tfm=$outxfmdir/pre-ex.tfm
+
+#convert to Slicer tfm
+if [ ! -e $ex_pre_tfm ]
+then
+runMatlabCmd convertRegAladinToSlicerTfm "'$ex_pre'" "'$ex_pre_tfm'"
+fi
+
+#convert to Slicer tfm
+if [ ! -e $pre_ex_tfm ]
+then
+runMatlabCmd convertRegAladinToSlicerTfm "'$pre_ex'" "'$pre_ex_tfm'"
+fi
+
+
+
+
+#now create xfms for pre-aligned
+
+ex_hist_dir=`ls -d $DATA_DIR/$subj/Processed/Ex-Hist_Reg/*/$struct | head -n 1`
+ex_aligned=$ex_hist_dir/final_xfm/ex-aligned.xfm
+
+if [ ! -e $ex_aligned ]
+then
+ echo "Ex-Hist registration not yet run for $subj, $struct !"
+ exit 0
+fi
+
+
+
+pre_aligned=$outxfmdir/pre-aligned.xfm
+aligned_pre=$outxfmdir/aligned-pre.xfm
+
+echo convert_xfm -omat $pre_aligned -concat $pre_ex $ex_aligned
+convert_xfm -omat $pre_aligned -concat $pre_ex $ex_aligned
+#echo convert_xfm -omat $pre_aligned -concat $ex_aligned $pre_ex
+#convert_xfm -omat $pre_aligned -concat $ex_aligned $pre_ex
+
+echo convert_xfm -omat $aligned_pre -inverse $pre_aligned
+convert_xfm -omat $aligned_pre -inverse $pre_aligned
+
+pre_aligned_tfm=$outxfmdir/pre-aligned.tfm
+aligned_pre_tfm=$outxfmdir/aligned-pre.tfm
+
+
+echo runMatlabCmd convertRegAladinToSlicerTfm "'$pre_aligned'" "'$pre_aligned_tfm'"
+runMatlabCmd convertRegAladinToSlicerTfm "'$pre_aligned'" "'$pre_aligned_tfm'"
+echo runMatlabCmd convertRegAladinToSlicerTfm "'$aligned_pre'" "'$aligned_pre_tfm'"
+runMatlabCmd convertRegAladinToSlicerTfm "'$aligned_pre'" "'$aligned_pre_tfm'"
+
+
+
+
+
+
+
+
+

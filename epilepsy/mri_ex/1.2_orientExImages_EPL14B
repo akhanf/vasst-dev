@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# 1. optionally extracts Neo and Hp from combined image
+
+#do next part in separate script:
+# 2. Sets ex-mri nifti headers to proper anatomical orientation -- need to determine this beforehand by examination of images with pre-op
+
+
+# input arguments:   axis to split Hp/Neo (x,y,z),   slice index, k, to split (0 to N-1),  name for first image (0 to k), name for second image (k+1 to N-1)
+
+
+#save input arguments to log file
+
+
+subjid=$1
+session=$2
+struct=$3
+orientation=$4
+
+if [ "$#" -lt 4 ]
+then 
+echo "Reorients ex mri images"
+echo "  To find orientation string, open imported NIFTI in fslview, and look at existing labels where {R A S} should be; orientation string is the sequence of 3 letters corresponding to these labels."
+echo "Usage: $0 <subjid> <session> <structure (Hp,Neo)> <orientation string>"
+exit 0
+fi
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase/EPL14B/legacy
+
+subj_dir=$data_dir/$subjid/Ex/$session/${struct}_ScannerOrient
+out_dir=$data_dir/$subjid/Ex/$session/${struct}
+mkdir -p $out_dir
+
+echo $@ > $out_dir/reorient_parameters.txt
+
+
+for nii in `ls $subj_dir/*.nii.gz`
+do
+
+ 
+ nii_prefix=${nii%%.nii.gz}
+ nii_prefix=${nii_prefix##*/}
+ outfile=$out_dir/${nii_prefix}.reorient.nii.gz
+ sform=$out_dir/${nii_prefix}.sform.txt
+
+ first=${nii_prefix:0:3}
+ if [ "$first" = "DTI" ]
+ then
+   continue
+ fi 
+
+
+ #add something to avoid
+
+ if [  -e $outfile ]
+ then
+    echo "Overwriting existing $outfile!"
+ fi
+
+ echo runMatlabCmd getReorientedSform "'$nii'" "'$orientation'" "'$sform'"
+ runMatlabCmd getReorientedSform "'$nii'" "'$orientation'" "'$sform'"
+
+ echo cp -v $nii $outfile
+ cp -v $nii $outfile
+
+## added below 3 lines (deleteorient, setsform/qform code to 1) before setting sform/qform to deal with problem cases where sform code is not correctly set
+ echo fslorient -deleteorient  $outfile
+ fslorient -deleteorient  $outfile
+ echo fslorient -setsformcode 1 $outfile
+ fslorient -setsformcode 1 $outfile
+ echo fslorient -setqformcode 1 $outfile
+ fslorient -setqformcode 1 $outfile
+
+ echo fslorient -setsform `cat $sform` $outfile
+ fslorient -setsform `cat $sform` $outfile
+ echo fslorient -setqform `cat $sform` $outfile
+ fslorient -setqform `cat $sform` $outfile
+
+
+ #make sure handedness is radiological 
+ #if not, then swaporient, fslswapdim -x y z
+
+hand=`fslorient -getorient $outfile`;
+echo hand: $hand
+
+if [ $hand = NEUROLOGICAL ] ; then
+
+echo changing convention to RADIOLOGICAL
+echo fslorient -swaporient $outfile
+fslorient -swaporient $outfile
+echo fslswapdim $outfile -x y z $outfile
+fslswapdim $outfile -x y z $outfile
+fi
+
+ 
+done
+
+
+

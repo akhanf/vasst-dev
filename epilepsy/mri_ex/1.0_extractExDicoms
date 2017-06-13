@@ -1,0 +1,203 @@
+#!/bin/bash
+
+#run this for a list of subjects
+if [ ! "$#" = "3" ]
+then
+ echo "Script to extract nifti images from Ex-vivo DICOMS"
+ echo "Uses dicom2 to query headers and dcm2nii to extract and reorient images. Ensure that these are in your path before running."
+ echo ""
+ echo "Usage: $0 <subject ID> <specimen_name (Combined,Hp,Neo)> <session (Pre_fix, Post_fix)"
+
+ exit 0
+fi
+
+
+
+subj=$1
+sample=$2
+fix=$3
+
+datadir=..
+
+#can be nii or img (nifti or analyze)
+format=nii
+
+
+
+
+echo "Processing subject $subj"
+
+
+
+
+origoutdir=$datadir/$subj/Ex/$fix
+outdir=/tmp/$subj/Ex/$fix
+mkdir -p $origoutdir
+
+#dicomdir=$datadir/$subj/Ex/$fix/Dicoms
+
+#with eq-nas, dcm2nii has major problems reading in dicoms, so need to copy to local folder, read dicoms from there, then remove local dicoms
+origdicomdir=$datadir/$subj/Ex/$fix/Dicoms
+dicomdir=/tmp/dicoms$subj
+
+if [ -e $dicomdir ]
+then
+rm -rf $dicomdir
+fi
+
+mkdir -p $dicomdir
+echo "copying dicoms to local folder for reading"
+cp -R $origdicomdir/* $dicomdir
+echo "done copying"
+
+
+
+
+
+
+
+
+#first get series description from first file of each folder
+mkdir -p $outdir
+
+i=0
+for folder in `ls -d $dicomdir/[0-9]*/[0-9]*`
+do
+ 
+ # prepend number to each one
+ i=$((i+1))
+
+ firstdcm=`ls $folder/*.dcm | head -n 1`
+
+#  echo $firstdcm
+  series=`dicom2 -t1 $firstdcm | grep "Series Description"`
+  series=${series##*\[}
+  series=${series%%\]*}
+#  echo $series
+
+#  flip=`dicom2 -t1 $firstdcm | grep "Flip Angle ("`
+#  flip=${flip##*\[}
+#  flip=${flip%%\]*}
+#  echo $flip
+
+#naming: 
+ #  replace spaces and /  with _
+ # remove trailing periods
+ name=${series//\ /_}
+ name=${name//\//_}
+ name=${name%.}
+ 
+sub=${name:0:5}
+ name=${i}_$name
+
+
+imgdir=$outdir/$type/${sample}_ScannerOrient
+mkdir -p $imgdir
+
+
+#despot name should be despot1_tr$tr_fa$fa_st$st_nex$nex_m$m
+
+
+# echo $name
+
+ #check if one of the skipped types
+#check against 1st 5 char
+ echo sub : $sub
+
+ coil=`dicom2 -t1 $firstdcm | grep "Receiving Coil"`
+ coil=${coil##*\ }
+ coil=${coil%%]*}
+
+ skip=0
+
+ if [ "$coil" = "Solenoid" -a "$sample" = "Neo" ]
+ then
+  skip=1
+ fi
+
+ if [ "$coil" = "Toro4ch" -a "$sample" = "Hp" ]
+ then
+  skip=1
+ fi
+
+
+ if [ "$sub" = "LOCAL" -o "$sub" = "ASSET" -o "$sub" = "PROBE" -o "$sub" = "Scree" -o "$sub" = "SCREE" -o $skip = 1  ]
+then
+ echo Skipping $name 
+else
+
+
+ #check to see if the output file exists first
+ #if file exists, append a number to the name
+ if [ -e $imgdir/$name.$format ]
+ then 
+ for i in `seq 2 9`
+ do
+ if [ ! -e $imgdir/${name}_${i}.$format ]
+ then 
+   name=${name}_${i}
+   break;
+ fi
+ done
+ fi
+
+ if [ "$format" = "nii" ]
+ then 
+   formatopt="-n y -r n -x n" #don't crop or reorient at all 
+ fi
+
+ if [ "$format" = "img" ]
+ then 
+   formatopt="-n n -s y"
+ fi
+
+if [ "$format" = "nii" ]
+then
+ ext=nii.gz
+else
+ ext=img
+fi
+
+if [ ! -e $imgdir/$name.$ext ]
+then
+
+
+ echo "Writing $name.$format to $imgdir"
+ outfile=`dcm2nii -o $imgdir $formatopt $folder | grep "\->"`
+  outfile=${outfile##*>}
+ outfile=${outfile%%.*}
+
+ #remove cropped images
+# rm -f $imgdir/c$outfile.*
+# rm -f $imgdir/co$outfile.*
+ 
+  #remove non-reoriented first
+#  if [ -e $imgdir/o$outfile.nii.gz ]
+#  then
+#    rm -f $imgdir/$outfile.*
+#    rename o$outfile $name $imgdir/*
+#  else
+     rename $outfile $name $imgdir/*
+#  fi
+fi
+
+#write out txt file for dicom hdr
+dicom2 -t1 --warn=n $firstdcm > $imgdir/$name.txt
+
+
+
+
+fi
+
+
+done #dicom folder
+
+
+echo "removing temp dicom dir $dicomdir"
+rm -rf $dicomdir
+
+#copy to final location
+cp -Rv $outdir/* $origoutdir
+rm -rf $outdir
+
+

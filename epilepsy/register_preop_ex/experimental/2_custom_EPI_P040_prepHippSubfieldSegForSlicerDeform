@@ -1,0 +1,47 @@
+#!/bin/bash
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+subj=EPI_P040
+
+struct=Hp
+out_dir=$data_dir/$subj/Processed/reg7Tto3T/$struct
+
+T2_crop_upsample=$out_dir/T2_slab.crop.upsample.nii.gz
+ex_reg7T_upsample=$out_dir/Ex_reg7T_upsample.nii.gz
+
+
+#in_seg_unfold=~/kohlerlab/Jordan/HippocampalSegmentation/DarkBandTechnique/Manual_segs/p040_l_Unfolded/avgborders_seg.nii.gz
+#in_seg_manual=~/kohlerlab/Jordan/HippocampalSegmentation/DarkBandTechnique/Manual_segs/p040_l_Unfolded/allmanual_Ding.nii.gz
+#seg_unfold=$out_dir/hipp_unfold.nii.gz
+#seg_manual=$out_dir/hipp_manual.nii.gz
+#cp -v $in_seg_unfold $seg_unfold 
+#cp -v $in_seg_manual $seg_manual 
+
+
+
+#split hipp seg into 4D image
+
+
+in_seg_dir=hipp_segs
+
+
+for segtype in unfold ding winterburn wisse 
+do
+
+seg_dir=$out_dir/subfields_$segtype
+mkdir -p $seg_dir
+
+ in_seg=$in_seg_dir/p040_l_${segtype}.nii.gz
+
+ echo splitSegInto4D  $in_seg   subfield_labellist.csv $seg_dir/hipp
+ splitSegInto4D  $in_seg   subfield_labellist.csv $seg_dir/hipp
+
+done
+
+
+
+#cat 00_README_SlicerLandmarkReg
+
+
+#Slicer $T2_crop_upsample $ex_reg7T_upsample #`ls $seg_dir/hipp_{CA1,CA2,CA3,DG,DarkBand,Sub,bgnd}.nii.gz`

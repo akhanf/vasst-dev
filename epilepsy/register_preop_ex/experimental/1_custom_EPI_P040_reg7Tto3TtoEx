@@ -1,0 +1,149 @@
+#!/bin/bash
+
+
+
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+subj=EPI_P040
+
+struct=Hp
+
+T1_1mm_7T=$data_dir/$subj/7T/MPRAGE_1mm.nii.gz
+T1_slab_7T=$data_dir/$subj/7T/MPRAGE_5avg_avg_correct.nii.gz
+T2_slab_7T=$data_dir/$subj/7T/superres/scans.avg4.nii.gz
+
+despot_3T=$data_dir/$subj/Preop/Despot/despot1_tr90_fa18.nii.gz
+despot_map_3T=$data_dir/$subj/Preop/Despot/DESPOT1HIFI_T1Map_brain.nii.gz
+
+
+out_dir=$data_dir/$subj/Processed/reg7Tto3T/$struct
+mkdir -p $out_dir
+
+reg_7T_1mm=$out_dir/MPRAGE_1mm_reg3T.nii.gz
+xfm_7T_pre=$out_dir/7T-pre.xfm
+
+
+
+
+
+#register 7T 1mm T1 to despot1
+echo reg_aladin -ref $despot_3T -flo $T1_1mm_7T -res $reg_7T_1mm -aff $xfm_7T_pre 
+reg_aladin -ref $despot_3T -flo $T1_1mm_7T -res $reg_7T_1mm -aff $xfm_7T_pre 
+
+
+reg_7T_T2=$out_dir/T2_slab_reg3T.nii.gz
+
+#resample T2 for evaluating
+
+echo reg_resample -flo $T2_slab_7T -res $reg_7T_T2 -aff $xfm_7T_pre -ref $despot_3T
+reg_resample -flo $T2_slab_7T -res $reg_7T_T2 -aff $xfm_7T_pre -ref $despot_3T
+
+
+#---------         concatenate ex-pre transform with pre-7T to get ex-7T:
+xfm_7T_ex=$out_dir/7T-ex.xfm
+xfm_ex_7T=$out_dir/ex-7T.xfm
+
+
+pre_ex_dir=$data_dir/$subj/Processed/PreEx_Reg/$struct/final_xfm
+xfm_pre_ex=$pre_ex_dir/pre-ex.xfm
+
+echo convert_xfm -omat $xfm_7T_ex -concat $xfm_7T_pre $xfm_pre_ex
+convert_xfm -omat $xfm_7T_ex -concat $xfm_7T_pre $xfm_pre_ex
+
+echo convert_xfm -omat $xfm_ex_7T -inverse $xfm_7T_ex
+convert_xfm -omat $xfm_ex_7T -inverse $xfm_7T_ex
+
+
+#--------------   concatenate with aligned to get 7T-aligned 
+xfm_7T_aligned=$out_dir/7T-aligned.xfm
+xfm_aligned_7T=$out_dir/aligned-7T.xfm
+
+xfm_pre_aligned=$pre_ex_dir/pre-aligned.xfm
+
+echo convert_xfm -omat $xfm_7T_aligned -concat $xfm_7T_pre $xfm_pre_aligned
+convert_xfm -omat $xfm_7T_aligned -concat $xfm_7T_pre $xfm_pre_aligned
+echo convert_xfm -omat $xfm_aligned_7T -inverse $xfm_7T_aligned
+convert_xfm -omat $xfm_aligned_7T -inverse $xfm_7T_aligned
+
+
+
+
+
+
+T2_regEx=$out_dir/T2_slab_regEx.nii.gz
+T1_regEx=$out_dir/T1_slab_regEx.nii.gz
+T1_1mm_regEx=$out_dir/T1_brain_regEx.nii.gz
+
+
+
+
+
+ex=$data_dir/$subj/Ex/9.4T/$struct/MRI_PreExReg.masked.nii.gz
+
+
+#try it out -- on 7T T2
+echo reg_resample -flo $T2_slab_7T -res $T2_regEx -aff $xfm_7T_ex -ref $ex
+reg_resample -flo $T2_slab_7T -res $T2_regEx -aff $xfm_7T_ex -ref $ex
+
+echo reg_resample -flo $T1_slab_7T -res $T1_regEx -aff $xfm_7T_ex -ref $ex
+reg_resample -flo $T1_slab_7T -res $T1_regEx -aff $xfm_7T_ex -ref $ex
+
+echo reg_resample -flo $T1_1mm_7T -res $T1_1mm_regEx -aff $xfm_7T_ex -ref $ex
+reg_resample -flo $T1_1mm_7T -res $T1_1mm_regEx -aff $xfm_7T_ex -ref $ex
+
+# and on 3T
+despot_regEx=$out_dir/DESPOT1HIFI_regEx.nii.gz
+echo reg_resample -flo $despot_map_3T -aff $xfm_pre_ex -res $despot_regEx -ref $ex
+reg_resample -flo $despot_map_3T -aff $xfm_pre_ex -res $despot_regEx -ref $ex
+
+
+
+
+# now resample Ex to 7T (so deformable can be done)
+ex_reg7T=$out_dir/Ex_reg7T.nii.gz
+
+echo reg_resample -flo $ex -aff $xfm_ex_7T -res $ex_reg7T -ref $T2_slab_7T 
+reg_resample -flo $ex -aff $xfm_ex_7T -res $ex_reg7T -ref $T2_slab_7T 
+
+dilated_mask=$out_dir/Ex_reg7T.dilated_mask.nii.gz
+
+roi_ex_txt=$out_dir/roi.Ex_reg7T.dilated_mask.txt
+#create bounding box from mask ex in 7T space
+echo fslmaths $ex_reg7T -bin -dilM $dilated_mask
+fslmaths $ex_reg7T -bin -dilM $dilated_mask
+echo "fslstats $dilated_mask -w > $roi_ex_txt"
+fslstats $dilated_mask -w > $roi_ex_txt
+
+roi_ex=`cat $roi_ex_txt`
+
+T2_crop=$out_dir/T2_slab.crop.nii.gz
+T2_crop_upsample=$out_dir/T2_slab.crop.upsample.nii.gz
+
+echo fslroi $T2_slab_7T $T2_crop $roi_ex
+fslroi $T2_slab_7T $T2_crop $roi_ex
+
+
+voxdim=0.1
+echo mri_convert $T2_crop $T2_crop_upsample -vs $voxdim $voxdim $voxdim
+mri_convert $T2_crop $T2_crop_upsample -vs $voxdim $voxdim $voxdim
+
+ex_reg7T_upsample=$out_dir/Ex_reg7T_upsample.nii.gz
+echo reg_resample -flo $ex -aff $xfm_ex_7T -res $ex_reg7T_upsample -ref $T2_crop_upsample 
+reg_resample -flo $ex -aff $xfm_ex_7T -res $ex_reg7T_upsample -ref $T2_crop_upsample 
+
+
+#reg_f3d below did not work well..
+
+#sx=28 #was 7 voxels when 0.4mm, now, should be 4*7= 28 voxels
+#be=1e-4
+#ex_nreg=$out_dir/Ex_reg7T_upsample.nreg_sx${sx}_be${be}.nii.gz
+#cpp=$out_dir/Ex_to_7T_nreg.cpp_sx${sx}_be${be}.nii.gz
+
+#echo reg_f3d -flo $T2_crop_upsample -ref $ex_reg7T_upsample -res $ex_nreg -sx -$sx -be $be -cpp $cpp
+#reg_f3d -flo $T2_crop_upsample -ref $ex_reg7T_upsample -res $ex_nreg -sx -$sx -be $be -cpp $cpp
+
+
+
+
+

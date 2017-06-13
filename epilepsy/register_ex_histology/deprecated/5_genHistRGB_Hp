@@ -1,0 +1,24 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage: $0 <subj> <structure> <session>"
+ echo ""
+ echo " e.g.:  $0 EPI_P014 Neo Post_fix"
+ echo ""
+ exit
+fi
+
+subj=$1
+struct=$2
+session=$3
+
+for png_res in 20 100
+do
+
+runMatlabCmd genAlignedNiftiRGB_Hp "'$subj'" "'$struct'" "'$session'" "$png_res"
+
+done
+
+

@@ -1,0 +1,13 @@
+all_subjects good, except
+
+EPI_P032 - needs Rigid reg redo -->  nreg not done either
+EPI_P036 maybe
+
+
+EPI_P041,nreg needs adjustment
+EPI_P043,nreg is good but perhaps deform more?
+EPI_P044,nreg needs adjustment
+EPI_P045,nreg needs adjustment
+EPI_P046,nreg needs alot of adjustment --> maybe rigid is off?
+EPI_P055,nreg needs alot of adjustment
+

@@ -1,0 +1,52 @@
+#!/bin/bash
+
+
+refstain=HE
+struct=Neo
+
+for subj in `cat patients`
+do
+
+coreg_dir=/eq-nas/$USER/EpilepsyDatabase/$subj/Hist/Processed/coregisterToHE
+lmk_dir=/eq-nas/$USER/EpilepsyHistology/Histology/$subj/val_lmks
+
+for stain in NEUN GFAP
+do
+
+
+for in_csv in `ls $lmk_dir/${subj}_*_${stain}_100um_nii.csv`
+do
+
+prefix=${in_csv##*/}
+prefix=${prefix%%.*}
+
+block=${prefix#EPI_P???_}
+block=${block#*_}
+block=${block%%_*}
+
+echo prefix: $prefix
+echo block: $block
+
+src=$coreg_dir/${subj}_${struct}_${block}_${stain}.grayscale.nii.gz
+dest=$coreg_dir/${subj}_${struct}_${block}_${refstain}.grayscale.nii.gz
+xfm=$coreg_dir/flirt_${subj}_${struct}_${block}_${stain}-${refstain}.xfm
+tmp_out_csv=$coreg_dir/${prefix}_xfmToHE.tmp
+out_csv=$coreg_dir/${prefix}_xfmToHE.csv
+
+#img2imgcoord -mm -src $src -dest $dest -xfm $xfm $in_csv
+img2imgcoord -mm -src $src -dest $dest -xfm $xfm $in_csv > $tmp_out_csv
+
+
+N=`cat $in_csv | wc -l`
+echo $N
+
+#strip off first and last line 
+cat $tmp_out_csv | head -n $((N+1)) | tail -n $N  > $out_csv
+rm -f $tmp_out_csv
+
+
+done
+
+done
+
+done

@@ -1,0 +1,172 @@
+#!/bin/bash
+
+if [  "$#" -lt "2" ]
+then
+ echo "Script to compute despot1 images"
+ echo ""
+ echo "Usage: $0 <session_id> <subject_id(s) >"
+
+ exit 0
+fi
+
+session_id=$1
+shift 1
+
+
+for subj in $@
+do
+datadir=/eq-nas/$USER/EpilepsyDatabase
+
+bindir=/eq-nas/$USER/EpilepsyDatabase/scripts
+
+
+
+echo "Processing subject $subj"
+
+
+
+despotdir=$datadir/$subj/$session_id/Despot
+
+#finaldir=$despotdir
+#tempdir=~/epilepsy/local_data/despot1/$subj
+#mkdir -p $tempdir
+##copy despot files to local storage first
+#cp -Rv $despotdir/* $tempdir/
+##now use tempdir as despotdir
+#despotdir=$tempdir
+
+
+spgr_txt1=`ls $despotdir/despot1*fa18.txt | head -n 1`
+spgr_txt2=`ls $despotdir/despot1*fa4.txt | head -n 1`
+ir_txt=`ls $despotdir/irspgr*.txt | head -n 1`
+
+despottype=2 	#hifi
+nspgr=2 #number of spgr images
+
+
+spgr_tr=`dicom/getDicomInfo $spgr_txt1 "Repetition Time"`
+
+
+spgr_img1=${spgr_txt1%%.txt}
+spgr_img2=${spgr_txt2%%.txt}
+
+spgr_fa1=`dicom/getDicomInfo $spgr_txt1 "Flip Angle"`
+spgr_fa2=`dicom/getDicomInfo $spgr_txt2 "Flip Angle"`
+
+
+nir=1
+ir_img=${ir_txt%%.txt}
+ir_ti=`dicom/getDicomInfo $ir_txt "Inversion Time"`  #Inversion Time
+ir_tr=`dicom/getDicomInfo $ir_txt "Repetition Time"`  #Repetition Time
+ir_fa=`dicom/getDicomInfo $ir_txt "Flip Angle"`
+npulse=78  #readout pulses following inversion
+field=3  #field strength
+invmode=2  #number of inversions per slice
+
+outdir=$despotdir/
+
+noiseth=1  #noise threshold scale
+smoothb1=1  #smooth B1 field
+specklerm=0  #enable error-checking and speckle removal
+speckleth=1 #speckle threshold
+
+outdespot=$despotdir/DESPOT1HIFI_T1Map.img
+
+
+
+
+#first, use flirt to co-register images to FA18 image
+ref_img=${spgr_img1}_flt
+
+if [ ! -e $ref_img.img ]
+then
+#SetDataTypeAnalyze $spgr_img1 float $ref_img
+echo fslchfiletype ANALYZE $spgr_img1.nii.gz $ref_img.img
+fslchfiletype ANALYZE $spgr_img1.nii.gz $ref_img.img
+echo mri_convert -odt float $ref_img.img $ref_img.img # --in_orientation RAS --out_orientation RAS
+mri_convert -odt float $ref_img.img $ref_img.img # --in_orientation RAS --out_orientation RAS
+
+fi
+
+
+for in_img in $spgr_img2 $ir_img 
+do
+
+ out_img=${in_img}_reg
+ out_mat=${in_img}_regFlirt.mat
+ flirt_params="-bins 64 -cost corratio -searchrx -5 5 -searchry -5 5 -searchrz -5 5 -dof 6  -interp sinc -sincwidth 7 -sincwindow hanning -datatype float"
+
+ if [ ! -e $out_mat -o ! -e ${out_img}.img ]
+ then
+ echo "Registering $in_img to $ref_img"
+ flirt -v -in $in_img -ref $ref_img -out $out_img -omat $out_mat $flirt_params
+ 
+ #convert from nii to analyze
+ fslchfiletype ANALYZE $out_img
+
+
+ fi
+
+done
+
+spgr_img1=$ref_img
+spgr_img2=${spgr_img2}_reg
+ir_img=${ir_img}_reg
+
+
+echo finishing
+
+
+if [ ! -e $outdespot ]
+then 
+
+#despot1 needs images with diff orientation (i.e. scanning plane in x,y) -- our properly oriented images need to be reoriented
+for img in $spgr_img1 $spgr_img2 $ir_img
+do
+ ReorderImage $img RAS $img PSR 
+done
+
+
+ echo despot1 $despottype $nspgr $spgr_tr $spgr_img1 $spgr_img2 $spgr_fa1 $spgr_fa2 $nir $ir_img $ir_ti $ir_tr $ir_fa $npulse $field $invmode $outdir $noiseth $smoothb1 $specklerm $speckleth
+ despot1 $despottype $nspgr $spgr_tr $spgr_img1 $spgr_img2 $spgr_fa1 $spgr_fa2 $nir $ir_img $ir_ti $ir_tr $ir_fa $npulse $field $invmode $outdir $noiseth $smoothb1 $specklerm $speckleth
+
+
+for img in $spgr_img1 $spgr_img2 $ir_img `ls $outdir/DESPOT*.img`
+do
+   ReorderImage $img PSR $img RAS 
+done
+
+
+qform=`fslorient -getqform $despotdir/despot1_tr90_fa18.nii.gz`
+
+
+for img in `ls $outdir/DESPOT*.img`
+do
+fslchfiletype NIFTI_GZ $img
+#echo  mri_convert --in_orientation LAS --out_orientation LAS $img ${img%img}nii.gz
+#echo rm -f $img ${img%img}hdr
+
+nii=${img%.img}.nii.gz
+
+echo fslorient -setqform $qform $nii
+fslorient -setqform $qform $nii
+echo fslorient -copyqform2sform $nii
+fslorient -copyqform2sform  $nii
+echo fslswapdim $nii -x y z $nii
+fslswapdim $nii -x y z $nii
+
+
+done
+
+
+fi
+
+
+#copy files to final location
+#cp -v $despotdir/DESPOT1HIFI*.nii.gz $finaldir
+
+
+
+
+done
+

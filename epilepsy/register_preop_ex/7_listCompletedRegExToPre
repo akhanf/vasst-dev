@@ -1,0 +1,45 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+ then
+ echo "$0 <structure (Neo, Hp)>  <SUBJIDs ...> "
+ exit 0
+fi
+
+
+DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
+struct=$1
+shift 1
+
+echo "subj,rigid,deformable"
+
+for subj in $@
+do
+
+out_dir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/Ex_warpedToPre
+init_dir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/Init_images
+
+ref_04mm=$init_dir/T1map_crop_res0.4.nii.gz
+reg_04mm=$out_dir/Ex_RegToPre04.nii.gz
+nreg_04mm=$out_dir/Ex_NregToPre04.nii.gz
+
+ 
+echo -n $subj
+
+if [ ! -e $reg_04mm ]
+then
+ echo -n ",N"
+else 
+ echo -n ",Y"
+fi
+
+if [ ! -e $nreg_04mm ]
+then
+ echo  ",N"
+else 
+ echo  ",Y"
+fi
+
+
+
+done

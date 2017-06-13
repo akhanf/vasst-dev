@@ -1,0 +1,284 @@
+#!/bin/bash
+
+
+#run this for a list of subjects
+if [ "$#" -lt "1" ]
+then
+ echo ""
+
+ echo " Run this script from the scripts folder, and does not need a targetList, just the ID"
+ echo "Script to extract nifti images from Preop DICOMS"
+ echo "Uses dicom2 to query headers and dcm2nii to extract and reorient images. Ensure that these are in your path before running."
+ echo ""
+ echo "Usage: $0 <subject ID>"
+
+ exit 0
+fi
+
+datadir=/eq-nas/$USER/EpilepsyDatabase
+
+#bindir may be deprecated, points to non-existant extractGradientTable script
+bindir=.
+
+
+for subj in $@
+do
+
+
+#can be nii or img (nifti or analyze)
+format=nii.gz
+
+
+echo "Processing subject $subj"
+
+outdir=$datadir/$subj/Preop
+
+
+#with eq-nas, dcm2nii has major problems reading in dicoms, so need to copy to local folder, read dicoms from there, then remove local dicoms
+origdicomdir=$datadir/$subj/Preop/Dicoms
+dicomdir=/tmp/dicoms$subj
+if [ -e $dicomdir ]
+then
+rm -rf $dicomdir
+fi
+
+mkdir -p $dicomdir
+echo "copying dicoms to local folder for reading"
+cp -R $origdicomdir/* $dicomdir
+echo "done copying"
+
+
+
+
+#first get series description from first file of each folder
+mkdir -p $outdir/Despot
+mkdir -p $outdir/fMRI
+mkdir -p $outdir/DTI
+
+#make link as 3T
+#ln -s Preop $datadir/$subj/3T
+
+filelist=$origdicomdir/file_list.txt
+rm -f $filelist
+touch $filelist
+
+
+
+for folder in `ls -d $dicomdir/[0-9]*/[0-9]*`
+do
+ 
+ firstdcm=`ls $folder/*.dcm | head -n 1`
+
+#  echo $firstdcm
+  series=`dicom2 -t1 $firstdcm | grep "Series Description"`
+  series=${series##*\[}
+  series=${series%%\]*}
+#  echo $series
+
+#  flip=`dicom2 -t1 $firstdcm | grep "Flip Angle ("`
+#  flip=${flip##*\[}
+#  flip=${flip%%\]*}
+#  echo $flip
+
+#naming: 
+ #  replace spaces and /  with _
+ # remove trailing periods
+ name=${series//\ /_}
+ name=${name//\//_}
+ name=${name%.}
+
+# echo $name
+
+ #check if one of the skipped types
+#check against 1st 5 char
+ sub=${name:0:5}
+ if [ "$sub" = "ASSET" ]
+then
+ echo Skipping $name
+else
+
+
+
+ #write it here..
+ if [ "$sub" = "DTI_2" -o "$sub" = "Avera" -o "$sub" = "Fract" -o "$sub" = "Isotr" -o "$sub" = "Axial" ]
+then
+ type=DTI
+else
+ type=Despot
+fi
+
+
+if [ "$sub" = "Non_B" -o "$sub" = "RESTI" ]
+then 
+  type=fMRI
+  name=rs_fmri
+fi
+
+ if [ "$sub" = "PROBE" -o "$sub" = "Scree" -o "$sub" = "SCREE" -o "$sub" = "LOCAL" ]
+ then 
+  type=Spectro
+ fi
+
+
+mkdir -p $outdir/$type
+
+
+ #check to see if the output file exists in the filelist
+ #if file exists, append a number to the name
+ isdupe=`grep $name $filelist`
+# if [ -e $outdir/$type/$name.$format ]
+ if [ -n "$isdupe" ]
+ then 
+ for i in `seq 2 9`
+ do
+ echo "isdupe, checking i=$i" 
+ isdupe=`grep ${name}_${i} $filelist`
+# if [ ! -e $outdir/$type/${name}_${i}.$format ]
+ if [ ! -n "$isdupe" ]
+ then 
+   name=${name}_${i}
+
+   echo "found unique name: $name"
+   break;
+ fi
+ done
+ fi
+ 
+ echo "$name" >> $filelist
+
+
+
+###temporary only to get data from mag+phase images
+#if [ "$name" = "despot1_tr90_fa18" -o "$name" = "despot1_tr90_fa4" ]
+#then
+#  format=img
+#fi
+
+
+
+
+ if [ "$format" = "nii.gz" ]
+ then 
+   formatopt="-n y"
+ fi
+
+ if [ "$format" = "img" ]
+ then 
+   formatopt="-n n -s y"
+ fi
+
+if [ ! -e $outdir/$type/$name.$format ]
+then
+
+logfile=$outdir/$type/$name.log
+
+ if [ "$type" = "DTI" ]
+ then
+ reorient_opt="-r n"
+ else
+ reorient_opt="-r y"
+ fi
+
+ echo "Writing $name.$format to $outdir/$type"
+ echo dcm2nii -o $outdir/$type $formatopt $reorient_opt $folder
+ outfile=`dcm2nii -o $outdir/$type $formatopt $reorient_opt $folder |tee $logfile | grep "\->"`
+#echo "outfile raw: $outfile"
+  outfile=${outfile##*>}
+ outfile=${outfile%%.*}
+
+cat $logfile
+
+echo "outfile filtered: $outfile"
+
+
+
+
+
+
+ #remove cropped images
+ rm -f $outdir/$type/co$outfile.*
+ 
+ if [ "$sub" = "DTI_2" ]
+ then
+  #DTI not reoriented
+  rename $outfile $name $outdir/$type/*
+
+   else
+  #remove non-reoriented first 
+  #rm -f $outdir/$type/$outfile.*  -- for nifti format no "o" prefix 
+
+  #if o${outfile} exists, then mv o${outfile} to ${outfile} 
+  
+  #if o${outfile} does not exist, then mv ${outfile} to o${outfile}
+  if [ -e $outdir/$type/o${outfile}.nii.gz ]
+  then
+     echo rename o$outfile $name $outdir/$type/o${outfile}.*
+     rename o$outfile $name $outdir/$type/o${outfile}.*
+     echo rm $outdir/$type/${outfile}*
+     rm $outdir/$type/${outfile}*
+  else
+
+  #deal with 3-plane localizer here:
+  if [ "$name" = "LOCALIZER" ]
+  then
+    outfile=${outfile%B} #strip off last letter
+    rename $outfile ${name}_Axial $outdir/$type/$outfile.*
+    rename ${outfile}A ${name}_Sagittal $outdir/$type/${outfile}A.*
+    rename ${outfile}B ${name}_Coronal $outdir/$type/${outfile}B.*
+
+   else
+ 
+   echo    rename $outfile $name $outdir/$type/${outfile}*
+    rename $outfile $name $outdir/$type/${outfile}*
+
+  fi
+
+
+  fi
+
+
+ fi
+
+fi
+
+if [ "$sub" = "DTI_2" ]
+then
+
+  dicom_link=$outdir/$type/${name}_DICOM
+
+   #create link to DTI dicom folder 
+#  if [ ! -e $dicom_link ]
+#  then
+#  ln -s ../../../$folder $dicom_link
+#  fi
+
+  #generate gradient table from bvec and bval files
+  bval=$outdir/$type/$name.bval
+  bvec=$outdir/$type/$name.bvec
+  gradtable=$outdir/$type/${name}.grad_table.txt
+  
+  if [ -e $bval -a -e $gradtable ] 
+  then
+  $bindir/extractGradientTable $bvec $bval > $gradtable  
+  fi
+fi
+
+
+#write out txt file for dicom hdr
+dicom2 -t1 --warn=n $firstdcm > $outdir/$type/$name.txt
+
+
+
+
+fi
+
+
+done
+
+
+
+#now remove temp dicom dir
+echo "removing temp dicom dir $dicomdir"
+rm -rf $dicomdir
+
+done

@@ -1,0 +1,42 @@
+#!/bin/bash
+pipeline_dir=/eq-nas/alik/EpilepsyDatabase/scripts/pipelines
+
+for subj in $@
+do
+pushd $pipeline_dir/histology_procFullRes
+# ./05_importHistAnnot Histology_Hp Hp 100 subfields $subj
+# ./06_genFieldFractions Histology_Hp Hp NEUN 100 $subj
+popd
+
+pushd $pipeline_dir/register_ex_histology
+
+#./6.2_resampleTo100um Hp EPI_P040
+
+popd
+
+
+pushd $pipeline_dir/histology_regMaps
+# ./01_genFeatNiftiRegToHE Histology_Hp Hp NEUN 100um_5umPad_FeatureMaps $subj
+# ./02_genAlignedFeatureMaps Histology_Hp Hp NEUN 100um_5umPad_FeatureMaps $subj
+
+# ./01_genFeatNiftiRegToHE Histology_Hp Hp NEUN 100um_Annotations_subfields $subj
+# ./02_genAlignedFeatureMaps Histology_Hp Hp NEUN 100um_Annotations_subfields $subj
+
+# ./01_genFeatNiftiRegToHE Histology_Hp Hp NEUN 100um_Grayscale $subj
+# ./02_genAlignedFeatureMaps Histology_Hp Hp NEUN 100um_Grayscale $subj
+
+ ./01_genFeatNiftiRegToHE Histology_Hp Hp NEUN 100um_RGB $subj
+ ./02_genAlignedFeatureMaps Histology_Hp Hp NEUN 100um_RGB $subj
+ ./XX2_applyDeformableToStain Histology_Hp Hp NEUN 100um_RGB 100um_Grayscale grayscale $subj
+
+# ./XX1_regDeformableStainToAlignedMRI Histology_Hp Hp NEUN 100um_Grayscale grayscale $subj
+# ./XX2_applyDeformableToStain Histology_Hp Hp NEUN 100um_5umPad_FeatureMaps 100um_Grayscale grayscale $subj
+# ./XX2_applyDeformableToStain Histology_Hp Hp NEUN 100um_Annotations_subfields 100um_Grayscale grayscale $subj
+
+popd
+
+
+#QC:
+
+
+done

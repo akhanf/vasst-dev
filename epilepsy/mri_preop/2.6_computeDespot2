@@ -1,0 +1,278 @@
+#!/bin/bash
+
+if [ ! "$#" = "1" ]
+then
+ echo "Script to compute despot1 images"
+ echo ""
+ echo "Usage: $0 <subject ID list>"
+
+ exit 0
+fi
+
+
+
+
+NUM_PROC=4
+
+
+datadir=/eq-nas/$USER/EpilepsyDatabase
+
+subj=$1
+echo "Processing subject $subj"
+
+
+despotdir=$datadir/$subj/Preop/Despot
+
+if [ ! -e $despotdir/DESPOTFM_T2Map.nii.gz ]
+then
+
+
+
+tempdir=/tmp/$subj/Preop/Despot/tempDespot2
+rm -rf $tempdir
+mkdir -p $tempdir
+
+despottype=2 	#FM
+
+i=0
+for ssfp180_txt in `ls -r $despotdir/ssfp*phase180.txt`
+do
+ 
+ ssfp180_img[$i]=${ssfp180_txt%%.txt}
+ ssfp180_img[$i]=${ssfp180_img[$i]##*/}
+ 
+ ssfp180_fa[$i]=`getDicomInfo $ssfp180_txt "Flip Angle"`
+
+ if [ "$i" = "0" ]
+ then
+  ssfp_tr=`getDicomInfo $ssfp180_txt "Repetition Time"`
+#  ssfp_tr=6.1
+  echo "ssfp tr: $ssfp_tr"
+
+ fi
+
+ echo "ssfp180: ${ssfp180_img[$i]}"
+ echo "ssfp180 fa: ${ssfp180_fa[$i]}"
+
+ i=$((i+1))
+
+done
+
+
+nssfp180=$i #number of ssfp phase 180 images
+
+
+i=0
+for ssfp0_txt in `ls -r $despotdir/ssfp*phase0.txt`
+do
+ 
+ ssfp0_img[$i]=${ssfp0_txt%%.txt}
+ ssfp0_img[$i]=${ssfp0_img[$i]##*/}
+ 
+ ssfp0_fa[$i]=`getDicomInfo $ssfp0_txt "Flip Angle"`
+
+ echo "ssfp0: ${ssfp0_img[$i]}"
+ echo "ssfp0 fa: ${ssfp0_fa[$i]}"
+
+ i=$((i+1))
+
+done
+
+
+nssfp0=$i  #number of ssfp phase 0 images
+
+
+
+outdir=$despotdir/
+
+in_t1map=$despotdir/DESPOT1HIFI_T1Map
+t1map=$tempdir/DESPOT1HIFI_T1Map
+useb1=1
+in_b1map=$despotdir/DESPOT1HIFI_B1Map
+b1map=$tempdir/DESPOT1HIFI_B1Map
+
+if [ ! -e $t1map.img ]
+then
+
+
+
+fslchfiletype ANALYZE $in_t1map $t1map.img
+
+#correct for new T1 maps that are ~108% of what old maps were...
+#fslmaths $in_t1map -mul 0.93 $t1map
+#fslchfiletype ANALYZE $t1map
+
+
+ReorderImage $t1map RAS $t1map PSR
+fi
+
+if [ ! -e $b1map.img ]
+then
+
+fslchfiletype ANALYZE $in_b1map $b1map.img
+
+#correct for new B1 maps that are ~60% of what old maps were...
+#fslmaths $in_b1map -mul 1.66 $b1map
+#fslchfiletype ANALYZE $b1map
+
+
+ReorderImage $b1map RAS $b1map PSR
+fi
+
+#despot2 $despottype $nssfp180 $ssfp_tr $rdir/ssfp_tr61_fa{15,35,68}_phase180_reg_{} 15 35 68 $nssfp0 $rdir/ssfp_tr61_fa{15,68}_phase0_reg_{} 15 68 $rdir/output_{}/ $rdir/DESPOT1HIFI_T1Map_{} $useb1 $rdir/DESPOT1HIFI_B1Map_{} 
+
+outdespot=$despotdir/DESPOTFM_T2Map.img
+
+
+
+#first, use flirt to co-register images to FA18 image
+spgr_txt1=`ls $despotdir/despot1*fa18.txt | head -n 1`
+spgr_img1=${spgr_txt1%%.txt}
+ref_img=${spgr_img1}
+
+#register the ssfp images to the ref img
+ flirt_params="-bins 64 -nosearch -dof 6  -interp sinc -sincwidth 7 -sincwindow hanning -datatype float"
+
+#phase 180
+for i in `seq 0 $((nssfp180-1))`
+do
+ in_img=$despotdir/${ssfp180_img[$i]}
+ out_img=$tempdir/${ssfp180_img[$i]}_reg
+ #out_mat=$tempdir/${ssfp180_img[$i]}_regFlirt.mat
+ out_mat=$tempdir/${ssfp180_img[$i]}_regNifty.mat
+
+ if [ ! -e ${out_img}.img ]
+ then
+ echo "Registering $in_img to $ref_img"
+# flirt -v -in $in_img -ref $ref_img -out $out_img -omat $out_mat $flirt_params
+
+#use reg_aladin instead (robust least-trimmed-squares, with high rejection rate)
+reg_aladin -target $ref_img -source $in_img -result $out_img  -rigOnly -%i 10 -aff $out_mat
+ 
+ #convert from nii to analyze
+ fslchfiletype ANALYZE $out_img
+ mri_convert $out_img.img $out_img.img -odt float
+ ReorderImage $out_img RAS $out_img PSR 
+ fi
+
+done
+
+#phase 0
+for i in `seq 0 $((nssfp0-1))`
+do
+ in_img=$despotdir/${ssfp0_img[$i]}
+ out_img=$tempdir/${ssfp0_img[$i]}_reg
+ #out_mat=$tempdir/${ssfp0_img[$i]}_regFlirt.mat
+ out_mat=$tempdir/${ssfp0_img[$i]}_regNifty.mat
+
+ if [ ! -e ${out_img}.img ]
+ then
+ echo "Registering $in_img to $ref_img"
+ #flirt -v -in $in_img -ref $ref_img -out $out_img -omat $out_mat $flirt_params
+
+ reg_aladin -target $ref_img -source $in_img -result $out_img  -rigOnly -%i 10  -aff $out_mat
+
+ #convert from nii to analyze
+ fslchfiletype ANALYZE $out_img
+ mri_convert $out_img.img $out_img.img -odt float
+ ReorderImage $out_img RAS $out_img PSR 
+ fi
+
+
+done
+
+
+#split into slices for parallel processing:
+
+ slicedir=$tempdir/slices 
+ mkdir -p $slicedir
+
+ nslices=`GetImageDims $tempdir/DESPOT1HIFI_T1Map.img`
+ nslices=${nslices##*\ }
+ echo "nslices = $nslices"
+
+for im in ssfp_tr61_fa{15,68}_phase{0,180}_reg ssfp_tr61_fa35_phase180_reg DESPOT1HIFI_{T1,B1}Map
+do
+
+
+ if [ ! -e $slicedir/${im}_$((nslices-1)).img ]
+ then
+ 
+ 
+
+ echo fslsplit $tempdir/$im.img $slicedir/${im}_ -z
+ fslsplit $tempdir/$im.img $slicedir/${im}_ -z
+
+ #convert to analyze
+ for i in `seq 0 $((nslices-1))`
+ do
+   i_i=`printf "%04d" $i`
+   i_o=`printf "%03d" $i`
+   echo fslchfiletype ANALYZE $slicedir/${im}_${i_i}.nii.gz $slicedir/${im}_${i_o}.img
+   fslchfiletype ANALYZE $slicedir/${im}_${i_i}.nii.gz $slicedir/${im}_${i_o}.img
+   mkdir -p $slicedir/output_${i_o}
+ done
+ fi
+
+done
+
+
+fi
+
+
+
+
+if [ ! -e $despotdir/DESPOTFM_T2Map.nii.gz ]
+then
+
+
+tempdir=/tmp/$subj/Preop/Despot/tempDespot2
+slicedir=$tempdir/slices 
+
+startslice=0
+
+rdir=$slicedir
+
+echo about to run: 
+echo "seq -w $startslice $((nslices-1)) | parallel -j $NUM_PROC  despot2 $despottype $nssfp180 $ssfp_tr $rdir/ssfp_tr61_fa{15,35,68}_phase180_reg_{} 15 35 68 $nssfp0 $rdir/ssfp_tr61_fa{15,68}_phase0_reg_{} 15 68 $rdir/output_{}/ $rdir/DESPOT1HIFI_T1Map_{} $useb1 $rdir/DESPOT1HIFI_B1Map_{} "
+seq -w $startslice $((nslices-1)) | parallel -j $NUM_PROC  despot2 $despottype $nssfp180 $ssfp_tr $rdir/ssfp_tr61_fa{15,35,68}_phase180_reg_{} 15 35 68 $nssfp0 $rdir/ssfp_tr61_fa{15,68}_phase0_reg_{} 15 68 $rdir/output_{}/ $rdir/DESPOT1HIFI_T1Map_{} $useb1 $rdir/DESPOT1HIFI_B1Map_{} 
+
+#then put it back together
+for im in DESPOT2FM_offResonanceHertz DESPOTFM_T2Map
+#for im in DESPOTFM_T2Map
+do
+
+ echo rm $tempdir/$im.* $despotdir/$im.*
+ rm $tempdir/$im.* $despotdir/$im.*
+
+ echo fslmerge -z $tempdir/$im $slicedir/output_*/$im.img
+ fslmerge -z $tempdir/$im $slicedir/output_*/$im.img
+ echo fslchfiletype ANALYZE $tempdir/$im
+ fslchfiletype ANALYZE $tempdir/$im
+
+ #copy hdr from T1map first
+ echo cp $tempdir/DESPOT1HIFI_T1Map.hdr $despotdir/$im.hdr
+ cp $tempdir/DESPOT1HIFI_T1Map.hdr $despotdir/$im.hdr
+
+ echo ReorderImage $tempdir/$im.img PSR $despotdir/$im.img RAS
+ ReorderImage $tempdir/$im.img PSR $despotdir/$im.img RAS
+ echo fslchfiletype NIFTI_GZ $despotdir/$im.img
+ fslchfiletype NIFTI_GZ $despotdir/$im.img
+
+#copy sform from T1map -- added Jan 26, 2012
+echo fslorient -setsform `fslorient -getsform $despotdir/DESPOT1HIFI_T1Map.nii.gz` $despotdir/$im.nii.gz
+ fslorient -setsform `fslorient -getsform $despotdir/DESPOT1HIFI_T1Map.nii.gz` $despotdir/$im.nii.gz
+echo fslorient -copysform2qform $despotdir/$im.nii.gz
+ fslorient -copysform2qform $despotdir/$im.nii.gz
+echo fslswapdim $despotdir/$im.nii.gz -x y z $despotdir/$im.nii.gz
+ fslswapdim $despotdir/$im.nii.gz -x y z $despotdir/$im.nii.gz
+
+
+done
+
+fi
+
+
+
+
+

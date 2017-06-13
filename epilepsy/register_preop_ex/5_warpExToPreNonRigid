@@ -1,0 +1,126 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+ then
+ echo "$0 <structure (Neo, Hp)>  <SUBJIDs ...> "
+ exit 0
+fi
+
+struct=$1
+shift 1
+
+for subj in $@
+do
+
+DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
+
+xfm_dir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/final_xfm
+out_dir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/Ex_warpedToPre
+init_dir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/Init_images
+init_xfm_dir=$DATA_DIR/$subj/Processed/PreEx_Reg/$struct/Init_xfms
+
+
+
+xfm=$xfm_dir/ex-pre.xfm
+mkdir -p $out_dir
+
+
+
+
+ex=`ls $DATA_DIR/$subj/Ex/*/$struct/MRI_PreExReg.nii.gz | head -n 1`
+
+ex_dir=${ex%/*}
+mask=$ex_dir/mask.nii.gz
+ex_masked=$ex_dir/MRI_PreExReg.masked.nii.gz
+
+if [ -e $mask ]
+then
+minmax=`fslstats $ex -R ` #outputs min and max intensity for MRI_PreExReg.nii.gz
+echo $minmax 
+min=${minmax%\ [0-9]*}
+max=${minmax#*[0-9]\ }
+echo min $min
+echo max $max
+
+#set max intensity to 1000
+echo fslmaths $ex -sub $min -div $max -mul 1000 -mas $mask $ex_masked
+fslmaths $ex -sub $min -div $max -mul 1000 -mas $mask $ex_masked
+in_ex=$ex_masked
+else
+echo "mask does not exist!"
+in_ex=$ex
+fi
+
+ 
+ref=$DATA_DIR/$subj/Preop/Despot/DESPOT1HIFI_T1Map_brain.nii.gz
+ref_04mm=$init_dir/T1map_crop_res0.4.nii.gz
+
+reg_04mm=$out_dir/Ex_RegToPre04.nii.gz
+
+nreg_cpp=$xfm_dir/NregSim_T1_cpp.nii.gz
+nreg_04mm=$out_dir/Ex_NregToPre04.nii.gz
+
+
+if [ ! -e $in_ex ]
+then
+ echo "Ex-vivo MRI $in_ex does not exist!"
+ continue
+fi
+
+if [ ! -e $ref_04mm  ]
+then
+ echo "T1 resampled to 04mm, $ref_04mm does not exist!"
+ continue
+fi
+
+if [ ! -e $xfm  ]
+then
+ echo "Transform from ex to pre, $xfm, does not exist!"
+ continue
+fi
+
+#if [ ! -e $nreg_04mm ]
+#then
+
+
+#reg_resample uses a reference (ref) and floating (flo) image to do some magic with an affine image
+	#masked image used here
+ echo reg_resample -flo $in_ex -ref $ref_04mm -res $reg_04mm -aff $xfm 
+ reg_resample -flo $in_ex -ref $ref_04mm -res $reg_04mm -aff $xfm 
+
+ #blahblahblahNeo
+ if [ "$struct" = "Neo" ]
+ then
+
+ if [ ! -e $nreg_cpp ]
+ then 
+   echo "nifty-reg non-rigid warp for Neo does not exist: $nreg_cpp"
+   continue
+ fi
+
+ echo reg_resample -flo $reg_04mm -ref $ref_04mm -res $nreg_04mm -cpp $nreg_cpp
+ reg_resample -flo $reg_04mm -ref $ref_04mm -res $nreg_04mm -cpp $nreg_cpp
+ fi
+#blahblahblahNeoEND
+
+
+ if [ "$struct" = "Hp" ]
+ then
+ 
+ #plastimatch
+ plasti_warp=$init_xfm_dir/Plasti_Ex_T1.nii.gz
+ if [ ! -e $plasti_warp ]
+ then
+  echo "Plastimatch transform for Hp does not exist: $plasti_warp"
+  continue
+ fi
+
+ #applywarp takes in: Ex_RegToPre04.nii.gz, Ex_NregToPre04.nii.gz, T1map_crop_res0.4.nii.gz, Plasti_Ex_T1.nii.gz
+ echo applywarp -i $reg_04mm -o $nreg_04mm -r $ref_04mm -w $plasti_warp --interp=spline
+ applywarp -i $reg_04mm -o $nreg_04mm -r $ref_04mm -w $plasti_warp --interp=spline
+
+ fi
+
+#fi
+ 
+done

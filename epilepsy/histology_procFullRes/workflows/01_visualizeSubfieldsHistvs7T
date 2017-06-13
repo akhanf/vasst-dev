@@ -1,0 +1,19 @@
+#!/bin/bash
+
+
+#7T label
+mri_seg=~/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/hipp.tps.aligned_100um.nii.gz
+
+#hist (NEUN) grayscale
+hist=~/EpilepsyHistology/Histology_Hp/EPI_P040/100um_Grayscale/aligned/Hp_NEUN/grayscale_deformable_100um.nii.gz
+
+#hist labels
+hist_seg=~/EpilepsyHistology/Histology_Hp/EPI_P040/100um_Annotations_subfields/aligned/Hp_NEUN/subfields_deformable_100um.nii.gz
+
+
+mri=/eq-nas/alik/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/T2_slab.crop.upsample.tps.aligned_100um.nii.gz
+
+#itksnap -m $hist -s $mri_seg&
+#itksnap -m $hist -s $hist_seg&
+
+itksnap -o $hist -m $mri

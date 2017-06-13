@@ -1,0 +1,13 @@
+Target Registration Error, Neocortex Neu-N and GFAP to HE, affine
+
+
+P006_A04_NEUN_100um_nii_xfmToHE.csv, num landmarks: 5, mean dist: 0.279314
+P006_A04_GFAP_100um_nii_xfmToHE.csv, num landmarks: 5, mean dist: 0.363779
+P014_A03_NEUN_100um_nii_xfmToHE.csv, num landmarks: 9, mean dist: 0.305647
+P014_A03_GFAP_100um_nii_xfmToHE.csv, num landmarks: 9, mean dist: 0.219007
+P014_A04_NEUN_100um_nii_xfmToHE.csv, num landmarks: 10, mean dist: 0.436825
+P014_A04_GFAP_100um_nii_xfmToHE.csv, num landmarks: 10, mean dist: 0.591416
+P015_B05_NEUN_100um_nii_xfmToHE.csv, num landmarks: 14, mean dist: 0.616169
+P015_B05_GFAP_100um_nii_xfmToHE.csv, num landmarks: 14, mean dist: 0.407228
+P015_B08_NEUN_100um_nii_xfmToHE.csv, num landmarks: 2, mean dist: 0.683154
+P015_B08_GFAP_100um_nii_xfmToHE.csv, num landmarks: 2, mean dist: 0.551151

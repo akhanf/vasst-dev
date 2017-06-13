@@ -1,0 +1,220 @@
+#!/bin/bash
+
+# Transforms cropped T1 map to Ex-vivo space for full registration 
+# Concatinates ... and Inverts .. and Run registration between ExMRI and Reg_ExMRI
+
+if [ "$#" -lt 2 ]
+ then
+ echo "$0 <structure - e.g. Hp, or Neo>  <SUBJID...> "
+ echo "Transforms cropped T1 map to Ex-vivo space for full registration"
+echo ""
+ exit 0
+fi
+
+STRUCT=$1
+shift 1
+
+for SUBJ in $@
+do
+
+
+#SESSION=$2
+
+DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
+
+images_dir=$DATA_DIR/$SUBJ/Processed/PreEx_Reg/$STRUCT/Init_images
+xfm_dir=$DATA_DIR/$SUBJ/Processed/PreEx_Reg/$STRUCT/final_xfm
+old_xfm_dir=$DATA_DIR/$SUBJ/Processed/PreEx_Reg/$STRUCT/Init_xfms
+
+#get SESSION automatically:
+ExHistReg_dir=`ls -d $DATA_DIR/$SUBJ/Processed/Ex-Hist_Reg/*/$STRUCT/3drigid_iter5 | head -n 1`
+SESSION=${ExHistReg_dir%%/3drigid_iter5*}
+SESSION=${SESSION##*/}
+
+
+ExHistimages_dir=$DATA_DIR/$SUBJ/Processed/Ex-Hist_Reg/$SESSION/$STRUCT/images
+#ExHistReg_dir=$DATA_DIR/$SUBJ/Processed/Ex-Hist_Reg/$SESSION/$STRUCT/3drigid_iter5
+
+outdir=$DATA_DIR/$SUBJ/Processed/PreEx_Reg/$STRUCT/WarpToHist
+mkdir -p $outdir
+
+
+# Nreg Sim_Ex_T1 and T1_crop (sym)
+
+Sim_Ex=$images_dir/Sim_Ex_T1.nii.gz
+T1_crop=$images_dir/T1map_crop_res0.4.nii.gz
+cpp=$xfm_dir/NregSim_T1_cpp.nii.gz
+inv_cpp=$xfm_dir/NregSim_T1_cpp_backward.nii.gz
+#inv_cpp_pad=$old_xfm_dir/NregSim_T1_cpp_backward_pad.nii.gz
+NregSim_T1=$images_dir/NregSim_T1.nii.gz
+NregT1_Sim=$images_dir/NregSim_T1_backward.nii.gz
+
+sx=-7
+be=1e-4
+
+#if [ ! -e $cpp ]
+#then
+
+#this registration is no longer needed:
+#echo reg_f3d -flo $Sim_Ex -ref $T1_crop -cpp $cpp -res $NregSim_T1 -sx $sx -sym -be $be
+#reg_f3d -flo $Sim_Ex -ref $T1_crop -cpp $cpp -res $NregSim_T1 -sx $sx -sym -be $be 
+
+#fi
+
+
+
+#if [ ! -e $inv_cpp ]
+#then
+
+
+echo reg_f3d -ref $Sim_Ex -flo $T1_crop -cpp $inv_cpp -res $NregT1_Sim -sx $sx -sym -be $be 
+reg_f3d -ref $Sim_Ex -flo $T1_crop -cpp $inv_cpp -res $NregT1_Sim -sx $sx -sym -be $be 
+
+#fi
+
+
+# Combine Inv_deformation field with concat_aff
+
+concat_aff=$xfm_dir/pre-aligned.xfm
+reg_ex=$ExHistReg_dir/reg_ex_mri_noresample.nii.gz
+reg_ex_pad=$ExHistReg_dir/reg_ex_mri_noresample_pad.nii.gz
+
+
+#if [ ! -e $reg_ex_pad ]
+#then
+echo c3d $ExHistReg_dir/reg_ex_mri_noresample.nii.gz -pad 20% 20% 1 -o $ExHistReg_dir/reg_ex_mri_noresample_pad.nii.gz
+c3d $ExHistReg_dir/reg_ex_mri_noresample.nii.gz -pad 20% 20% 1 -o $ExHistReg_dir/reg_ex_mri_noresample_pad.nii.gz
+#fi
+
+comb_def=$xfm_dir/combined_def.nii.gz
+
+#if [ ! -e $comb_def ]
+#then
+reg_transform -ref $reg_ex_pad -aff2def $concat_aff $Sim_Ex $inv_cpp $comb_def
+#fi
+
+
+#T1_crop_init=$images_dir/T1map_crop_res0.4_init.nii.gz
+#reg_resample -ref $Sim_Ex -flo $T1_crop -cpp $inv_cpp -res $T1_crop_init
+
+# Apply combined def field
+
+WarpT1Hist=$outdir/T1.warpedToHist.nii.gz
+#if [ ! -e $WarpT1Hist ]
+#then
+reg_resample -ref $reg_ex_pad -flo $T1_crop -def $comb_def -res $WarpT1Hist
+#fi
+
+
+
+#---- new part
+
+reg_ex=$ExHistReg_dir/reg_ex_mri.nii.gz
+
+reg_ex_100um=$outdir/reg_ex_mri_100um.nii.gz
+
+
+#if [ ! -e $reg_ex_100um ]
+#then
+mri_convert $reg_ex -vs 0.1 0.1 4.4 $reg_ex_100um
+#fi
+
+
+comb_def_100um=$xfm_dir/combined_def_100um.nii.gz
+
+#if [ ! -e $comb_def_100um ]
+#then
+reg_transform -ref $reg_ex_100um -aff2def $concat_aff $Sim_Ex $inv_cpp $comb_def_100um
+#fi
+
+WarpT1Hist_100um=$outdir/T1.warpedToHist.100um.nii.gz
+#if [ ! -e $WarpT1Hist_100um ]
+#then
+reg_resample -ref $reg_ex_100um -flo $T1_crop -def $comb_def_100um -res $WarpT1Hist_100um
+#fi
+
+#----------
+
+
+# Warp T2, DTI maps and clinical scans
+
+#MD
+files[0]=$DATA_DIR/$SUBJ/Preop/DTI/Processed/FDT/dtifit_t1space/dti_MD.nii.gz
+lbl[0]=MD
+
+#L1
+files[1]=$DATA_DIR/$SUBJ/Preop/DTI/Processed/FDT/dtifit_t1space/dti_L1.nii.gz
+lbl[1]=AD
+
+#T2
+files[2]=$DATA_DIR/$SUBJ/Preop/Despot/DESPOTFM_T2Map_brain.nii.gz
+lbl[2]=T2
+
+#FA
+files[3]=$DATA_DIR/$SUBJ/Preop/DTI/Processed/FDT/dtifit_t1space/dti_FA.nii.gz
+lbl[3]=FA
+
+files[4]=$DATA_DIR/$SUBJ/Preop/Despot/DESPOT1HIFI_T1Map_brain.nii.gz
+lbl[4]=T1
+
+i=5
+
+
+#check if this writes over the original file D:
+for im in `ls $DATA_DIR/$SUBJ/1.5T/regTo3T/*.nii.gz`
+do
+
+ files[$i]=$im
+
+ prefix=${im##*/}
+ prefix=${prefix%%.nii.gz}
+ lbl[$i]=$prefix
+
+ i=$((i+1))
+done
+
+itotal=$((i-1))
+            
+
+
+for i in `seq 0 $itotal`
+do
+
+in=${files[$i]}
+out=$outdir/${lbl[$i]}.warpedToHist.nii.gz
+
+#if [ ! -e $out ]
+#then
+reg_resample -ref $reg_ex_pad -flo $in -def $comb_def -res $out
+#fi
+
+
+in=${files[$i]}
+out=$outdir/${lbl[$i]}.warpedToHist.100um.nii.gz
+
+#if [ ! -e $out ]
+#then
+reg_resample -ref $reg_ex_100um -flo $in -def $comb_def_100um -res $out
+#fi
+
+
+done
+
+
+hist_warped=$ExHistReg_dir/hist_stack_nreg_reg_be0.01.nii.gz
+#if [ ! -e $outdir/hist_stack_nreg_reg_be0.01.nii.gz ]
+#then
+cp $hist_warped $outdir/.
+#fi
+
+#if [ ! -e $outdir/reg_ex_mri_noresample_pad.nii.gz ]
+#then
+cp $reg_ex_pad $outdir/.
+#fi
+
+
+
+
+done
+
+

@@ -1,0 +1,83 @@
+#!/bin/bash
+
+#run this for a list of subjects
+if [ "$#" -lt "2" ]
+then
+ echo ""
+
+ echo " Run this script from the scripts folder, and does not need a targetList, just the ID"
+ echo "Script to extract nifti images from Preop DICOMS"
+ echo "Uses dicom2 to query headers and dcm2nii to extract and reorient images. Ensure that these are in your path before running."
+ echo ""
+ echo "Usage: $0 <output dir> <subject IDs ...>"
+
+ exit 0
+fi
+
+
+datadir=/eq-nas/$USER/EpilepsyDatabase
+
+#outroot=/media/Khan2TB/ctrl_dicoms
+outroot=$2  
+shift 1
+
+for subj in $@
+do
+
+
+
+
+echo "Processing subject $subj"
+
+outdir=$outroot/$subj
+mkdir -p $outdir
+
+#with eq-nas, dcm2nii has major problems reading in dicoms, so need to copy to local folder, read dicoms from there, then remove local dicoms
+dicomdir=$datadir/$subj/Preop/Dicoms
+
+
+#first get series description from first file of each folder
+#make link as 3T
+#ln -s Preop $datadir/$subj/3T
+
+
+for folder in `ls -d $dicomdir/[0-9]*/[0-9]*`
+do
+ 
+ firstdcm=`ls $folder/*.dcm | head -n 1`
+
+#  echo $firstdcm
+  series=`dicom2 -t1 $firstdcm | grep "Series Description"`
+  series=${series##*\[}
+  series=${series%%\]*}
+
+ name=${series//\ /_}
+ name=${name//\//_}
+ name=${name%.}
+
+ sub=${name:0:5}
+ if [ "$sub" = "DTI_2" -o "$sub" = "Axial" ]
+then
+ type=dti
+ echo "dti $name: $folder"
+ mkdir $outdir/DTI
+ cp -v $folder/*.dcm $outdir/DTI
+
+fi
+
+ if [ "$name" = "despot1_tr90_fa18" ]
+then
+ type=t1
+ echo "t1 $name: $folder" 
+ mkdir $outdir/T1
+ cp -v $folder/*.dcm $outdir/T1
+fi
+
+
+
+done #folder
+
+done #subj
+
+
+

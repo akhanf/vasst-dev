@@ -1,0 +1,37 @@
+
+Open Ex_reg7T_upsample.nii.gz and T2_slab.crop.upsample.nii.gz in Slicer 4.4 (or later)
+
+Use Registration -> Landmark Registraiton
+Moving: T2_slab.crop.upsample.nii.gz
+Fixed: Ex_reg7T_upsample.nii.gz
+
+Place landmarks to align anatomy
+
+Use Thin Plate Spline Registration, and after finished, hit Export to Grid Transform
+
+
+
+Next, to apply to hipp subfields split into a volume for each lable
+
+
+- Go to the Transforms module,
+  
+   -apply the new Transform-grid to those images
+   -harden the transform for each
+   -save the deformed hipp subfields in:
+
+  ~/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/subfields_tps
+
+
+
+Finally, combine these to create a labelmap again:
+
+cd ~/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/subfields_tps
+voteSegs hipp.tps.nii.gz hipp_bgnd.nii.gz hipp_CA* hipp_Sub.nii.gz hipp_DG.nii.gz hipp_DarkBand.nii.gz
+
+
+And warp them to histology space:
+./3_custom_EPI_P040_apply7TtoAligned ~/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/subfields_tps/hipp.tps.nii.gz ~/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/hipp.tps.aligned_100um_iso.nii.gz ~/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/hipp.tps.aligned_100um.nii.gz 
+
+
+./3_custom_EPI_P040_apply7TtoAligned  /eq-nas/alik/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/subfields_tps/T2_slab.crop.upsample.tps.nii.gz /eq-nas/alik/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/T2_slab.crop.upsample.tps.aligned_100um_iso.nii.gz /eq-nas/alik/EpilepsyDatabase/EPI_P040/Processed/reg7Tto3T/Hp/T2_slab.crop.upsample.tps.aligned_100um.nii.gz

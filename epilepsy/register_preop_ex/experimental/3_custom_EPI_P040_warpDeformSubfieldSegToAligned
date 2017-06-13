@@ -1,0 +1,39 @@
+#!/bin/bash
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+subj=EPI_P040
+
+struct=Hp
+out_dir=$data_dir/$subj/Processed/reg7Tto3T/$struct
+
+T2_crop_upsample=$out_dir/T2_slab.crop.upsample.nii.gz
+ex_reg7T_upsample=$out_dir/Ex_reg7T_upsample.nii.gz
+
+
+for segtype in ding winterburn wisse unfold #manual
+do
+
+tps_dir=$out_dir/subfields_$segtype/tps
+
+pushd $tps_dir
+voteSegs hipp.tps.nii.gz hipp_bgnd.nii.gz hipp_Sub.nii.gz hipp_CA* hipp_DG.nii.gz hipp_DarkBand.nii.gz
+popd
+
+hipp_tps=$tps_dir/hipp.tps.nii.gz
+
+hist_dir=$out_dir/subfields_$segtype/hist_aligned
+mkdir -p $hist_dir
+
+rm $hist_dir/hipp.tps.aligned*.nii.gz
+./function_custom_EPI_P040_apply7TtoAligned $hipp_tps $hist_dir/hipp.$segtype.tps.aligned_100um_iso.nii.gz $hist_dir/hipp.$segtype.tps.aligned_100um.nii.gz $hist_dir/hipp.$segtype.tps.aligned_20um.nii.gz
+
+
+done
+
+
+
+#cat 00_README_SlicerLandmarkReg
+
+
+#Slicer $T2_crop_upsample $ex_reg7T_upsample #`ls $seg_dir/hipp_{CA1,CA2,CA3,DG,DarkBand,Sub,bgnd}.nii.gz`

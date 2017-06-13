@@ -1,0 +1,38 @@
+#!/bin/bash
+
+bindir=/eq-nas/$USER/EpilepsyDatabase/scripts/Ex-Hist_Reg
+
+
+if [ "$#" -lt "3" ]
+then
+
+echo "Usage: <subj> <struct> <session>..Runs all Ex-Hist registration scripts..Make sure MRI_ExHistReg.nii.gz (Oriented Ex) exists before running "
+exit 0
+
+fi
+
+subj=$1
+struct=$2
+session=$3
+
+#for subj in $@
+#do
+
+echo $bindir/1_registerHistToExMRI_niftiOnly $subj $struct $session
+$bindir/1_registerHistToExMRI_niftiOnly $subj $struct $session
+
+echo $bindir/2_generateFinalXfms $subj $struct $session
+$bindir/2_generateFinalXfms $subj $struct $session
+
+echo $bindir/5_genHistRGB $subj $struct $session
+$bindir/5_genHistRGB $subj $struct $session
+
+#echo $bindir/00_copyResultsToShared $subj $struct 
+#$bindir/00_copyResultsToShared $subj $struct 
+
+echo $bindir/00_checkReg $subj $struct
+$bindir/00_checkReg $subj $struct
+
+#done
+
+

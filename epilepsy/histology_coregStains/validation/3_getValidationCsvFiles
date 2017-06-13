@@ -1,0 +1,1 @@
+ls /eq-nas/$USER/EpilepsyHistology/Histology/EPI_*/val_lmks/*HE*nii.csv > validation_csv_files

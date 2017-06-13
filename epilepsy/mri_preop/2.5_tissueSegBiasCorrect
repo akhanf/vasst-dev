@@ -1,0 +1,54 @@
+#!/bin/bash
+
+
+if [  "$#" -lt "1" ]
+then
+ echo "Script to run FSL FAST on  T1-weighted  (flip angle 18 from despot) brain images"
+ echo ""
+ echo "Usage: $0 <subject ID>"
+
+ exit 0
+fi
+
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+for subj in $@
+do
+
+echo "Processing subject $subj"
+
+despotdir=$data_dir/$subj/Preop/Despot
+outdir=$data_dir/$subj/Preop/Processed/TissueSegBiasCorrect
+
+mkdir -p $outdir
+
+src_img=`ls -t1r $despotdir/despot1_*fa18.nii.gz | tail -n 1`  #take the most recent fa18 despot1
+
+prefix=T1w_fa18
+
+pushd $outdir
+
+if [ ! -e ${prefix}_restore.nii.gz ]
+then
+echo "Running FAST segementation on $subj, writing log to  $outdir/fast.log"
+fast -o $prefix -v -B $src_img  > fast.log
+
+
+#for suffix in mixeltype pve_0 pve_1 pve_2 pveseg restore seg
+#do
+# mri_convert --in_orientation LAS --out_orientation LAS ${prefix}_${suffix}.nii.gz ${prefix}_${suffix}.nii.gz
+#done
+
+fi
+
+if [ ! -e ${prefix}_restore_brain.nii.gz ]
+then
+bet ${prefix}_restore.nii.gz ${prefix}_restore_brain.nii.gz -v 
+fi
+
+
+popd
+
+
+done

@@ -1,0 +1,54 @@
+#!/bin/bash
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+struct=$1
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage: $0 <structure - Hp, Neo> <subjids ...>"
+ exit 0
+fi
+
+shift 1
+for subj in $@
+do
+
+
+reg_dir=`ls -d $data_dir/$subj/Processed/Ex-Hist_Reg/*/$struct/3drigid_iter5 | head -n 1`
+out_dir=$reg_dir/../aligned_Ex_100um
+mkdir -p $out_dir
+
+
+ex_mri=`ls -d $data_dir/$subj/Ex/*/$struct/MRI_ExHistReg.nii.gz | head -n 1`
+
+
+
+mri_convert $reg_dir/reg_ex_mri.nii.gz -vs 0.1 0.1 4.4 $out_dir/reg_ex_mri_100um.nii.gz
+reg_resample -flo $ex_mri -res $out_dir/reg_ex_mri_100um.nii.gz  -aff $reg_dir/../final_xfm/ex-aligned.xfm -ref $out_dir/reg_ex_mri_100um.nii.gz 
+
+mri_convert $reg_dir/reg_ex_mri.nii.gz -vs 0.02 0.02 4.4 $out_dir/reg_ex_mri_20um.nii.gz
+reg_resample -flo $ex_mri -res $out_dir/reg_ex_mri_20um.nii.gz  -aff $reg_dir/../final_xfm/ex-aligned.xfm -ref $out_dir/reg_ex_mri_20um.nii.gz 
+
+mri_convert $reg_dir/reg_ex_mri.nii.gz -vs 0.1 0.1 0.1 $out_dir/reg_ex_mri_100um_iso.nii.gz
+reg_resample -flo $ex_mri -res $out_dir/reg_ex_mri_100um_iso.nii.gz  -aff $reg_dir/../final_xfm/ex-aligned.xfm -ref $out_dir/reg_ex_mri_100um_iso.nii.gz 
+
+
+dti_dir=$reg_dir/../aligned_ExDTI
+mkdir -p $dti_dir
+
+#warp all DTI images to 100um space too
+for folder in smoothed_0.1 smoothed_0.2
+do
+mkdir -p $out_dir/dti_$folder
+for metric in FA MD V1 V2 V3 L1 L2 L3 
+do
+ prefix=${im%%.nii.gz}
+ echo reg_resample -flo $dti_dir/$folder/dti_$metric.nii.gz -res $out_dir/dti_$folder/dti_$metric.100um.nii.gz -ref $out_dir/reg_ex_mri_100um.nii.gz  -NN 0
+ reg_resample -flo $dti_dir/$folder/dti_$metric.nii.gz -res $out_dir/dti_$folder/dti_$metric.100um.nii.gz -ref $out_dir/reg_ex_mri_100um.nii.gz  -NN 0
+done
+done
+
+done
+
+

@@ -1,0 +1,36 @@
+#!/bin/bash 
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+struct=$1
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage: $0 <structure - Hp, Neo> <subjids ...>"
+ exit 0
+fi
+
+shift 1
+for subj in $@
+do
+
+
+ex_dir=$data_dir/$subj/Ex/9.4T/$struct
+
+anat=$ex_dir/MRI_ExHistReg.nii.gz
+dti=$ex_dir/DTI.anat.nii.gz
+
+
+if [ ! -e $anat -o ! -e $dti ]
+then
+ echo "DTI to anat registration not done for $subj $struct"
+continue
+fi
+
+
+echo "$subj"
+fslview $dti $anat
+
+
+
+done

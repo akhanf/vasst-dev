@@ -1,0 +1,80 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 1 ]
+then
+ echo "Runs DTI processing on Ex-vivo (brain mask, eddy-correct, smoothing, dtifit) -- output goes in dti subfolder of original DWI path"
+ echo "Usage: $0 <dwi> <optional sigma -- default 0.1> <optional mask image - default threshold B0 at 500>"
+ exit 0
+fi
+
+dwi=$1
+
+
+bvec=/eq-nas/$USER/EpilepsyDatabase/GradTable9.4T/Dir12Gradient.bvec
+bval=/eq-nas/$USER/EpilepsyDatabase/GradTable9.4T/Dir12Gradient.bval
+
+
+
+in_dir=${dwi%/*}
+out_dir=$in_dir/dti
+mkdir -p $out_dir
+
+#for smoothing
+sigma=0.1
+threshold=500
+
+if [ "$#" -gt 1 ]
+then
+  sigma=$2
+fi
+
+if [ "$#" -gt 2 ]
+then
+  mask=$3
+else
+mask=$out_dir/mask.nii.gz
+fi
+
+
+
+if [ ! -e $mask ]
+ then
+echo fslroi $dwi $mask 0 1 
+fslroi $dwi $mask 0 1 
+#fslmaths $mask -s 0.5 -thr $threshold -bin $mask
+fslmaths $mask -s $sigma  -thr $threshold -bin $mask
+fi
+
+ecc=${out_dir}/dwi_eddycorr.nii.gz
+
+if [ ! -e $ecc ]
+then
+echo eddy_correct $dwi $ecc 0
+eddy_correct $dwi $ecc 0
+fi
+
+
+dwi_sm=${out_dir}/dwi_eddycorr_sm$sigma.nii.gz
+if [ ! -e $dwi_sm ] 
+then
+
+if [ "$sigma" = "0" ]
+then
+ dwi_sm=$ecc
+else
+
+echo fslmaths $ecc -s $sigma $dwi_sm 
+fslmaths $ecc -s $sigma $dwi_sm 
+
+fi
+
+
+fi
+
+dti=$out_dir/dti_sm$sigma
+
+echo dtifit --data=$dwi_sm --out=$dti --mask=$mask --bvecs=$bvec --bvals=$bval --save_tensor
+dtifit --data=$dwi_sm --out=$dti --mask=$mask --bvecs=$bvec --bvals=$bval --save_tensor
+
+

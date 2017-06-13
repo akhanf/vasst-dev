@@ -1,0 +1,36 @@
+#!/bin/bash 
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+struct=$1
+
+if [ "$#" -lt 1 ]
+then
+ echo "Usage: $0 <structure - Hp, Neo> <subjids ...>"
+ exit 0
+fi
+
+shift 1
+for subj in $@
+do
+
+
+exhist_reg_dir=$data_dir/$subj/Processed/Ex-Hist_Reg/9.4T/$struct
+out_dir=$data_dir/$subj/Processed/Ex-Hist_Reg/9.4T/$struct/aligned_ExDTI
+
+aligned_ref=$exhist_reg_dir/3drigid_iter5/reg_ex_mri_noresample.nii.gz
+
+#out_v1=$out_dir/dti_V1.nii.gz
+out_fa=$out_dir/dti_FA.nii.gz
+
+if [ ! -e $aligned_ref -o ! -e $out_fa ]
+then
+  echo Registration not done for $subj $struct
+  continue
+fi
+
+echo $subj
+itksnap $out_fa &
+itksnap $aligned_ref
+
+done

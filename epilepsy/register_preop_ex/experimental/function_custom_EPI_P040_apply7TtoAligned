@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [ "$#" -lt 4 ]
+then
+echo "Usage: $0 <input label image> <output image 100um iso> <output image 100umx4.4mm> <output image 20umx4.4mm> "
+exit 0
+fi
+
+
+
+in_img=$1
+out_iso=$2
+out=$3
+out_20um=$4
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+subj=EPI_P040
+
+struct=Hp
+
+reg_dir=$data_dir/$subj/Processed/reg7Tto3T/$struct
+
+xfm_7T_aligned=$reg_dir/7T-aligned.xfm
+
+ref_iso=$data_dir/$subj/Processed/Ex-Hist_Reg/9.4T/Hp/3drigid_iter5/reg_ex_mri_100um_iso.nii.gz
+ref=$data_dir/$subj/Processed/Ex-Hist_Reg/9.4T/Hp/3drigid_iter5/reg_ex_mri_100um.nii.gz
+ref_20um=$data_dir/$subj/Processed/Ex-Hist_Reg/9.4T/Hp/aligned_Ex_100um/reg_ex_mri_20um.nii.gz
+
+
+
+reg_resample -flo $in_img  -res $out_iso -aff $xfm_7T_aligned -ref $ref_iso -NN 0
+reg_resample -flo $in_img  -res $out -aff $xfm_7T_aligned -ref $ref -NN 0
+reg_resample -flo $in_img  -res $out_20um -aff $xfm_7T_aligned -ref $ref_20um -NN 0
+

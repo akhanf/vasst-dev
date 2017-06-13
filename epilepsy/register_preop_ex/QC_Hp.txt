@@ -1,0 +1,27 @@
+EPI_P002 is not done
+EPI_P006  nreg zeros
+EPI_P007  not accurate
+EPI_P008 is not done
+EPI_P014 is not done
+EPI_P015
+EPI_P016 is not done
+EPI_P021  not accurate
+EPI_P022 is not done
+EPI_P024   fail
+EPI_P026 is not done
+EPI_P027 is not done
+EPI_P029  fail
+EPI_P031
+EPI_P032 is not done
+EPI_P033  (plastimatch not done, rigid may need improvement)
+EPI_P034 is not done
+EPI_P035 is not done
+EPI_P036 is not done
+EPI_P037 is not done
+EPI_P040
+EPI_P041 is not done
+EPI_P043 is not done
+EPI_P044 (plastimatch not done, rigid good)
+EPI_P045 is not done
+EPI_P046 is not done
+EPI_P055 is not done

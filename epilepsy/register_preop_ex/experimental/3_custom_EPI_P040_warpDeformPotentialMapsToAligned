@@ -1,0 +1,38 @@
+#!/bin/bash
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase
+
+subj=EPI_P040
+
+struct=Hp
+out_dir=$data_dir/$subj/Processed/reg7Tto3T/$struct
+
+T2_crop_upsample=$out_dir/T2_slab.crop.upsample.nii.gz
+ex_reg7T_upsample=$out_dir/Ex_reg7T_upsample.nii.gz
+
+
+segtype=potentialmaps
+for imtype in AP GM laminar PD
+do
+
+
+tps_dir=$out_dir/subfields_potentialmaps/tps
+
+hipp_tps=$tps_dir/$imtype.l.tps.nii.gz
+
+hist_dir=$out_dir/subfields_$segtype/hist_aligned
+mkdir -p $hist_dir
+
+
+rm $hist_dir/$imtype.tps.aligned*.nii.gz
+./function_custom_EPI_P040_apply7TtoAligned $hipp_tps $hist_dir/$imtype.l.tps.aligned_100um_iso.nii.gz $hist_dir/$imtype.l.tps.aligned_100um.nii.gz $hist_dir/$imtype.ltps.aligned_20um.nii.gz
+
+
+done
+
+
+
+#cat 00_README_SlicerLandmarkReg
+
+
+#Slicer $T2_crop_upsample $ex_reg7T_upsample #`ls $seg_dir/hipp_{CA1,CA2,CA3,DG,DarkBand,Sub,bgnd}.nii.gz`

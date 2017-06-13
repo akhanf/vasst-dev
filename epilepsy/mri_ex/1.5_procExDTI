@@ -1,0 +1,26 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 2 ]
+then
+ echo "Runs DTI processing on Ex-vivo (brain mask, eddy-correct, smoothing, dtifit"
+ echo "Usage: $0 <subj> <struct> <optional sigma -- default 0.1> <optional mask image - default threshold B0 at 500>"
+ exit 0
+fi
+
+
+struct=$2
+
+
+for subj in $1
+do
+
+
+
+dwi=`ls /eq-nas/$USER/EpilepsyDatabase/$subj/Ex/9.4T/${struct}_ScannerOrient/DTI*.nii.gz | head -n 1`
+
+
+./runProcessExDTI $dwi
+
+
+done

@@ -1,0 +1,101 @@
+#!/bin/bash
+
+
+if [ "$#" -lt 1 ]
+then
+ echo "Script to generate synthetic T1-weighted brain images"
+ echo ""
+ echo "Usage: $0 <subject IDs> ..."
+
+ exit 0
+fi
+
+
+datadir=/eq-nas/$USER/EpilepsyDatabase
+
+for subj in $@
+do
+
+
+echo "Processing subject $subj"
+
+despotdir=$datadir/$subj/Preop/Despot
+outdir=$datadir/$subj/Preop/Processed/SynT1weighted
+
+mkdir -p $outdir
+mkdir -p $outdir/work
+
+m0map=$despotdir/DESPOT1HIFI_MoMap.nii.gz
+mask_prefix=$outdir/work/MoMap_bet
+#bet -m on MoMap
+mask=${mask_prefix}_mask.nii.gz
+
+if [ ! -e $mask ]
+then
+echo bet $m0map $mask_prefix -m
+bet $m0map $mask_prefix -m
+fi
+
+distmap=${mask_prefix}_mask_distmap.nii.gz
+if [ ! -e $distmap ]
+then
+#compute distance map
+echo mri_distance_transform $mask 1 10 2 $distmap 
+mri_distance_transform $mask 1 10 2 $distmap 
+fi
+
+dist_img=$outdir/work/distmap.img
+
+#convert analyze for calculation
+if [ ! -e $dist_img ]
+then
+echo fslchfiletype ANALYZE $distmap $dist_img
+fslchfiletype ANALYZE $distmap $dist_img
+fi
+
+t1map=$despotdir/DESPOT1HIFI_T1Map.nii.gz
+t1map_img=$outdir/work/t1map.img
+
+if [ ! -e $t1map_img ]
+then
+echo fslchfiletype ANALYZE $t1map $t1map_img 
+fslchfiletype ANALYZE $t1map $t1map_img 
+fi
+
+
+t1w=$outdir/SynT1w_brain.nii.gz
+t1w_img=$outdir/SynT1w_brain.img
+
+if [ ! -e $t1w ]
+then
+#generate synT1w
+echo GenerateSynT1wFromT1Map $t1map_img $dist_img $t1w_img
+ GenerateSynT1wFromT1Map $t1map_img $dist_img $t1w_img
+echo fslchfiletype NIFTI_GZ $t1w_img
+fslchfiletype NIFTI_GZ $t1w_img
+
+
+qform=`fslorient -getqform $t1map`
+echo fslorient -setqform $qform $t1w
+fslorient -setqform $qform $t1w
+echo fslorient -copyqform2sform $qform $t1w
+fslorient -copyqform2sform $qform $t1w
+echo fslswapdim $t1w -x y z $t1w
+fslswapdim $t1w -x y z $t1w
+
+fi
+
+t1w_withbg=$outdir/SynT1w.nii.gz
+
+#create image with BG too for compatibility with other pipelines
+if [ ! -e $t1w_withbg ]
+then
+ echo "Creating SynT1w with background and non-brain regions"
+echo fslmaths $mask -bin -sub 1 -abs $outdir/work/bg_mask.nii.gz
+fslmaths $mask -bin -sub 1 -abs $outdir/work/bg_mask.nii.gz
+echo fslmaths $despotdir/despot1_tr90_fa18.nii.gz -mas $outdir/work/bg_mask.nii.gz -mul 0.1 -add $t1w $t1w_withbg
+fslmaths $despotdir/despot1_tr90_fa18.nii.gz -mas $outdir/work/bg_mask.nii.gz -mul 0.1 -add $t1w $t1w_withbg
+fi
+
+
+done

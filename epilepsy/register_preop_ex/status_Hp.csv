@@ -1,0 +1,28 @@
+Subj,Rigit,Deformable,Quality,Notes
+EPI_P002,No file,No file,,
+EPI_P006,Y,Y,,nreg zeros
+EPI_P007,Y,Y,,not very accurate
+EPI_P008,N,N,BAD,
+EPI_P014,No file,No file,,
+EPI_P015,Y,Y,,
+EPI_P016,N,N,WORST,DOES NOT EVEN HAVE A HIPPOCAMPUS 
+EPI_P021,Y,Y,,not very accurate
+EPI_P022,N,N,BAD,
+EPI_P024,Y,Y,,fail
+EPI_P026,N,N,WORST,
+EPI_P027,No file,No file,,
+EPI_P029,Y,Y,BAD,fail
+EPI_P031,Y,Y,,
+EPI_P032,Y,N,,plastimatch not done (stopped at 5)
+EPI_P033,Y,N,,plastimatch not done; rigid may need improvement
+EPI_P034,No file,No file,,
+EPI_P035,N,N,BAD,Probably left
+EPI_P036,N,N,BAD,I THINK IT’S THE SAME AS 35 WHAT
+EPI_P037,Y,N,,plastimatch not done (stopped at 5)
+EPI_P040,Y,N,,
+EPI_P041,N,N,GREAT,
+EPI_P043,N,N,MEDIUM,Probably left
+EPI_P044,N,N,,Plastimatch not done (is rigid done? Check)
+EPI_P045,N,N,GREAT,
+EPI_P046,N,N,GOOD,
+EPI_P055,No file,No file,,

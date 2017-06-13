@@ -1,0 +1,145 @@
+#!/bin/bash
+
+#script for preprocessing histology slices and MRI
+
+#input parameters? MRI volume, histology slices
+function usage {
+
+ echo "$0 <SUBJID> <structure> <session>"
+ echo ""
+echo "Looks for image: MRI_ExHistReg.nii.gz, which should be a symlink to most suitable MRI image for registration"
+ exit 0
+}
+
+function checkMinVol {
+
+img1=$1
+img2=$2
+
+
+vol1=`fslstats -t $img1 -V | awk -F\  '{print $1}'`
+vol2=`fslstats -t $img2 -V | awk -F\  '{print $1}'`
+
+
+if [ $vol1 -gt 1000 -a $vol2 -gt 1000 ]
+then
+  echo 1
+else
+ echo 0
+fi
+
+}
+
+
+
+SUBJ=$1
+STRUCT=$2
+SESSION=$3
+
+
+MRI_IMAGE=MRI_ExHistReg.nii.gz
+
+DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
+
+IN_SUBJ_DIR=$DATA_DIR/$SUBJ/Ex/$SESSION/$STRUCT
+
+
+
+
+for iter in 5
+do
+
+#OUT=../$SUBJ/Processed/Ex-Hist_Reg/${SESSION}/${STRUCT}
+reg3d_dir=$IN_SUBJ_DIR/3drigid_iter$iter
+split_dir=$reg3d_dir/slices
+
+disp_dir=$split_dir/disp_fields
+mkdir -p $disp_dir
+
+be=0.01
+
+
+for mri in `ls $split_dir/mri_*.nii.gz`
+do
+
+ suffix=${mri%%.nii.gz}
+ suffix=${suffix##*mri_}
+
+ reg_hist=${split_dir}/hist_reg_${suffix}.nii.gz
+
+ nreg_stack=${split_dir}/hist_nreg_reg_stack_be${be}.txt
+
+
+  nreg_dir=${split_dir}/inv_nonrigidreg_${suffix}_be${be}
+  mkdir -p $nreg_dir
+  nreg_hist=${nreg_dir}/mri_nreg_reg_${suffix}_be${be}.nii.gz
+
+
+
+ spline_spacing=2 #in voxels
+
+ ctrlpt=$nreg_dir/ctrlpt_field.nii.gz
+ deform=$nreg_dir/deformation_field.nii.gz
+ displace=$nreg_dir/disp_field.nii.gz
+ #position=$nreg_dir/pos_field.nii.gz
+
+#need to blank out orientation before starting
+ref=$reg_hist
+flo=$mri
+
+
+isMinVol=`checkMinVol $reg_hist $mri`
+
+if [ $isMinVol = 1 ]
+then
+
+
+#cp $reg_hist $ref
+#cp $mri $flo
+
+fslorient -deleteorient $ref
+fslorient -deleteorient $flo
+fslorient -setsformcode 1 $ref
+fslorient -setsformcode 1 $flo
+
+
+if [ ! -e $nreg_hist ]
+then
+
+#then
+echo reg_f3d -ref $ref -flo $flo -be $bending -cpp $ctrlpt -result $nreg_hist -sx $spline_spacing #-tmask $IGNSLICE
+reg_f3d -ref $ref -flo $flo -be $be -cpp $ctrlpt -result $nreg_hist -sx $spline_spacing #-tmask $IGNSLICE
+#get displacement field for xfming fiducials
+echo reg_transform -ref $ref -cpp2def $ctrlpt $deform
+reg_transform -ref $ref -cpp2def $ctrlpt $deform
+echo reg_transform -ref $ref -def2disp $deform $displace
+reg_transform -ref $ref -def2disp $deform $displace
+
+
+#now need to add back orientation info
+sform=`fslorient -getsform $reg_hist`
+echo fslorient -setsform $sform $nreg_hist
+fslorient -setsform $sform $nreg_hist
+echo fslorient -setqform $sform $nreg_hist
+fslorient -setqform $sform $nreg_hist
+
+fi
+
+cp $displace $disp_dir/disp_field_$suffix.nii.gz
+
+
+else 
+
+echo skipping
+
+fi
+
+done
+
+done
+
+fslmerge -z $disp_dir/disp_fields.nii.gz $disp_dir/disp_field_*
+cp $disp_dir/disp_fields.nii.gz $disp_dir/disp_fields_nii.nii.gz
+fslchfiletype ANALYZE $disp_dir/disp_fields.nii.gz
+
+

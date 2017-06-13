@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# 1. optionally extracts Neo and Hp from combined image
+
+#do next part in separate script:
+# 2. Sets ex-mri nifti headers to proper anatomical orientation -- need to determine this beforehand by examination of images with pre-op
+
+
+# input arguments:  subjid session (Post_fix)  axis to split Hp/Neo (x,y,z),  phys dimension to split,   name for first image, name for second image
+
+
+#save input arguments to log file
+
+
+subjid=$1
+session=$2
+x=$3
+y=$4
+z=$5
+axis=$6 # 1 2 or 3 (x y or z)
+
+
+if [ "$#" -lt 6 ]
+then 
+echo "Splits combined Ex mri images into Hp and Neo using phys coordinate of split point and the axis it was split along"
+echo "Usage: $0 <subjid> <session> <x> <y> <z> <axis to split (1,2, or 3 for x y z)>"
+exit 0
+fi
+
+
+subj_dir=../$subjid/Ex/$session
+combined_dir=$subj_dir/Combined_ScannerOrient
+
+echo $subjid $session $x $y $z $axis >$combined_dir/split_parameters.txt
+
+# how to specify cutting plane?  point in physical coords + axis to cut along
+
+mkdir -p $subj_dir/Neo_ScannerOrient
+mkdir -p $subj_dir/Hp_ScannerOrient
+
+
+for nii in `ls $combined_dir/*.nii.gz`
+do
+
+ roi_prefix=${nii%%.nii.gz}
+
+ echo nii $nii
+ echo roi_prefix: $roi_prefix
+ nii_file=${nii##*/}
+ echo nii_file: $nii_file
+ file_prefix=${nii_file%%.nii.gz}
+
+
+ runMatlabCmd getCutPlaneROI $x $y $z $axis "'$nii'" "'$subj_dir'" "'$file_prefix'"
+
+ #run fslroi
+ for struc in Hp_ScannerOrient Neo_ScannerOrient
+ do
+
+ 
+ fslroi_txt=$subj_dir/$struc/${file_prefix}.fslroi.txt
+ out_nii=$subj_dir/$struc/${nii_file}
+
+ echo fslroi $nii $out_nii `cat $fslroi_txt`
+ fslroi $nii $out_nii `cat $fslroi_txt`
+
+ done
+
+done

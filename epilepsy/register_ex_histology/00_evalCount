@@ -1,0 +1,28 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+  echo "Usage: $0 <subj> <structure>"
+  exit 0
+fi
+
+
+subj=$1
+struct=$2
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase/$subj/Processed/Ex-Hist_Reg
+mri=$data_dir/*/$struct/3drigid_iter5/reg_ex_mri.nii.gz
+itksnap $mri&
+for he_rgb in `ls $data_dir/*/$struct/aligned_rgb_20um/NEUN_rigid_rgb_*um.nii*`
+do
+
+itksnap $he_rgb& 
+
+
+for feat in `ls $data_dir/*/$struct/aligned_FeatureMaps_100um/count*.nii*`
+do
+
+itksnap $feat&
+done
+
+done

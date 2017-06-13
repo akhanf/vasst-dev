@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+echo "Usage: <subjects list (subj,session,structure) on each line>  <script to run>"
+exit 0
+fi
+
+subjlist=$1
+script=$2
+
+for subjline in `cat $subjlist`
+do
+
+ subj=${subjline%%,*}
+ struct=${subjline##*,}
+ session=${subjline#*,}
+ session=${session%%,*}
+
+ echo $script $subj $struct $session
+ $script $subj $struct $session
+
+
+done

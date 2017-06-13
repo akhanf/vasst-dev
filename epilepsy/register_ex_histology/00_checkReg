@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+  echo "Usage: $0 <subj> <structure>"
+  exit 0
+fi
+
+
+subj=$1
+struct=$2
+
+data_dir=/eq-nas/$USER/EpilepsyDatabase/$subj/Processed/Ex-Hist_Reg
+mri=$data_dir/*/$struct/3drigid_iter5/reg_ex_mri.nii.gz
+he_rgb=`ls $data_dir/*/$struct/aligned_rgb_100um_*/HE*_rigid_rgb_100um.nii.gz | head -n 1`
+
+
+if [ ! -e $mri ]
+then 
+  echo "$subj mri does not exist!"
+  echo $mri
+  exit 0
+fi
+
+if [ ! -n "$he_rgb" ]
+then 
+  echo "$subj HE 100um does not exist!"
+  exit 0
+
+fi
+
+
+if [ ! -e $he_rgb ] 
+then 
+  echo "$subj HE 100um does not exist!"
+ echo $he_rgb
+  exit 0
+fi
+
+echo itksnap $mri
+itksnap $mri&
+
+
+echo itksnap $he_rgb
+itksnap $he_rgb
+
+
