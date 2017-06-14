@@ -6,29 +6,29 @@
 # 2. Sets ex-mri nifti headers to proper anatomical orientation -- need to determine this beforehand by examination of images with pre-op
 
 
-# input arguments:  subjid session (Post_fix)  axis to split Hp/Neo (x,y,z),  phys dimension to split,   name for first image, name for second image
+# input arguments:  <data_dir> subjid session (Post_fix)  axis to split Hp/Neo (x,y,z),  phys dimension to split,   name for first image, name for second image
 
 
 #save input arguments to log file
 
+data_dir=$1
+subjid=$2
+session=$3
+x=$4
+y=$5
+z=$6
+axis=$7 # 1 2 or 3 (x y or z)
 
-subjid=$1
-session=$2
-x=$3
-y=$4
-z=$5
-axis=$6 # 1 2 or 3 (x y or z)
 
-
-if [ "$#" -lt 6 ]
+if [ "$#" -lt 7 ]
 then 
 echo "Splits combined Ex mri images into Hp and Neo using phys coordinate of split point and the axis it was split along"
-echo "Usage: $0 <subjid> <session> <x> <y> <z> <axis to split (1,2, or 3 for x y z)>"
+echo "Usage: $0 <ex_data_dir> <subjid> <session> <x> <y> <z> <axis to split (1,2, or 3 for x y z)>"
 exit 0
 fi
 
 
-subj_dir=../$subjid/Ex/$session
+subj_dir=$data_dir/$subjid/$session
 combined_dir=$subj_dir/Combined_ScannerOrient
 
 echo $subjid $session $x $y $z $axis >$combined_dir/split_parameters.txt

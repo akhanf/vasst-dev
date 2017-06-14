@@ -11,24 +11,23 @@
 
 #save input arguments to log file
 
-
-subjid=$1
-session=$2
-struct=$3
-orientation=$4
+data_dir=$1
+subjid=$2
+session=$3
+struct=$4
+orientation=$5
 
 if [ "$#" -lt 4 ]
 then 
 echo "Reorients ex mri images"
 echo "  To find orientation string, open imported NIFTI in fslview, and look at existing labels where {R A S} should be; orientation string is the sequence of 3 letters corresponding to these labels."
-echo "Usage: $0 <subjid> <session> <structure (Hp,Neo)> <orientation string>"
+echo "Usage: $0 <ex_data_dir> <subjid> <session> <structure (Hp,Neo)> <orientation string>"
 exit 0
 fi
 
-data_dir=/eq-nas/$USER/EpilepsyDatabase
 
-subj_dir=$data_dir/$subjid/Ex/$session/${struct}_ScannerOrient
-out_dir=$data_dir/$subjid/Ex/$session/${struct}
+subj_dir=$data_dir/$subjid/$session/${struct}_ScannerOrient
+out_dir=$data_dir/$subjid/$session/${struct}
 mkdir -p $out_dir
 
 echo $@ > $out_dir/reorient_parameters.txt
