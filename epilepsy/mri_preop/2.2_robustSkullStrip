@@ -1,23 +1,25 @@
 #!/bin/bash
 
 
-if [ "$#" -lt "1" ]
+if [ "$#" -lt "2" ]
 then
  echo "Script to robustly strip skull by processing Mo Map from despot1"
  echo ""
- echo "Usage: $0 <subject IDs>"
+ echo "Usage: $0 <preop_data_dir> <subject IDs>"
 
  exit 0
 fi
 
-datadir=/eq-nas/$USER/EpilepsyDatabase
+datadir=$1
+
+shift 1
 for subj in $@
 do
 
 echo "Processing subject $subj"
 
-despotdir=$datadir/$subj/Preop/Despot
-outdir=$datadir/$subj/Preop/Processed/BrainMask
+despotdir=$datadir/$subj/Despot
+outdir=$datadir/$subj/Processed/BrainMask
 
 
 mkdir -p $outdir

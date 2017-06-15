@@ -1,10 +1,10 @@
 #!/bin/bash
 
-if [ ! "$#" = "1" ]
+if [ ! "$#" = "2" ]
 then
  echo "Script to compute despot1 images"
  echo ""
- echo "Usage: $0 <subject ID list>"
+ echo "Usage: $0 <preop data dir> <subject ID>"
 
  exit 0
 fi
@@ -15,20 +15,20 @@ fi
 NUM_PROC=4
 
 
-datadir=/eq-nas/$USER/EpilepsyDatabase
+datadir=$1
 
-subj=$1
+subj=$2
 echo "Processing subject $subj"
 
 
-despotdir=$datadir/$subj/Preop/Despot
+despotdir=$datadir/$subj/Despot
 
 if [ ! -e $despotdir/DESPOTFM_T2Map.nii.gz ]
 then
 
 
 
-tempdir=/tmp/$subj/Preop/Despot/tempDespot2
+tempdir=/tmp/$subj/Despot/tempDespot2
 rm -rf $tempdir
 mkdir -p $tempdir
 

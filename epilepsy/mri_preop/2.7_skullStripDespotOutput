@@ -1,25 +1,26 @@
 #!/bin/bash
 
 
-if [ "$#" -lt "1" ]
+if [ "$#" -lt "2" ]
 then
  echo "Apply brainmask to despot output images"
  echo ""
- echo "Usage: $0 <subject IDs>"
+ echo "Usage: $0 <preop_data_dir> <subject IDs>"
 
  exit 0
 fi
 
-datadir=/eq-nas/$USER/EpilepsyDatabase
+datadir=$1
 
+shift 1
 
 for subj in $@
 do
 
 echo "Processing subject $subj"
 
-despotdir=$datadir/$subj/Preop/Despot
-brainmask=$datadir/$subj/Preop/Processed/BrainMask/BrainMask.nii.gz
+despotdir=$datadir/$subj/Despot
+brainmask=$datadir/$subj/Processed/BrainMask/BrainMask.nii.gz
 
 
 for img in DESPOT1HIFI_T1Map DESPOTFM_T2Map
