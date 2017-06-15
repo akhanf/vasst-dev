@@ -1,16 +1,17 @@
 #!/bin/bash
 
-data_dir=/eq-nas/$USER/EpilepsyDatabase
-
-struct=$1
-
-if [ "$#" -lt 1 ]
+if [ "$#" -lt 2 ]
 then
- echo "Usage: $0 <structure - Hp, Neo> <subjids ...>"
+ echo "Usage: $0 <out_reg_dir> <structure - Hp, Neo> <subjids ...>"
  exit 0
 fi
 
-shift 1
+data_dir=$1
+struct=$2
+
+
+
+shift 2
 for subj in $@
 do
 

@@ -1,34 +1,35 @@
 #!/bin/bash
 
 
-if [ "$#" -lt 3 ]
+if [ "$#" -lt 4 ]
 then
- echo "Usage: $0 <subj> <structure> <histology study (e.g. Histology)>"  #<session>"
+ echo "Usage: $0 <out_reg_dir> <subj> <structure> <histology study (e.g. Histology)>"  #<session>"
  echo ""
- echo " e.g.:  $0 EPI_P014 Neo" #Post_fix"
+ echo " e.g.:  $0 ~/EpilepsyDatabase/epilepsyPhase1/Ex-Hist_Reg EPI_P014 Neo" #Post_fix"
  echo ""
  exit
 fi
 
-subj=$1
-struct=$2
-histology_study=$3
+out_dir=$1
+subj=$2
+struct=$3
+histology_study=$4
 
-data_dir=/eq-nas/$USER/EpilepsyDatabase/$subj/Processed/Ex-Hist_Reg
-mri=`ls $data_dir/*/$struct/3drigid_iter5/reg_ex_mri.nii.gz | head -n 1`
+mri=`ls $data_dir/$subj/*/$struct/3drigid_iter5/reg_ex_mri.nii.gz | head -n 1
+`
 if [ ! -n "$mri" ]
 then 
  echo $subj mri does not exist!
  exit 0
 fi
 
-session=${mri##*Ex-Hist_Reg/}
+session=${mri##*$subj/}
 session=${session%%/*}
 
 for png_res in 20 #100 20
 do
 
-runMatlabCmd genAlignedNiftiRGB "'$subj'" "'$struct'" "'$session'" "$png_res" "'$histology_study'"
+runMatlabCmd genAlignedNiftiRGB "'$out_dir'" "'$subj'" "'$struct'" "'$session'" "$png_res" "'$histology_study'"
 
 done
 
