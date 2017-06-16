@@ -1,17 +1,20 @@
 #!/bin/bash
 
-if [ "$#" -lt 5 ]
+
+if [ "$#" -lt 6 ]
 then
- echo "Usage: $0 <hist name -- e.g.: Histology or Histology_Hp> <structure> <stain>  <featuremapdir - e.g.: 100um_FeatureMaps> <subject ids ...>"
+ echo "This script uses Ex-Hist-Reg transforms to bring feature-map NII files into the aligned-ex space"
+ echo "Usage: $0 <ex-hist_reg dir> <hist name -- e.g.: Histology or Histology_Hp> <structure> <stain>  <featuremapdir - e.g.: 100um_FeatureMaps> <subject ids ...>"
  exit 0
 fi
 
-hist_name=$1
+reg_data_dir=$1
+hist_name=$2
 hist_dir=/eq-nas/$USER/EpilepsyHistology/$hist_name
-struct=$2
-stain=$3
-feat_dir=$4
-shift 4
+struct=$3
+stain=$4
+feat_dir=$5
+shift 5
 
 
 res_um=${feat_dir%%um*}
@@ -21,7 +24,7 @@ for subj in $@
 do
 
 #get sessionsubj struct session
-exhistreg_dir=`ls -d /eq-nas/$USER/EpilepsyDatabase/$subj/Processed/Ex-Hist_Reg/*/$struct`
+exhistreg_dir=`ls -d $reg_data_dir/$subj/*/$struct`
 session=${exhistreg_dir%/*}
 session=${session##*/}
 

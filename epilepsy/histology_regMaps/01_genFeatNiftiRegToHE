@@ -1,8 +1,10 @@
 #!/bin/bash
 
 
+
 if [ "$#" -lt 5 ]
 then
+ echo "This script converts feature-map MAT files to nifti, making use of histology orientation cfg files"
  echo "Usage: $0 <hist name -- e.g.: Histology or Histology_Hp> <structure> <stain>  <featuremapdir - e.g.: 100um_FeatureMaps> <subject ids ...>"
  exit 0
 fi

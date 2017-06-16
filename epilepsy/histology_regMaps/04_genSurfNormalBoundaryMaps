@@ -1,23 +1,23 @@
 #!/bin/bash
 
+data_dir=$1
+struct=$2
 
-struct=$1
-
-if [ "$#" -lt 2 ]
+if [ "$#" -lt 3 ]
 then
-  echo "Usage: $0  <struct - Neo,Hp>   <subjids..>"
+  echo "Usage: $0 <ex_hist_reg_dir>  <struct - Neo,Hp>   <subjids..>"
   exit 0
 fi
 
-shift 1
 
-data_dir=/eq-nas/$USER/EpilepsyDatabase
+shift 2
+
 
 for subj in $@
 do
 
 # create boundary maps first:
-reg_dir=$data_dir/$subj/Processed/Ex-Hist_Reg/9.4T/$struct
+reg_dir=$data_dir/$subj/9.4T/$struct
 
 out_dir=$reg_dir/surf
 mkdir -p $out_dir
