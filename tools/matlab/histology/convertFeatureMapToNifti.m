@@ -23,8 +23,14 @@ mkdir(outdir);
 
 featRot=rotateImgTiffSpaceWithOrient(featureVec(:,:,i),tif,orientcsv);
 
+if(~exist('res_microns'))
+res_microns=100
+end
+
+inplane_mm=res_microns/1000;
+
 %save as nifti
-nii=make_nii(imrotate(featRot,-90),[0.1,0.1,4.4],[0,0,0],16);
+nii=make_nii(imrotate(featRot,-90),[inplane_mm,inplane_mm,4.4],[0,0,0],16);
 
 niifile=sprintf('%s/%s.nii',outdir,name);
 save_nii(nii,niifile);

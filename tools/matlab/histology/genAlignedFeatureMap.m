@@ -1,15 +1,17 @@
 % transform feature map 100 um niftis to 3D nifti's in aligned space
 
-function genAlignedFeatureMap(subj, struct, session, stain,in_dir,out_dir,out_name);
+function genAlignedFeatureMap(subj, struct, session, stain,in_dir,out_dir,out_name,res_um);
 
 %featuredir is where reg niftis exist
 
 resetvol=0;
 
-png_res=100;
+
+%get resolution from input image
+%res_um=100;
  
 
-    png_res_mm=png_res/1000;
+    res_mm=res_um/1000;
 
 
 reg_dir=sprintf('/eq-nas/%s/EpilepsyDatabase/%s/Processed/Ex-Hist_Reg/%s/%s',getenv('USER'),subj,session,struct);
@@ -31,7 +33,7 @@ slicespacing=hdr.pixdim(4);
 
 %  ----- here we get nifti's instead..
 
-%coreg_dir=sprintf('~/epilepsy/local_data/GenPosPixMaps/%s/%dum_PoxPixMap',subj,png_res);
+%coreg_dir=sprintf('~/epilepsy/local_data/GenPosPixMaps/%s/%dum_PoxPixMap',subj,res_um);
 coreg_dir=sprintf('%s',in_dir);
 
 
@@ -44,7 +46,6 @@ mkdir(slice_dir);
 
 for slice=1:nslices
     
-
     
      coreg_nii=sprintf('%s/%s_%s_%02d_%s_regHE.nii.gz',coreg_dir,subj,struct,slice,stain);
 
@@ -72,9 +73,9 @@ for slice=1:nslices
 %size(in_hist.vol)
 %vox2ras=in_hist.vox2ras
 vox2ras_png=eye(4,4);
-vox2ras_png(1,1)=png_res_mm;
-vox2ras_png(2,2)=png_res_mm;
-vox2ras_png(3,3)=png_res_mm;
+vox2ras_png(1,1)=res_mm;
+vox2ras_png(2,2)=res_mm;
+vox2ras_png(3,3)=res_mm;
 
 
 %load up ref slice:
@@ -125,7 +126,7 @@ T=maketform('affine',transform');
 A=permute(hist_png,[2,1,3]);
 %A=hist_png;
 
-[B,out_xdata,out_ydata]=imtransform(A,T,'nearest','UData',udata,'VData',vdata,'XData',xdata,'YData',ydata,'XYScale',[png_res_mm,png_res_mm],'FillValues',histfillval);
+[B,out_xdata,out_ydata]=imtransform(A,T,'nearest','UData',udata,'VData',vdata,'XData',xdata,'YData',ydata,'XYScale',[res_mm,res_mm],'FillValues',histfillval);
 
 B=permute(B,[2,1,3]);
 
@@ -143,20 +144,20 @@ rgbslice=zeros(size(B,1),size(B,2),1);
 rgbslice(:,:,1)=B;
 
 
-temp=make_nii(rgbslice,[png_res_mm,png_res_mm,slicespacing],[0,0,0]);
+temp=make_nii(rgbslice,[res_mm,res_mm,slicespacing],[0,0,0]);
 temp.hdr.hist.srow_x=histref_hdr.srow_x';
 temp.hdr.hist.srow_y=histref_hdr.srow_y';
 temp.hdr.hist.srow_z=histref_hdr.srow_z';
 %correct in-slice voxel resolution in sform:
-temp.hdr.hist.srow_x(1)=png_res_mm;
-temp.hdr.hist.srow_z(2)=png_res_mm;
+temp.hdr.hist.srow_x(1)=res_mm;
+temp.hdr.hist.srow_z(2)=res_mm;
 
 temp.hdr.hist.qform_code=0;
 temp.hdr.hist.sform_code=1;
 
 
 
-save_nii(temp,sprintf('%s/%s_rigid_%dum_slice_%02d.nii',slice_dir,stain,png_res,slice));
+save_nii(temp,sprintf('%s/%s_rigid_%dum_slice_%02d.nii',slice_dir,stain,res_um,slice));
 
 
 
@@ -170,7 +171,7 @@ histvol=sprintf('%s/3drigid_iter5/hist_stack_reg.nii.gz',reg_dir);
 histvolref_hdr=load_nifti(histvol,1);
 
         
-temp=make_nii(rgbout,[png_res_mm,png_res_mm,slicespacing],[0,0,0]);
+temp=make_nii(rgbout,[res_mm,res_mm,slicespacing],[0,0,0]);
 %temp.hdr.dime.datatype=128;
 %temp.hdr.dime.bitpix=24;
 temp.hdr.hist.srow_x=histvolref_hdr.srow_x';
@@ -178,8 +179,8 @@ temp.hdr.hist.srow_y=histvolref_hdr.srow_y';
 temp.hdr.hist.srow_z=histvolref_hdr.srow_z';
 
 %correct in-slice voxel resolution in sform:
-temp.hdr.hist.srow_x(1)=png_res_mm;
-temp.hdr.hist.srow_z(2)=png_res_mm;
+temp.hdr.hist.srow_x(1)=res_mm;
+temp.hdr.hist.srow_z(2)=res_mm;
 
 
 temp.hdr.dime.xyzt_units=18;
@@ -187,9 +188,9 @@ temp.hdr.dime.xyzt_units=18;
 temp.hdr.hist.qform_code=0;
 temp.hdr.hist.sform_code=1;
 
-save_nii(temp,sprintf('%s/%s_rigid_%dum.nii',out_dir,out_name,png_res));
-gzip(sprintf('%s/%s_rigid_%dum.nii',out_dir,out_name,png_res));
-delete(sprintf('%s/%s_rigid_%dum.nii',out_dir,out_name,png_res));
+save_nii(temp,sprintf('%s/%s_rigid_%dum.nii',out_dir,out_name,res_um));
+gzip(sprintf('%s/%s_rigid_%dum.nii',out_dir,out_name,res_um));
+delete(sprintf('%s/%s_rigid_%dum.nii',out_dir,out_name,res_um));
 
     
 
