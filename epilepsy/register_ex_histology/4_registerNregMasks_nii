@@ -5,7 +5,7 @@
 #input parameters? MRI volume, histology slices
 function usage {
 
- echo "$0 <SUBJID> <structure> <session>"
+ echo "$0 <out_reg_data_dir> <SUBJID> <structure> <session>"
  echo ""
 echo "Looks for image: MRI_ExHistReg.nii.gz, which should be a symlink to most suitable MRI image for registration"
  exit 0
@@ -30,17 +30,20 @@ fi
 
 }
 
+if [ "$#" -lt 4 ]
+ then
+ usage
+fi
 
-SUBJ=$1
-STRUCT=$2
-SESSION=$3
 
 
-MRI_IMAGE=MRI_ExHistReg.nii.gz
+OUT_DIR=$1
+SUBJ=$2
+STRUCT=$3
+SESSION=$4
 
-DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
 
-IN_SUBJ_DIR=$DATA_DIR/$SUBJ/Ex/$SESSION/$STRUCT
+
 
 
 
@@ -48,7 +51,7 @@ IN_SUBJ_DIR=$DATA_DIR/$SUBJ/Ex/$SESSION/$STRUCT
 for iter in 5
 do
 
-OUT=$DATA_DIR/$SUBJ/Processed/Ex-Hist_Reg/${SESSION}/${STRUCT}
+OUT=$OUT_DIR/$SUBJ/${SESSION}/${STRUCT}
 reg3d_dir=$OUT/3drigid_iter$iter
 split_dir=$reg3d_dir/slices
 

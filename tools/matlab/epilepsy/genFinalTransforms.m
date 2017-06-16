@@ -1,18 +1,16 @@
-function genFinalTransforms ( subj, struct, session )
+function genFinalTransforms ( data_dir, subj, struct, session )
 
 
 
 
 % applies to images from Histology, 100um_nii
 
-data_dir=sprintf('/eq-nas/%s/EpilepsyDatabase',getenv('USER'));
-
 
 init_phys_xfm=eye(4,4);
 init_phys_xfm(1,1)=10;
 init_phys_xfm(2,2)=10;
 
-reg_dir=sprintf('%s/%s/Processed/Ex-Hist_Reg/%s/%s',data_dir,subj,session,struct);
+reg_dir=sprintf('%s/%s/%s/%s',data_dir,subj,session,struct);
 
 %first, load up hist stack image to determine # of slices and slice spacing
 hist_stack_nii=sprintf('%s/images/hist_stack.nii.gz',reg_dir);

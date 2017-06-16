@@ -1,6 +1,6 @@
 
 % transform feature map 100 um niftis to 3D nifti's in aligned space
-function genAlignedFeatureMapVecOrient(subj, struct, session,stain,in_dir,out_dir,out_name)
+function genAlignedFeatureMapVecOrient(data_dir,subj, struct, session,stain,in_dir,out_dir,out_name)
 
 %featuredir is where reg niftis exist
 
@@ -13,8 +13,8 @@ png_res=100;
 
 %line below for testing
 %subj='EPI_P040'; struct='Neo'; session='9.4T'; png_res=100;
+reg_dir=sprintf('%s/%s/%s/%s',data_dir,subj,session,struct);
 
-reg_dir=sprintf('/eq-nas/%s/EpilepsyDatabase/%s/Processed/Ex-Hist_Reg/%s/%s',getenv('USER'),subj,session,struct);
 
 %first, load up hist stack image to determine # of slices and slice spacing
 hist_stack_nii=sprintf('%s/images/hist_stack.nii.gz',reg_dir);

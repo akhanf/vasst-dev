@@ -1,16 +1,15 @@
-
 % transform rgb 100 um pngs to 3D nifti's in aligned space
-function genAlignedNiftiRGB(subj, struct, session,png_res,histology_study)
+function genAlignedNiftiRGB(data_dir,subj, struct, session,png_res,histology_study)
 
 
-data_dir=sprintf('/eq-nas/%s/EpilepsyDatabase',getenv('USER'));
+
 hist_dir=sprintf('/eq-nas/%s/EpilepsyHistology/%s',getenv('USER'),histology_study);
 
 
 %line below for testing
 %subj='EPI_P040'; struct='Neo'; session='9.4T'; png_res=100;
 
-reg_dir=sprintf('%s/%s/Processed/Ex-Hist_Reg/%s/%s',data_dir,subj,session,struct);
+reg_dir=sprintf('%s/%s/%s/%s',data_dir,subj,session,struct);
 
 %first, load up hist stack image to determine # of slices and slice spacing
 hist_stack_nii=sprintf('%s/images/hist_stack.nii.gz',reg_dir);

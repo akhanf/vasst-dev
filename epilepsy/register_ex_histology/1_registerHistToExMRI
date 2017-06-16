@@ -5,43 +5,21 @@
 #input parameters? MRI volume, histology slices
 function usage {
  
- echo "$0 <SUBJID> <structure> <session>"
+ echo "$0 <in mri nii> <histology_data_dir> <out_reg_data_dir> <SUBJID> <structure> <session>"
  echo "   -t <th>		Set threshold for ex-vivo MRI (default 50; use 0 if already masked)"
  echo ""
-echo "Looks for image: MRI_ExHistReg.nii.gz, which should be a symlink to most suitable MRI image for registration"
  echo ""
  exit 0 
 }
 
-#function not used anymore:
-function doNonRigidRegLDDMM {
 
-#in args:
-#doNonRigidReg $reg_hist $mri $nreg_hist $nreg_dir
-reg_hist=$1
-mri=$2
-nreg_hist=$3
-nreg_dir=$4
+if [ "$#" -lt 6 ]
+then
 
+usage
 
+fi
 
-mri_norm=$nreg_dir/mri_norm.nii.gz
-#nreg_hist=$nreg_dir/hist_warped.nii.gz
-nreg_mri=$nreg_dir/mri_warped.nii.gz
-disp_hist_mri=$nreg_dir/disp_hist_mri.nii.gz
-disp_mri_hist=$nreg_dir/disp_mri_hist.nii.gz
-lddmm_dir=$nreg_dir/lddmm
-
-#normalize intensities
-fslmaths $mri -inm `fslstats $reg_hist -M` $mri_norm
-
-#not used anymore::
-~/epilepsy/shared_data/data/scripts/wrappers/runNiftiLDDMM $reg_hist $mri_norm $nreg_hist $nreg_mri $disp_hist_mri $disp_mri_hist $lddmm_dir
-
-
-
-
-}
 
 function doNonRigidRegNifty {
 
@@ -109,7 +87,6 @@ function checkMinVol {
 img1=$1
 img2=$2
 
-
 vol1=`fslstats -t $img1 -V | awk -F\  '{print $1}'`
 vol2=`fslstats -t $img2 -V | awk -F\  '{print $1}'`
 
@@ -126,24 +103,18 @@ fi
 
 
 
-if [ "$#" -lt 3 ]
-then
-
-usage
-
-fi
-
-
 #store output in:
   #  SUBJDIR/Processed/Ex-Hist_Reg
 
-
-SUBJ=$1
-STRUCT=$2
-SESSION=$3 
+in_mri=$1
+HIST_DIR=$2
+OUT_DIR=$3
+SUBJ=$4
+STRUCT=$5
+SESSION=$6 
 
 th=50
-shift 3
+shift 6
 
 while getopts "t:" options; do
  case $options in
@@ -154,18 +125,16 @@ while getopts "t:" options; do
  esac
 done
 
-MRI_IMAGE=MRI_ExHistReg.nii.gz
 
-DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
-HIST_DIR=/eq-nas/$USER/EpilepsyHistology/Histology/
+#DATA_DIR=/eq-nas/$USER/EpilepsyDatabase
+#HIST_DIR=/eq-nas/$USER/EpilepsyHistology/Histology/
 
 
-IN_SUBJ_DIR=$DATA_DIR/$SUBJ/Ex/$SESSION/$STRUCT
 IN_HIST_DIR=$HIST_DIR/$SUBJ/100um_nii
 
 
 #write directly to eq-nas now
-OUT=$DATA_DIR/$SUBJ/Processed/Ex-Hist_Reg/${SESSION}/${STRUCT}
+OUT=$OUT_DIR/$SUBJ/${SESSION}/${STRUCT}
 mkdir -p $OUT
 
 
@@ -190,7 +159,6 @@ MRI_STD=$IMG_DIR/ex_mri.nii.gz
  # echo fslreorient2std $IN_SUBJ_DIR/$MRI_IMAGE $MRI_STD
 #  fslreorient2std $IN_SUBJ_DIR/$MRI_IMAGE $MRI_STD
 
-in_mri=$IN_SUBJ_DIR/$MRI_IMAGE
 
 if [ ! -e $in_mri ]
 then

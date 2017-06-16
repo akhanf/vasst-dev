@@ -1,23 +1,22 @@
 #!/bin/bash
 
 #run this for a list of subjects
-if [ ! "$#" = "3" ]
+if [ ! "$#" = "4" ]
 then
  echo "Script to extract nifti images from Ex-vivo DICOMS"
  echo "Uses dicom2 to query headers and dcm2nii to extract and reorient images. Ensure that these are in your path before running."
  echo ""
- echo "Usage: $0 <subject ID> <specimen_name (Combined,Hp,Neo)> <session (Pre_fix, Post_fix)"
+ echo "Usage: $0 <ex_data_dir> <subject ID> <specimen_name (Combined,Hp,Neo)> <session (Pre_fix, Post_fix) "
 
  exit 0
 fi
 
 
+datadir=$1
+subj=$2
+sample=$3
+fix=$4
 
-subj=$1
-sample=$2
-fix=$3
-
-datadir=..
 
 #can be nii or img (nifti or analyze)
 format=nii
@@ -30,14 +29,14 @@ echo "Processing subject $subj"
 
 
 
-origoutdir=$datadir/$subj/Ex/$fix
-outdir=/tmp/$subj/Ex/$fix
+origoutdir=$datadir/$subj/$fix
+outdir=/tmp/Ex/$subj/$fix
 mkdir -p $origoutdir
 
 #dicomdir=$datadir/$subj/Ex/$fix/Dicoms
 
 #with eq-nas, dcm2nii has major problems reading in dicoms, so need to copy to local folder, read dicoms from there, then remove local dicoms
-origdicomdir=$datadir/$subj/Ex/$fix/Dicoms
+origdicomdir=$datadir/$subj/$fix/Dicoms
 dicomdir=/tmp/dicoms$subj
 
 if [ -e $dicomdir ]

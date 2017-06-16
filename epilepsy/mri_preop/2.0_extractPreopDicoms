@@ -2,7 +2,7 @@
 
 
 #run this for a list of subjects
-if [ "$#" -lt "1" ]
+if [ "$#" -lt "2" ]
 then
  echo ""
 
@@ -10,12 +10,13 @@ then
  echo "Script to extract nifti images from Preop DICOMS"
  echo "Uses dicom2 to query headers and dcm2nii to extract and reorient images. Ensure that these are in your path before running."
  echo ""
- echo "Usage: $0 <subject ID>"
+ echo "Usage: $0 <preop_data_dir> <subject IDs>"
 
  exit 0
 fi
 
-datadir=/eq-nas/$USER/EpilepsyDatabase
+datadir=$1
+shift 1
 
 #bindir may be deprecated, points to non-existant extractGradientTable script
 bindir=.
@@ -31,11 +32,11 @@ format=nii.gz
 
 echo "Processing subject $subj"
 
-outdir=$datadir/$subj/Preop
+outdir=$datadir/$subj
 
 
 #with eq-nas, dcm2nii has major problems reading in dicoms, so need to copy to local folder, read dicoms from there, then remove local dicoms
-origdicomdir=$datadir/$subj/Preop/Dicoms
+origdicomdir=$datadir/$subj/Dicoms
 dicomdir=/tmp/dicoms$subj
 if [ -e $dicomdir ]
 then
@@ -55,8 +56,6 @@ mkdir -p $outdir/Despot
 mkdir -p $outdir/fMRI
 mkdir -p $outdir/DTI
 
-#make link as 3T
-#ln -s Preop $datadir/$subj/3T
 
 filelist=$origdicomdir/file_list.txt
 rm -f $filelist

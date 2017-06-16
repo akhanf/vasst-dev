@@ -1,27 +1,27 @@
 #!/bin/bash
 
-if [ "$#" -lt 3 ]
+if [ "$#" -lt 4 ]
 then 
 echo "Reorients ex DTI images using existing reorientation string"
 echo "  To find orientation string, open imported NIFTI in fslview, and look at existing labels where {R A S} should be; orientation string is the sequence of 3 letters corresponding to these labels."
-echo "Usage: $0 <struct> <orient> <subjids ...> "
+echo "Usage: $0 <ex_data_dir> <struct> <orient> <subjids ...> "
 exit 0
 fi
 
-struct=$1
-orient=$2
+data_dir=$1
+struct=$2
+orient=$3
 
-shift 2
+shift 3
 
-data_dir=/eq-nas/$USER/EpilepsyDatabase
 session=9.4T
 
 for subjid in $@
 do
 
 
-subj_dir=$data_dir/$subjid/Ex/$session/${struct}_ScannerOrient
-out_dir=$data_dir/$subjid/Ex/$session/${struct}
+subj_dir=$data_dir/$subjid/$session/${struct}_ScannerOrient
+out_dir=$data_dir/$subjid/$session/${struct}
 
 echo "$subjid $session $struct $orient" > $out_dir/reorient_parameters.DTI12.txt
 

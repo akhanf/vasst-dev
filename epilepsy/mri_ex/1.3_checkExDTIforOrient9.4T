@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]
+then
+ echo "Usage: $0 <ex_data_dir> <subj> <struct>"
+ exit 0
+fi
+data_dir=$1
+subjid=$2
+struct=$3
+
+session=9.4T
+
+dti_dir=$data_dir/$subjid/$session/${struct}_ScannerOrient
+reorient_dir=$data_dir/$subjid/$session/${struct}
+
+dti=`ls $dti_dir/DTI*.nii.gz | head -n 1`
+ref=$reorient_dir/MRI_ExHistReg.nii.gz
+
+echo Comparing $dti and $ref
+fslview $dti&
+fslview $ref
+
+

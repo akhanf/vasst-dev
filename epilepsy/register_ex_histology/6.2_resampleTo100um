@@ -1,21 +1,22 @@
 #!/bin/bash
 
-data_dir=/eq-nas/$USER/EpilepsyDatabase
-
-struct=$1
-
-if [ "$#" -lt 1 ]
+if [ "$#" -lt 2 ]
 then
- echo "Usage: $0 <structure - Hp, Neo> <subjids ...>"
+ echo "Usage: $0 <out_reg_dir> <structure - Hp, Neo> <subjids ...>"
  exit 0
 fi
 
-shift 1
+data_dir=$1
+struct=$2
+
+
+
+shift 2
 for subj in $@
 do
 
 
-reg_dir=`ls -d $data_dir/$subj/Processed/Ex-Hist_Reg/*/$struct/3drigid_iter5 | head -n 1`
+reg_dir=`ls -d $data_dir/$subj/*/$struct/3drigid_iter5 | head -n 1`
 out_dir=$reg_dir/../aligned_Ex_100um
 mkdir -p $out_dir
 

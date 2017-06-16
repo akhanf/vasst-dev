@@ -1,17 +1,18 @@
 #!/bin/bash
 
 
-if [ "$#" -lt 1 ]
+if [ "$#" -lt 2 ]
 then
  echo "Script to generate synthetic T1-weighted brain images"
  echo ""
- echo "Usage: $0 <subject IDs> ..."
+ echo "Usage: $0 <preop_data_dir> <subject IDs>"
 
  exit 0
 fi
 
 
-datadir=/eq-nas/$USER/EpilepsyDatabase
+datadir=$1
+shift 1
 
 for subj in $@
 do
@@ -19,8 +20,8 @@ do
 
 echo "Processing subject $subj"
 
-despotdir=$datadir/$subj/Preop/Despot
-outdir=$datadir/$subj/Preop/Processed/SynT1weighted
+despotdir=$datadir/$subj/Despot
+outdir=$datadir/$subj/Processed/SynT1weighted
 
 mkdir -p $outdir
 mkdir -p $outdir/work

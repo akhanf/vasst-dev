@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-if [  "$#" -lt "1" ]
+if [ "$#" -lt 2 ]
 then
  echo "Script to run FSL FAST on  T1-weighted  (flip angle 18 from despot) brain images"
  echo ""
@@ -11,15 +11,16 @@ then
 fi
 
 
-data_dir=/eq-nas/$USER/EpilepsyDatabase
+data_dir=$1
+shift 1
 
 for subj in $@
 do
 
 echo "Processing subject $subj"
 
-despotdir=$data_dir/$subj/Preop/Despot
-outdir=$data_dir/$subj/Preop/Processed/TissueSegBiasCorrect
+despotdir=$data_dir/$subj/Despot
+outdir=$data_dir/$subj/Processed/TissueSegBiasCorrect
 
 mkdir -p $outdir
 

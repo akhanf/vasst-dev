@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #run this for a list of subjects
-if [ "$#" -lt "2" ]
+if [ "$#" -lt "3" ]
 then
  echo ""
 
@@ -9,17 +9,17 @@ then
  echo "Script to extract nifti images from Preop DICOMS"
  echo "Uses dicom2 to query headers and dcm2nii to extract and reorient images. Ensure that these are in your path before running."
  echo ""
- echo "Usage: $0 <output dir> <subject IDs ...>"
+ echo "Usage: $0 <preop data dir> <output dir> <subject IDs ...>"
 
  exit 0
 fi
 
 
-datadir=/eq-nas/$USER/EpilepsyDatabase
+datadir=$1
 
 #outroot=/media/Khan2TB/ctrl_dicoms
 outroot=$2  
-shift 1
+shift 2
 
 for subj in $@
 do
@@ -33,7 +33,7 @@ outdir=$outroot/$subj
 mkdir -p $outdir
 
 #with eq-nas, dcm2nii has major problems reading in dicoms, so need to copy to local folder, read dicoms from there, then remove local dicoms
-dicomdir=$datadir/$subj/Preop/Dicoms
+dicomdir=$datadir/$subj/Dicoms
 
 
 #first get series description from first file of each folder
