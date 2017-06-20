@@ -52,9 +52,9 @@ nii=$out_dir/${featname}_rigid_${res_um}um.nii.gz
  then
 
 
- runMatlabCmd genAlignedFeatureMapVecOrient "'$subj'" "'$struct'" "'$session'" "'$stain'" "'$in_dir'" "'$out_dir'" "'$featname'" 
+ runMatlabCmd genAlignedFeatureMapVecOrient "'$reg_data_dir'" "'$subj'" "'$struct'" "'$session'" "'$stain'" "'$in_dir'" "'$out_dir'" "'$featname'" 
  else  
- runMatlabCmd genAlignedFeatureMap "'$subj'" "'$struct'" "'$session'" "'$stain'" "'$in_dir'" "'$out_dir'" "'$featname'" "$res_um"
+ runMatlabCmd genAlignedFeatureMap "'$reg_data_dir'" "'$subj'" "'$struct'" "'$session'" "'$stain'" "'$in_dir'" "'$out_dir'" "'$featname'" "$res_um"
 
  fi
 #fi
