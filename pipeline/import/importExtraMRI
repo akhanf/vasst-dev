@@ -22,7 +22,7 @@ ext=${in_mri##*.}
 
 if [ "$ext" = "gz" ]
 then
-  cp $in_t1 $t1
+  cp $in_mri $mri
 else
 
 
