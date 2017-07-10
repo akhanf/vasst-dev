@@ -1,4 +1,4 @@
-function remapSegmentationLabels( in_seg_nii, in_label_mapping, output_labels, out_folder)
+function remapSegmentationLabels( in_seg_nii, in_label_mapping, output_label_mapping, out_folder)
 %Remaps segmentation labels using a label mapping text file, writing out
 %individual images and a combined label image.  The input indices, in the label
 %mapping text file are assumed to be the line numbers (1:end). 
@@ -10,11 +10,11 @@ function remapSegmentationLabels( in_seg_nii, in_label_mapping, output_labels, o
 
 mkdir(out_folder);
 
-in_labels=importdata(in_label_mapping);
+in_labels=importdata(in_label_mapping,',',0);
 in_names=in_labels.rowheaders;
 in_ids=in_labels.data;
 
-output_labels=importdata(output_labels);
+output_labels=importdata(output_label_mapping,',',0);
 out_names=output_labels.rowheaders;
 out_ids=output_labels.data;
 
