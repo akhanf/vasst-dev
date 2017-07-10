@@ -58,11 +58,17 @@ scriptname=${pipeline_script##*/} #strip leading path
 name=$scriptname.$subj
 job=$pbs_dir/$name
 
-echo $pipeline_script $add_args $subj > $job
+echo "#!/bin/bash" > $job
+echo cd `pwd` >> $job
+echo $pipeline_script $add_args $subj >> $job
 
-sbatch -J $name  -D `pwd` --time=72:00:00 --mem=6000 $job
+#echo sbatch -J $name  -D `pwd` --time=72:00:00 --mem=6000 $job
+# echo sbatch -J $name  -D `pwd` $job
+# sbatch -J $name  -D `pwd` --time=1:00 --mem=1 $job
+ echo sbatch -J $name  -D `pwd` --time=36:00:00  --mem=8000 --account=rrg-akhanf $job
+ sbatch -J $name  -D `pwd` --time=36:00:00  --mem=8000 --account=rrg-akhanf $job
 #wait 30 sec before sending another..
-sleep 30
+#sleep 1
 
 done
 

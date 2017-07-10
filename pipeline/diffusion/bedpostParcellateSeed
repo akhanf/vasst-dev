@@ -80,8 +80,16 @@ subj_dir=$output_dir/$subj
  targets_dir=$parc_dir/targets 
  mkdir -p $targets_dir
 
+ if [ ! -e $target_seg ]
+ then
+	 echo "$target_seg does not exist!"
+	 continue
+ fi
+
  #process for targets
- runMatlabCmd remapSegmentationLabels "'$target_seg'" "'$target_mapping_txt'" "'$target_labels_txt'" "'$targets_dir'"
+# runMatlabCmd remapSegmentationLabels "'$target_seg'" "'$target_mapping_txt'" "'$target_labels_txt'" "'$targets_dir'"
+ echo octave --eval "remapSegmentationLabels('$target_seg','$target_mapping_txt','$target_labels_txt','$targets_dir')"
+ octave --eval "remapSegmentationLabels('$target_seg','$target_mapping_txt','$target_labels_txt','$targets_dir')"
  
  targets_file=$parc_dir/targets.txt
  ls $targets_dir/*.nii.gz > $targets_file
