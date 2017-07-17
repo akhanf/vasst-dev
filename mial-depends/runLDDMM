@@ -1,0 +1,118 @@
+#!/bin/bash
+
+#inputs:
+ # template, target
+  # could be images or image lists (for multichan)
+
+#output: 
+ # LDDMM dir (with Hmap, Kimap etc)
+
+
+#options: 
+  # pre register? hist equalize?
+
+
+function usage {
+echo ""
+echo "Usage: runLDDMM <options> <template_img/txt> <target_img/txt> <output_folder>"
+echo ""
+echo " For single channel, supply images for template/target"
+echo " For multi channel, supply text files where each line has the absolute path to an image, for template/target, and a header line with the number of images"
+echo "   Note that the template and target files should have .img or .txt suffixes!"
+echo ""
+echo ""
+echo "<example file>:"
+echo "3"
+echo "myimage_chan_T1.img"
+echo "myimage_chan_WM.img"
+echo "myimage_chan_GM.img"
+echo ""
+
+echo ""
+echo "Options:"
+echo "  -n ##      : number of MPI processes to use (default 1)"
+echo "  -g         : use Greedy LDDMM instead (requires less memory/computation time)"
+echo "  -a ##      : regularization parameter alpha"
+echo "  -W ##      : walltime (default: 24:00:00)"
+echo "  -w /path/  : working directory"
+}
+
+
+NUM_PROCS=1
+USE_GREEDY=0
+OPTS="-i 32 -h 16"
+
+while getopts "ga:n:w:W:o:" options; do
+  case $options in
+    a ) echo "Regularization: alpha=$OPTARG"
+        OPTS="$OPTS -a $OPTARG";;
+    n ) echo "Using MPI with n=$OPTARG processors" 
+        OPTS="$OPTS -N $OPTARG";;
+    g ) echo "Using Greedy LDDMM"
+        OPTS="$OPTS -G 100 -E 0.05 -n 0";;
+    W ) echo "Using walltime=$OPTARG"
+        OPTS="$OPTS -W $OPTARG";;
+    w ) echo "Working directory $OPTARG"
+        OPTS="$OPTS -w $OPTARG";;
+    o ) echo "Custom options for generatePBSfluidmatch: $OPTARG"
+  	OPTS="$OPTS $OPTARG";;
+     \? ) usage
+          exit 1;;
+     * ) usage
+         exit 1;;
+	 
+   esac
+done 
+
+ 
+shift $((OPTIND-1))
+
+if [ "$#" -lt "3" ]
+then 
+ usage
+ exit 1
+fi
+
+TEMPLATE=$1
+TARGET=$2
+OUTPUT_DIR=$3
+
+
+SUFFIX=${TEMPLATE##*.}
+if [ "$SUFFIX" = "img" ]
+then
+  echo "Single channel LDDMM"
+  USE_MULTI=0
+
+
+elif [ "$SUFFIX" = "txt" ]
+then
+  echo "Multi channel LDDMM"
+  USE_MULTI=1
+  OPTS="$OPTS -b fluidmatch3D_constWeightedMC -m"
+else
+ echo "Please use .img or .txt files for the template/target"
+ exit 1
+fi
+
+if [ -e $TEMPLATE -a -e $TARGET ]
+then
+mkdir -p $OUTPUT_DIR
+PBS_FILE=$OUTPUT_DIR/cmd.pbs
+
+echo "generatePBSfluidmatch $OPTS $TEMPLATE $TARGET $PBS_FILE"
+generatePBSfluidmatch $OPTS $TEMPLATE $TARGET $PBS_FILE
+else
+
+ if [ ! -e $TEMPLATE ]
+ then 
+  echo "Template file: $TEMPLATE does not exist"
+  exit 1
+ fi
+
+ if [ ! -e $TARGET ]
+ then
+  echo "Target file: $TARGET does not exist"
+  exit 1
+ fi
+fi

@@ -1,0 +1,324 @@
+#!/bin/bash
+
+function usage {
+echo ""
+echo "Usage: generatePBS_LDDMM [-n lddmm_sims] [-t timesteps] [-G greedy_steps] [-E greedy_error] [-N num_procs] [-a alpha] [-g gamma] [-i padI] [-h padH] [-r restart] [-e lddmm_error] [-R multi-res] [-w working dir] [-b binary] [-m machine] template_image target_image pbs_file"
+echo "       -n lddmm_sims        Total number of LDDMM sim steps (1000)"
+echo "       -t timesteps         LDDMM timesteps (20)"
+echo "       -G greedy_steps      Number of Greedy sim steps (0)"
+echo "       -E greedy_error      Image error to stop Greedy (0.1)"
+echo "       -N num_procs         Number of processors (1)"
+echo "       -a alpha             Alpha (0.01)"
+echo "       -g gamma             Gamma (1)"
+echo "       -i padI              MPI image padding (10)"
+echo "       -h padH              MPI map padding (5)"
+echo "       -r restart           Restart (0)"
+echo "       -e lddmm_error       Image error to stop LDDMM (0.02)"
+echo "       -R multi-res         Multi-resolution parameters file (none by default)"
+echo "       -w working_dir       Working directory (current dir)"
+echo "       -b binary            FluidMatch binary (fluidmatch3D)"
+echo "       -m multichannel      Enable multi-channel lddmm (still need to specify -b flag)"
+echo "       -M memory            Specify memory used instead of MemUsageFluidmatch (e.g. 1000mb)"
+echo "       -D                   Disable e-mail notifications"
+echo "       -d                   Enable 2D LDDMM"
+echo "       -s                   Disable MPI"
+echo "       -A                   Specify architecture (for #PBS -l arch= )"
+echo "       -l                   Specify nodes list (for #PBS -l nodes= )"
+echo "       -O outfile           Redirect stdout to outfile"
+echo "       -W walltime          Specify walltime (default: 24:00:00)"
+echo ""
+echo "Note that landmark initialization is not yet implemented in this script"
+
+}
+
+
+if [ -e $PBS_CONFIG ]
+then
+  source $PBS_CONFIG
+fi
+
+
+
+
+
+NUM_PROCS=1
+
+ENABLE_2D=0
+NUM_LDDMM_STEPS=1000
+TIMESTEPS=20
+NUM_GREEDY_STEPS=0
+GREEDY_IMG_ERROR=0.1
+DELTA=0.1
+EPSILON=1e-10
+NUM_PROC_Z=$NUM_PROCS
+NUM_PROC_Y=1
+NUM_PROC_X=1
+ALPHA=0.01
+GAMMA=1
+PADI=10
+PADH=5
+NORM_GRAD_STOP=1000
+RESTART=0
+SIGMA=1
+LDDMM_IMG_ERROR=0.02
+STEPS_CHANGE_EPSILON=25
+STEPS_REVERSE_MAPPING=0
+USE_LANDMARKS=0
+MULTI_RES_FILE=
+WORKING_DIR=.
+FM_BIN=fluidmatch3D
+DISABLE_EMAIL=0
+MEMORY=
+USE_MPI=1
+OUTFILE=
+MULTICHANNEL=0
+WALLTIME="24:00:00"
+ARCH=
+PBS_PREFIX="#PBS"
+NODES=
+USE_SCM=0
+
+while getopts "w:n:t:G:E:N:a:g:i:h:r:e:R:Db:mdM:sO:W:A:p:l:cBS:" options; do
+  case $options in
+     A ) echo "Using architecture: $OPTARG"
+         ARCH=$OPTARG;;
+     S ) echo "Using epsilon: $OPTARG"
+ 	 EPSILON=$OPTARG;;
+     c ) echo "Using conf weighted channels"
+	 USE_SCM=1;;
+     l ) echo "Using nodes: $OPTARG"
+	 NODES=$OPTARG;;
+     w ) echo "Using $OPTARG as working directory"
+         WORKING_DIR=$OPTARG;;
+     W ) echo "Using walltime: $OPTARG"
+         WALLTIME=$OPTARG;;
+     n ) echo "Using $OPTARG LDDMM simulations"
+	 NUM_LDDMM_STEPS=$OPTARG
+	 TIMESTEPS=0;;
+     t ) echo "Using $OPTARG LDDMM timesteps"
+	 TIMESTEPS=$OPTARG;;
+     G ) echo "Using $OPTARG Greedy steps"
+	 NUM_GREEDY_STEPS=$OPTARG;;
+     E ) echo "Using $OPTARG as Greedy image error stop"
+	 GREEDY_IMG_ERROR=$OPTARG;;
+     N ) echo "Using $OPTARG processors"
+	 NUM_PROCS=$OPTARG
+	 NUM_PROC_Z=$OPTARG;;
+     a ) echo "Using $OPTARG as alpha"
+	 ALPHA=$OPTARG;;
+     g ) echo "Using $OPTARG as gamma"
+	 GAMMA=$OPTARG;;
+     i ) echo "Using $OPTARG as padI"
+	 PADI=$OPTARG;;
+     h ) echo "Using $OPTARG as padH"
+	 PADH=$OPTARG;;
+     r ) echo "Using $OPTARG as restart"
+	 RESTART=$OPTARG;;
+     e ) echo "Using $OPTARG as LDDMM image error stop"
+	 LDDMM_IMG_ERROR=$OPTARG;;
+     R ) echo "Using $OPTARG as multi-res file"
+         MULTI_RES_FILE=$OPTARG;;
+     b ) echo "Using $OPTARG as FluidMatch binary"
+	 FM_BIN=$OPTARG;;
+     m ) echo "Enabling multi-channel"
+         MULTICHANNEL=1;;
+     D ) echo "Disabling e-mail notifications"
+         DISABLE_EMAIL=1;;
+     d ) echo "Enable 2D mapping"
+         ENABLE_2D=1;;
+	# FM_BIN=fluidmatch2D;;
+     M ) echo "Using $OPTARG memory"
+     	 MEMORY=$OPTARG;;
+     s ) echo "Disabling MPI"
+         USE_MPI=0;;
+     O ) echo "Redirecting stdout to $OPTARG"
+     	 OUTFILE="> $OPTARG";;
+     p ) echo "Using PBS Prefix: $OPTARG"
+	 PBS_PREFIX=$OPTARG;;
+     B ) echo "Using whole brain multi-chan settings"
+         EPSILON=1e-2
+	 ALPHA=0.1
+	 GAMMA=0.002
+	 SIGMA=2
+	 PADI=32
+	 PADH=16;;
+	
+     \? ) usage
+          exit 1;;
+     * ) usage
+         exit 1;;
+	 
+   esac
+done   
+
+shift $((OPTIND-1))
+
+if [ "$ENABLE_2D" = "1" ]
+then
+  NUM_PROC_Y=$NUM_PROCS
+  NUM_PROC_Z=1
+fi
+
+if [ $# -ge "3" ]
+then
+ TEMPLATE=$1
+ TARGET=$2
+ PBS_FILE=$3
+ 
+ echo "Template Image: $1" 
+ echo "Target Image: $2" 
+ echo "PBS file: $3" 
+ echo ""
+ echo "To run job:"
+ echo "ssh queen"
+ echo "qsub $3" 
+ echo "-- or:  rqsub $3"
+else
+ echo "Missing required parameters"
+ usage
+ exit 1
+fi
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
+#Replace the PBS directives to be set by the PBSBoilerPlate function
+#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+#pbsBoilerPlate -n fslddmmMC-fullbrainmap.metrics -c $NUM_PROCS -m $MEMORY -w $WALLTIME ${QUEUE_NAME:+"-q $QUEUE_NAME"} ${CUSTOM_ARCH:+"-a $CUSTOM_ARCH"} ${EMAIL:+"-e $EMAIL"} ${NODES:+"-N $NODES"} -f $PBS_FILE
+
+
+
+#echo "#!/bin/sh" > $PBS_FILE
+#echo "$PBS_PREFIX -l $PBS_CPU_COUNT=$NUM_PROCS" >> $PBS_FILE
+
+
+#if [ "$DISABLE_EMAIL" == 0 ]
+#then
+
+#  echo "$PBS_PREFIX -m bea" >> $PBS_FILE
+  
+#fi
+
+#echo "$PBS_PREFIX -l walltime=$WALLTIME" >> $PBS_FILE
+
+#if [ -n "$ARCH" ]
+#then
+#  echo "$PBS_PREFIX -l arch=$ARCH" >>  $PBS_FILE
+#fi
+
+#if [ -n "$NODES" ]
+#then
+#  echo "$PBS_PREFIX -l nodes=$NODES" >>  $PBS_FILE
+#fi
+
+#  if [ "$PBS_MEMORY" = "pmem" ]
+#  then
+#    USE_PMEM=1
+#  else
+#    USE_PMEM=0
+#  fi
+
+ if [ -e $TEMPLATE ]
+ then
+ IMG_MEMCHECK=$TEMPLATE
+ else
+   if [ -e $TARGET ]
+   then 
+    IMG_MEMCHECK=$TARGET
+   else
+    echo "Cannot find images to check memory usage estimate"
+    exit 1
+   fi
+ fi
+
+
+if [ -n "$MEMORY" ]
+then
+  #echo "$PBS_PREFIX -l $PBS_MEMORY=$MEMORY" >>  $PBS_FILE
+	MEMORY_VALUE=$MEMORY
+ else
+ 
+ if [ "$TIMESTEPS" == 0 ]
+ then
+   TIMESTEPS=2
+ fi
+
+ 
+ 
+  if [ ! "$MULTICHANNEL" = "1" ]
+  then
+
+    if [ "$USE_SCM" = "1" ]
+    then
+      SCM_CHAN=1
+    else
+      SCM_CHAN=0
+    fi
+ 
+ #   echo "$PBS_PREFIX -l $PBS_MEMORY=`MemUsageFluidMatch $IMG_MEMCHECK $NUM_PROCS $PADI $PADH $TIMESTEPS 1 $SCM_CHAN $USE_PMEM`" >> $PBS_FILE
+	MEMORY_VALUE=`MemUsageFluidMatch $IMG_MEMCHECK $NUM_PROCS $PADI $PADH $TIMESTEPS 1 $SCM_CHAN $USE_PMEM`
+  else
+    #multichannel
+    NUM_CHANS=`head -n 1 $IMG_MEMCHECK`
+    IMAGE=`tail -n 1 $IMG_MEMCHECK`
+    
+    #parameters that work
+#    EPSILON=1e-3
+#  if [ "$ALPHA" = "0.01" ]
+#  then
+#    ALPHA=0.1
+#  fi
+
+#  if [ "$GAMMA" = "1" ]
+#  then
+#    GAMMA=0.01
+#  fi
+
+    if [ "$USE_SCM" = "1" ]
+    then
+      SCM_CHAN=$NUM_CHANS
+    else
+      SCM_CHAN=0
+    fi
+
+#    echo "$PBS_PREFIX -l $PBS_MEMORY=`MemUsageFluidMatch $IMAGE $NUM_PROCS $PADI $PADH $TIMESTEPS $NUM_CHANS $SCM_CHAN $USE_PMEM`" >> $PBS_FILE
+ 	MEMORY_VALUE=`MemUsageFluidMatch $IMAGE $NUM_PROCS $PADI $PADH $TIMESTEPS $NUM_CHANS $SCM_CHAN $USE_PMEM`   
+  fi #if MULTICHANNEL
+
+ fi #MEMORY
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+pbsBoilerPlate -n fslddmmMC-fullbrainmap.metrics -c $NUM_PROCS -m $MEMORY_VALUE -w $WALLTIME ${QUEUE_NAME:+"-q $QUEUE_NAME"} ${CUSTOM_ARCH:+"-a $CUSTOM_ARCH"} ${EMAIL:+"-e $EMAIL"} ${NODES:+"-N $NODES"} -f $PBS_FILE
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+echo "cd $WORKING_DIR" >> $PBS_FILE
+
+
+if [ "$USE_MPI" = "1" ]
+then
+
+  if [ "$USE_MACHINEFILE" = "1" ]
+  then
+    MPI_STRING="mpiexec -machinefile \$PBS_NODEFILE"
+  else
+    MPI_STRING="mpiexec -np $NUM_PROCS"
+  fi
+
+
+else
+  MPI_STRING=""
+fi
+  
+
+echo "$MPI_STRING $FM_BIN $TEMPLATE $TARGET $NUM_LDDMM_STEPS $TIMESTEPS $NUM_GREEDY_STEPS $GREEDY_IMG_ERROR $DELTA $EPSILON $NUM_PROC_Z $NUM_PROC_Y $NUM_PROC_X $ALPHA $GAMMA $PADI $PADH $NORM_GRAD_STOP $RESTART $SIGMA $LDDMM_IMG_ERROR $STEPS_CHANGE_EPSILON $STEPS_REVERSE_MAPPING $USE_LANDMARKS $MULTI_RES_FILE < /dev/null $OUTFILE" >> $PBS_FILE
+
+if [ ! "$NUM_GREEDY_STEPS" = "0" ]
+then
+  echo "rm -f MovieGreedyVelocity*.vtk" >> $PBS_FILE
+fi
+
+exit 0

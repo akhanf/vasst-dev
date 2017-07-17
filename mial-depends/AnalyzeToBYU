@@ -1,0 +1,19 @@
+#!/bin/bash
+
+img=$1
+thresh=$2
+outByu=$3
+
+if [ $# -lt 3 ];
+then
+	echo "too few arguments--"
+	echo "USAGE: AnalyzeToBYU  AnalyzeImage IsoSurfaceThreshold ByuSurfaceFilename"
+	exit
+fi
+
+img=${img%%.img}
+AnalyzeToVTK $img.img $img.vtk
+GenerateBYUIsosurface $img.vtk $thresh $outByu.cpp.byu    
+rm $img.vtk
+ConvertBYU_BW-CPP $outByu.cpp.byu $outByu.byu `GetImageDims $img.img`
+rm $outByu.cpp.byu
