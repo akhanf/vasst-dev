@@ -4,7 +4,6 @@ function writeTriByu(filename, triangles, vertices)
 % filename - path to BYU file to create
 % vertices - Mx3 matrix of vertex coordinates
 % triangles - Mx3 matrix of indices into the vertices matrix
-filename = enscPathAsLocal(filename);
 dlmwrite(filename, [1 size(vertices,1) size(triangles,1) size(triangles,1)*3], 'delimiter', ' ', 'precision', '%i') ;
 
 % $$$ dlmwrite(filename, [1 size(triangles,1)*3], '-append', 'delimiter', ' ', 'precision', '%i') ;

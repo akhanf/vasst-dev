@@ -10,7 +10,6 @@ function [faces, vertices] = readTriByu(filename,fixedwidth)
 %       i.e. [1;4;3;-5;1;2;-3;1;5;-3] would describe a quadrangle and 2
 %       triangless
 % parts - vector delineating which edges belong in which parts
-filename = enscPathAsLocal(filename);
 if nargin<2
     fixedwidth = 0;
 end
