@@ -45,7 +45,7 @@ then
  continue
 fi
 
-out_dir=${dwi_dir}_bundleSeg
+out_dir=${dwi_dir}_bundleSeg_${syn_labels}
 
 mkdir -p $out_dir
 
