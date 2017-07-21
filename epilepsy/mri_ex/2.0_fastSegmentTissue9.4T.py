@@ -131,6 +131,6 @@ if __name__ == '__main__':
     print '  done'
     sys.stdout.flush()
 
-    output_fullfilename=output_fullprefix+'_seg.nii.gz'
+    output_fullfilename=output_fullprefix+'_seg_'+class_num+'.nii.gz'
     print '  result: ',output_fullfilename
     
