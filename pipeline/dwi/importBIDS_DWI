@@ -1,0 +1,98 @@
+#!/bin/bash
+
+
+# dependencies: none
+
+if [ "$#" -lt 3 ]
+then
+ echo "Command-line Usage: $0 <in_bids_folder> <out_dwi_folder> <subjid/list> <options>"
+  echo ""
+  echo " options:"
+  echo "   -p <prefix>:  optional acq prefix for selecting subset of dwi, e.g. -p singleband  to select  *singleband_dwi.nii.gz"
+  echo "   -o :  overwrite files if they exist"
+ exit 0
+fi
+
+input_dir=$1
+output_dir=$2
+
+shift 2
+
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+shift 1
+
+
+#get options
+while getopts "p:o" options; do
+ case $options in
+    p ) echo "Using custom dwi acq prefix=$OPTARG"
+       prefix=$OPTARG;;
+    o ) echo "Overwrite files"
+	overwrite=true;;
+ esac
+done
+
+
+for subj in $subjids
+do
+
+bids_dir=$input_dir/$subj/dwi
+uncorr_dir=$output_dir/$subj/dwi
+
+mkdir -p $uncorr_dir
+
+if [ "$overwrite" ]
+then
+  rm $uncorr_dir/dwi*
+fi
+
+
+#get input bids dwi
+
+i=1
+for dwi in `ls $bids_dir/*${prefix}_dwi.nii.gz`
+do
+
+ in_dwi[$i]=$dwi
+ in_json[$i]=${dwi%%.nii.gz}.json
+ in_bvec[$i]=${dwi%%.nii.gz}.bvec
+ in_bval[$i]=${dwi%%.nii.gz}.bval
+
+  i=$((i+1))
+done
+
+N=$((i-1))
+
+if [ "$N" = 1 ]
+then
+i=1
+cp -v ${in_dwi[$i]} $uncorr_dir/dwi.nii.gz
+cp -v ${in_json[$i]} $uncorr_dir/dwi.json
+cp -v ${in_bvec[$i]} $uncorr_dir/dwi.bvec
+cp -v ${in_bval[$i]} $uncorr_dir/dwi.bval
+
+else
+
+
+for i in `seq 1 $N`
+do
+
+cp -v ${in_dwi[$i]} $uncorr_dir/dwi_$i.nii.gz
+cp -v ${in_json[$i]} $uncorr_dir/dwi_$i.json
+cp -v ${in_bvec[$i]} $uncorr_dir/dwi_$i.bvec
+cp -v ${in_bval[$i]} $uncorr_dir/dwi_$i.bval
+
+done
+
+
+
+fi
+
+done #subj

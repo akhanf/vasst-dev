@@ -4,43 +4,34 @@
 #		 mrtrix3 dwidenoise 
 # precondition:  importDWI
 
-if [ "$#" -lt 1 ]
+if [ "$#" -lt 3 ]
 then
- echo " writes output to dwi/<input>_denoise"
  echo ""
- echo "Command-line Usage: $0 <in_uncorrected>  <subjid>"
+ echo "Command-line Usage: $0 <in_dwi_folder> <out_dwi_folder> <subjids/list>"
  exit 0
 fi
 
-output_dir=.
+input_dir=$1
+output_dir=$2
 
-in_uncorrected=$1
-out_name=${in_uncorrected}_denoise
-shift 1
-
+shift 2
 
 
 if [ -f $1 ]
 then
  subjids=`cat $1`
 else
- subjids=$1
+ subjids=$@
 fi
 
 
 for subj in $subjids
 do
 
+uncorr_dir=$input_dir/$subj/dwi
+denoise_dir=$output_dir/$subj/dwi
 
-
-subj_dir=$output_dir/$subj
-dwi_dir=$subj_dir/dwi
-uncorr_dir=$dwi_dir/$in_uncorrected
-
-
-denoise_dir=$dwi_dir/$out_name
 mkdir -p $denoise_dir
-
 
 for dwi in `ls $uncorr_dir/dwi*.nii.gz`
 do
@@ -55,8 +46,6 @@ suffix=${dwi##*/}
  denoise_bvec=${denoise_dwi%%.nii.gz}.bvec
  denoise_bval=${denoise_dwi%%.nii.gz}.bval
  denoise_json=${denoise_dwi%%.nii.gz}.json
-
- mkdir -p $denoise_dir
 
  
  minvols=10

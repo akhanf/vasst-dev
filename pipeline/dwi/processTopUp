@@ -4,39 +4,33 @@
 #		 fsl (bet, topup, dtifit, ...)
 # precondition:  importBlippedDWI
 
-if [ "$#" -lt 1 ]
+if [ "$#" -lt 3 ]
 then
- echo " writes output to dwi/<input>_topup"
  echo ""
- echo "Command-line Usage: $0 <in_uncorrected>  <subjid>"
+ echo "Command-line Usage: $0 <in_dwi_folder> <out_dwi_folder> <subjids/list>"
  exit 0
 fi
 
-output_dir=.
+input_dir=$1
+output_dir=$2
 
-in_uncorrected=$1
-out_name=${in_uncorrected}_topup
-shift 1
-
-
-for subj in $@
-do
+shift 2
 
 
-subj_dir=$output_dir/$subj
-dwi_dir=$subj_dir/dwi
-
-uncorr_dir=$dwi_dir/$in_uncorrected
-
-N=`ls $uncorr_dir/dwi_[0-9].nii.gz | wc -l`
-
-if [ "$N" -lt 2 ]
+if [ -f $1 ]
 then
-  echo $subj does not have more enough dwi_# scans imported
-  continue
+ subjids=`cat $1`
+else
+ subjids=$@
 fi
 
-distort_dir=$dwi_dir/$out_name
+
+for subj in $subjids
+do
+
+uncorr_dir=$input_dir/$subj/dwi
+distort_dir=$output_dir/$subj/dwi
+
 mkdir -p $distort_dir
 
 work_dir=$distort_dir/work
@@ -54,22 +48,10 @@ done
 
 
 #get phase encode lines for each dwi
-
-
-
-#echo "N: $N"
-#for i in `seq 1 $N`
-#do
-# echo in_dwi: ${in_dwi[$i]}
-
-
-#done
-
-
 petxt=$work_dir/pedir.txt
 rm -f $petxt
 
-cd `pwd`
+#cd `pwd`
 
 #get b0 volumes from each dwi
 for i in `seq 1 $N`
@@ -82,6 +64,7 @@ echo octave --eval "getDiffPhaseEncodeLine('${in_dwi[$i]}','$petxt_i')"
 cat $petxt_i >> $petxt
 
 dwi=$work_dir/dwi_$i.nii.gz
+
 cp -v ${in_dwi[$i]} $dwi
 
 
@@ -95,7 +78,6 @@ then
 else
   dwi_list="$dwi_list,$dwi"
 fi
-
 
 
 #crop for even # of slices
@@ -140,9 +122,6 @@ done #i
 avg_b0=$work_dir/avg_b0.nii.gz
 echo fslmerge -t $avg_b0 $work_dir/avg_b0_?.nii.gz
 fslmerge -t $avg_b0 $work_dir/avg_b0_?.nii.gz
-
-
-
 
 
 echo topup --imain=$avg_b0 --datain=$petxt --config=b02b0.cnf --out=$work_dir/topup -v --iout=$work_dir/hifi

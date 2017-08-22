@@ -3,43 +3,34 @@
 # dependencies:  unring
 # precondition:  importDWI
 
-if [ "$#" -lt 1 ]
+if [ "$#" -lt 3 ]
 then
- echo " writes output to dwi/<input>_unring"
  echo ""
- echo "Command-line Usage: $0 <in_uncorrected>  <subjid>"
+ echo "Command-line Usage: $0 <in_dwi_folder> <out_dwi_folder> <subjids/list>"
  exit 0
 fi
 
-output_dir=.
+input_dir=$1
+output_dir=$2
 
-in_uncorrected=$1
-out_name=${in_uncorrected}_unring
-shift 1
-
+shift 2
 
 
 if [ -f $1 ]
 then
  subjids=`cat $1`
 else
- subjids=$1
+ subjids=$@
 fi
 
 
 for subj in $subjids
 do
 
+uncorr_dir=$input_dir/$subj/dwi
+unring_dir=$output_dir/$subj/dwi
 
-
-subj_dir=$output_dir/$subj
-dwi_dir=$subj_dir/dwi
-uncorr_dir=$dwi_dir/$in_uncorrected
-
-
-unring_dir=$dwi_dir/$out_name
 mkdir -p $unring_dir
-
 
 for dwi in `ls $uncorr_dir/dwi*.nii.gz`
 do
@@ -55,9 +46,6 @@ suffix=${dwi##*/}
  unring_bval=${unring_dwi%%.nii.gz}.bval
  unring_json=${unring_dwi%%.nii.gz}.json
 
- mkdir -p $unring_dir
-
- 
  
   echo unring $dwi $unring_dwi 
   unring $dwi $unring_dwi 
