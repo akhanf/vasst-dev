@@ -1,0 +1,46 @@
+#!/bin/bash
+# script name: importOsiriXToPreBIDS
+# input dir of DICOMS arranged by subject (i.e. exported from OsiriX), converts to Nifti using dcm2niix
+#   each subject has their own subdirectory
+# calls importDicomFolderBIDS which calls Rorden's dcm2niix
+# Output: is a folder in PreBIDS format with nifti files + json
+
+# root dir may need to be modified depending on where it is run
+
+if [ "$#" -lt 2 ]
+then
+  echo "Usage: $0 <input folder> <output folder>"
+  exit 0
+fi
+
+DICOM_dir=$1
+CONVERTED_dir=$2
+
+if [ ! -e $DICOM_dir ]
+then
+ echo "Input folder does not exist!"
+ exit 0
+fi
+
+echo ""
+echo "Importing dicoms from $DICOM_dir into $CONVERTED_dir ..."
+echo ""
+
+mkdir -p $CONVERTED_dir
+
+list=`ls -1 $DICOM_dir/`
+echo $list
+
+for subj in $list
+do
+
+  echo "----------------------------------------"
+  echo $subj
+  DICOM_SUBJ_dir=$DICOM_dir/$subj
+  CONVERTED_SUBJ_dir=$CONVERTED_dir/$subj
+  mkdir -p $CONVERTED_SUBJ_dir
+ 
+  echo importDicomFolderBIDS $DICOM_SUBJ_dir $CONVERTED_SUBJ_dir
+  importDicomFolderBIDS $DICOM_SUBJ_dir $CONVERTED_SUBJ_dir
+
+done
