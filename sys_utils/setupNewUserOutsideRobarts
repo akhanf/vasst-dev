@@ -1,0 +1,42 @@
+#!/bin/bash
+if [ "$#" -lt 1 ]
+then
+  echo "This script must be run by an administrator."
+  echo "Usage: $0 <username>" 
+  exit 0
+fi
+
+
+
+newuser=$1
+
+echo user: $newuser
+
+
+#create folder for petergrp mount
+for fs in petergrp EpilepsyDatabase EpilepsyHistology khangrp
+do
+
+sudo mkdir -p /eq-nas/$newuser/$fs
+echo "//eq-nas.imaging.robarts.ca/$fs /eq-nas/$newuser/$fs cifs username=$newuser,domain=robarts,noauto,user 0 0" | sudo tee --append /etc/fstab
+
+#link to it
+sudo ln -s /eq-nas/$newuser/$fs ~$newuser/$fs
+
+done
+
+profile=~$newuser/.bashrc
+
+sw_dir=/opt
+
+echo "if [ -f $sw_dir/init.sh ]"  | sudo tee --append $profile
+echo "then" |  sudo tee --append $profile
+echo " . $sw_dir/init.sh"  | sudo tee --append $profile
+echo "fi"  | sudo tee --append $profile
+
+
+sudo cp startup.m ~$newuser/startup.m
+
+
+
+
