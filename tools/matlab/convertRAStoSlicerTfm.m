@@ -1,7 +1,10 @@
 function convertRAStoSlicerTfm (xfm, out_tfm)
+% converts RAS transformation (e.e. NiftReg) to ITK format (e.g. Slicer, ANTs). 
 
 %tfm = importdata(in_tfm, ' ', 3);
-%xfm=importdata(in_xfm);
+if ischar(xfm)
+  xfm=importdata(xfm);
+end
 
 %xfm=eye(4,4);
 %xfm(1:3,1:3)=reshape(tfm.data(1,1:9),3,3)';
