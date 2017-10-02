@@ -21,11 +21,11 @@ sudo mkdir -p /eq-nas/$newuser/$fs
 echo "//eq-nas.imaging.robarts.ca/$fs /eq-nas/$newuser/$fs cifs username=$newuser,domain=robarts,noauto,user 0 0" | sudo tee --append /etc/fstab
 
 #link to it
-sudo ln -s /eq-nas/$newuser/$fs ~$newuser/$fs
+sudo ln -s /eq-nas/$newuser/$fs ~/$fs
 
 done
 
-profile=~$newuser/.bashrc
+profile=~/.bashrc
 
 sw_dir=/opt
 
@@ -35,7 +35,7 @@ echo " . $sw_dir/init.sh"  | sudo tee --append $profile
 echo "fi"  | sudo tee --append $profile
 
 
-sudo cp startup.m ~$newuser/startup.m
+sudo cp startup.m ~/startup.m
 
 
 
