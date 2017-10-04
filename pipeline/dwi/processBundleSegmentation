@@ -1,15 +1,22 @@
 #!/bin/bash
 
-dwi_type=dwi_singleband  # this is currently hardcoded.. need to have way of generating img cfg files on the fly
+syn_labels=Atlas_2017_04_09_bspline_f3d_synaptive
+atlas=MNI152_1mm
 
-if [ "$#" -lt 2 ]
+
+if [ "$#" -lt 4 ]
 then
- echo "Usage $0 <dwi_name> <subjid/list>"
- exit 0
+ echo "Usage $0 <dwi_name> <dwi_type> <syn_labels> <subjid/list> <options>"
+  echo ""
+  echo "dwi_type is the img_type cfg, e.g.: dwi_singleband or dwi_multiband"
+  echo "syn_labels is the label set, e.g.: Atlas_2017_04_09_bspline_f3d_synaptive"
+exit 0
 fi
 
 dwi_name=$1
-shift 1
+dwi_type=$2
+syn_labels=$3
+shift 3
 
 output_dir=.
 
@@ -19,6 +26,9 @@ then
 else
  subjids=$1
 fi
+
+shift 1
+
 
 
 for subj in $subjids
@@ -35,7 +45,7 @@ then
  continue
 fi
 
-out_dir=${dwi_dir}_bundleSeg
+out_dir=${dwi_dir}_bundleSeg_${syn_labels}
 
 mkdir -p $out_dir
 
@@ -43,8 +53,6 @@ tract_name=wholebrain
 
 tracts=$dwi_dir/${tract_name}_tracts.Bfloat
 
-syn_labels=Atlas_2017_04_09_bspline_f3d_synaptive
-atlas=MNI152_1mm
 
 #reg to MNI space
 #--- need to ensure this is done -- 3 steps (intersubj affine, reg_bspline, intrasubj rigid) -- later this could be a single module..

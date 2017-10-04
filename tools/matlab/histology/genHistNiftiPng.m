@@ -83,7 +83,7 @@ proceed=true;
                 
                 %read in tif
              %   imgSizes=mexAperioTiff(histFile);
-                imgSizes=getAperioImgSizes(tif);
+                imgSizes=getAperioImgSizes(histFile);
 
                 
                 origvox=[0.0005,0.0005];

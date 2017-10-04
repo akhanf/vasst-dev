@@ -126,7 +126,7 @@ if __name__ == '__main__':
     #fast segmentation.
     print '  fast segmentation...',
     sys.stdout.flush()
-    output_fullprefix = input_fullfilename[:-7] #remove '.nii.gz', the segmentation result is 'output_fullprefix_seg.nii.gz'
+    output_fullprefix = input_fullfilename[:-7]+'_'+str(class_num) #remove '.nii.gz', the segmentation result is 'output_fullprefix_seg.nii.gz'
     fast_segmentation(FAST,input_fullfilename,mask_fullfilename,output_fullprefix,class_num)
     print '  done'
     sys.stdout.flush()
