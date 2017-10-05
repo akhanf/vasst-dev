@@ -4,7 +4,6 @@
 # Sets up the MATLAB Runtime environment for the current $ARCH and executes 
 # the specified command.
 #
-
 #MCRROOT and MCRBINS should be set in env already, below just for debugging
 #MCRBINS=$VASST_DEV_HOME/tools/mcr/v92
 #MCRROOT=/opt/mcr/v92
@@ -21,7 +20,6 @@ shift 1
 
 #if MCRROOT exists, and if compiled function exists, then use MCR:
 if [ -e "$MCRROOT" -a -e "$MCRBINS/$func_name" ]
-
 then
   echo "Using MCR at $MCRROOT, running function $MCRBINS/$func_name"
 
@@ -39,9 +37,11 @@ then
   args=
   while [ $# -gt 0 ]; do
       token=$1
-      args="${args} \"${token}\"" 
+      args="${args} ${token}" 
       shift
   done
+ 
+  echo Running  "${MCRBINS}/${func_name} $args"
 
 
   eval "\"${MCRBINS}/${func_name}\"" $args
