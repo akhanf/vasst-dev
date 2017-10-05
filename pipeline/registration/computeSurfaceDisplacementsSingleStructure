@@ -237,10 +237,10 @@ do
  target_img_list=$target_dir/target_images.$struct.txt
  echo 1 > $target_img_list
 
-#if [ ! -e $nii ]
-#then 
+if [ ! -e $nii ]
+then 
  fslroi $subj_dir/$target_4d_path $nii $index 1
-#fi
+fi
  
  template_nii=$template_dir/${struct}.nii.gz
  reg=$target_dir/${struct}_reg.nii.gz
@@ -261,25 +261,25 @@ fi
 if [ "$no_reg" = "0" ]
 then
 
- #if [ ! -e $rigid_xfm ]
-#then
+if [ ! -e $rigid_xfm ]
+then
  echo reg_aladin -flo $nii -ref $template_nii -res $reg -rigOnly -aff $rigid_xfm 
  reg_aladin -flo $nii -ref $template_nii -res $reg -rigOnly -aff $rigid_xfm 
-#fi
+fi
 
 
-#if [ ! -e $ana ]
-#then
+if [ ! -e $ana ]
+then
  mri_convert $reg $ana -vs $resample_res $resample_res $resample_res
-#fi
+fi
 
 else
  
 
-#if [ ! -e $ana ]
-#then
+if [ ! -e $ana ]
+then
  mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
-#fi
+fi
 
 fi
 
@@ -289,10 +289,10 @@ fi
  crop=$target_dir/${struct}${reg_suffix}ana_crop.img 
  cropparam=$template_dir/${struct}_crop_param.txt
 
- #if [ ! -e $crop ]
- #then
+ if [ ! -e $crop ]
+ then
  CropImage $ana `cat $cropparam` $crop
- #fi
+ fi
 
 
  byu_noext=$target_dir/${struct}${reg_suffix}ana_crop
@@ -321,14 +321,14 @@ fi
 
 
 #here, lddmm job can be submitted
-#if [ ! -e $kimap ]
-# then
+if [ ! -e $kimap ]
+ then
  pushd $lddmm_dir
  sh $cmd
 
  gatherData Hmap Kimap
   popd 
-#fi
+fi
 
  
  #surface and displacement processing
@@ -351,55 +351,55 @@ fi
  prop_surf_template_nii=$target_dir/propSurface_${struct}_nii.byu
  prop_surf_subj_nii=$target_dir/propSurface_${struct}_nii_regSubj.byu
 
-#if [ ! -e $disp_csv ]
-#then
+if [ ! -e $disp_csv ]
+then
  #now compute surface vector displacements
 echo GenSurfDisplacementTxt $template_byu_cpp $hmap $disp_csv
  GenSurfDisplacementTxt $template_byu_cpp $hmap $disp_csv
-#fi
+fi
 
-#if [ ! -e $prop_surf ]
-#then
+if [ ! -e $prop_surf ]
+then
  #propagate surface
  echo TransformSurfaceWithMaps $template_byu_cpp $kimap $prop_surf
  TransformSurfaceWithMaps $template_byu_cpp $kimap $prop_surf
  echo ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`
  ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`
-# fi
+ fi
 
  #generate inout displacements
 
-#if [ ! -e $inout_txt ]
-#then
+if [ ! -e $inout_txt ]
+then
  echo "compdisp $template_byu $prop_surf > $inout_txt"
  compdisp $template_byu $prop_surf > $inout_txt
-#fi
+fi
 
-#if [ ! -e $inout_vtk ]
-#then
+if [ ! -e $inout_vtk ]
+then
  echo CombineBYUandSurfDist $template_byu $inout_txt $inout_vtk
  CombineBYUandSurfDist $template_byu $inout_txt $inout_vtk
-#fi
+fi
 
-#if [ ! -e $disp_vtk ]
-#then
+if [ ! -e $disp_vtk ]
+then
  sed 's/,/\ /g' $disp_csv > $disp_txt
  echo ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
  ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
-#fi
+fi
 
-#if [ ! -e $prop_surf_template_nii ]
-#then
+if [ ! -e $prop_surf_template_nii ]
+then
  echo runMatlabCmd  transformByuLinearXfm "'$prop_surf'" "'$byu_nii_xfm'" "'$prop_surf_template_nii'"
  runMatlabCmd  transformByuLinearXfm "'$prop_surf'" "'$byu_nii_xfm'" "'$prop_surf_template_nii'"
-#fi
+fi
 
 
-#if [ "$no_reg" = "0" -a ! -e $prop_surf_subj_nii ]
-#then
+if [ "$no_reg" = "0" -a ! -e $prop_surf_subj_nii ]
+then
  echo runMatlabCmd  transformByuLinearXfm "'$prop_surf_template_nii'" "'$rigid_xfm'" "'$prop_surf_subj_nii'" "1"  # extra 1 is to invert, since the xfm is from subj to template, and we want template to subj
  runMatlabCmd  transformByuLinearXfm "'$prop_surf_template_nii'" "'$rigid_xfm'" "'$prop_surf_subj_nii'" "1"
-#fi
+fi
 
 done #structure
 
