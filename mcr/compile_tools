@@ -1,0 +1,20 @@
+#!/bin/bash
+
+version=v92
+
+mcr_dir=`dirname $0`
+matlab_dir=`realpath $mcr_dir/../tools/matlab`
+out_dir=$mcr_dir/$version
+
+for m in `ls $matlab_dir/{genBYUtoNiftiTransformFromCroppedAnalyze,transformByu*}.m`
+do
+
+filename=${m##*/}
+funcname=${filename%.m}
+
+echo "Compiling $filename ..."
+mcc -v -m -d $out_dir $filename 
+echo "Removing extra files: $out_dir/*.{txt,sh,log}"
+rm $out_dir/*.{txt,sh,log}
+
+done

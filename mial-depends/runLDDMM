@@ -89,7 +89,7 @@ elif [ "$SUFFIX" = "txt" ]
 then
   echo "Multi channel LDDMM"
   USE_MULTI=1
-  OPTS="$OPTS -b fluidmatch3D_constWeightedMC -m"
+  OPTS="$OPTS -b fluidmatch3D_constWeightedMC_sfu -m -s"
 else
  echo "Please use .img or .txt files for the template/target"
  exit 1
