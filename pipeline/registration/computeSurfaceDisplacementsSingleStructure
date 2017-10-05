@@ -121,16 +121,16 @@ do
  nii=$template_dir/$struct.nii.gz
  ana=$template_dir/${struct}_ana.img
 
- #if [ ! -e $nii ]
- #then
+ if [ ! -e $nii ]
+ then
 echo  fslroi $template_4d $nii $index 1
   fslroi $template_4d $nii $index 1
- #fi
- #if [ ! -e $ana ]
- #then
+ fi
+ if [ ! -e $ana ]
+ then
  echo mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
  mri_convert $nii $ana -vs $resample_res $resample_res $resample_res
- #fi
+ fi
 
 
 
@@ -140,11 +140,11 @@ cropparam=$template_dir/${struct}_crop_param.txt
 zdiv=8 # divisibility for MPI parallel
 crop=$template_dir/${struct}_ana_crop.img 
 
-#if [ ! -e $cropparam ]
-#then
+if [ ! -e $cropparam ]
+then
 echo CropImageToSegExtents $ana $ana $crop  $paddim $cropparam 
 CropImageToSegExtents $ana $ana $crop  $paddim $cropparam 
-#fi
+fi
 
 
 
@@ -153,38 +153,38 @@ CropImageToSegExtents $ana $ana $crop  $paddim $cropparam
  byu=$template_dir/${struct}_ana_crop.byu
  byu_cpp=$template_dir/${struct}_ana_crop_cpp.byu
 
-# if [ ! -e $byu_cpp ]
-# then
+ if [ ! -e $byu_cpp ]
+ then
  #create surfaces
   echo AnalyzeToBYU  $crop $isothreshold $byu_noext
   AnalyzeToBYU  $crop $isothreshold $byu_noext
   echo ConvertBYU_BW-CPP $byu $byu_cpp `GetImageDims $crop`
   ConvertBYU_BW-CPP $byu $byu_cpp `GetImageDims $crop`
-# fi
+ fi
 
-# if [ ! -e $template_img_list ]
-# then
+ if [ ! -e $template_img_list ]
+ then
  echo 1 > $template_img_list
- echo `pwd`/$crop >> $template_img_list
-# fi
+ echo $crop >> $template_img_list
+ fi
 
 
 
  byu_nii_xfm=$template_dir/${struct}_byuToNifti.xfm
 
  #create surfaces in template nifti space
-# if [ -e $crop -a -e $cropparam -a ! -e $byu_nii_xfm ]
-# then
+ if [ -e $crop -a -e $cropparam -a ! -e $byu_nii_xfm ]
+ then
   echo runMatlabCmd genBYUtoNiftiTransformFromCroppedAnalyze "'$crop'" "'$cropparam'" "'$byu_nii_xfm'"
  runMatlabCmd genBYUtoNiftiTransformFromCroppedAnalyze "'$crop'" "'$cropparam'" "'$byu_nii_xfm'"
-# fi
+ fi
 
  byu_niispace=$template_dir/${struct}_nii.byu
-# if [ ! -e $byu_niispace -a -e $byu_nii_xfm ]
-# then
+ if [ ! -e $byu_niispace -a -e $byu_nii_xfm ]
+ then
   echo runMatlabCmd  transformByuLinearXfm "'$byu'" "'$byu_nii_xfm'" "'$byu_niispace'"
   runMatlabCmd  transformByuLinearXfm "'$byu'" "'$byu_nii_xfm'" "'$byu_niispace'"
-# fi
+ fi
 
 done
 
@@ -304,16 +304,16 @@ fi
 
 
  #add to image list for lddmm
- echo `pwd`/$crop >> $target_img_list
+ echo $crop >> $target_img_list
 
  lddmm_dir=$target_dir/lddmm_${struct}
  
- cmd=`pwd`/$lddmm_dir/cmd.pbs 
+ cmd=$lddmm_dir/cmd.pbs 
 
  rm -f $cmd
  #run lddmm
- echo "runLDDMM -o "$genpbs_opts" `pwd`/$template_img_list `pwd`/$target_img_list $lddmm_dir"
- runLDDMM -o "$genpbs_opts" `pwd`/$template_img_list `pwd`/$target_img_list $lddmm_dir
+ echo "runLDDMM -o "$genpbs_opts" $template_img_list $target_img_list $lddmm_dir"
+ runLDDMM -o "$genpbs_opts" $template_img_list $target_img_list $lddmm_dir
 
  hmap=$lddmm_dir/Hmap.vtk 
  kimap=$lddmm_dir/Kimap.vtk 
