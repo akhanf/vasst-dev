@@ -85,6 +85,7 @@ done
 
 out_dir=surfdisp_singlestruct_$surfdisp_name
 mkdir -p $out_dir
+out_dir=`realpath $out_dir`
 
 
 
