@@ -26,10 +26,11 @@ then
   
   echo Setting up environment variables
   echo ---
+  OLD_PATH=$LD_LIBRARY_PATH ## added this just in case matlab script uses system calls that then require external libs (i.e. calling fslval from genBYUtoNiftiTransformFromCroppedAnalyze)
   LD_LIBRARY_PATH=.:${MCRROOT}/runtime/glnxa64 ;
   LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/bin/glnxa64 ;
   LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/sys/os/glnxa64;
-  LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/sys/opengl/lib/glnxa64;
+  LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/sys/opengl/lib/glnxa64:$OLD_PATH;
   export LD_LIBRARY_PATH;
   echo LD_LIBRARY_PATH is ${LD_LIBRARY_PATH};
 
