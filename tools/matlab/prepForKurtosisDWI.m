@@ -9,9 +9,9 @@ bvec=importdata(sprintf('%s.bvec',in_dwi_prefix));
 bval=importdata(sprintf('%s.bval',in_dwi_prefix));
 
 %transpose if needed
-if(size(bvec,2)==3)
-bvec=bvec';
-end
+%if(size(bvec,2)==3)
+%bvec=bvec';
+%end
 
 bfuzzy=100;
 bval_new=[0];
@@ -24,7 +24,7 @@ for i=1:length(B)
     shell_bval{i}=bval(shell_inds{i});
     shell_bvec{i}=bvec(:,shell_inds{i});
     
-    bval_new=[bval_new;shell_bval{i}];
+    bval_new=[bval_new,shell_bval{i}];
     
     bvec_new=[bvec_new,shell_bvec{i}];
 
@@ -32,7 +32,7 @@ for i=1:length(B)
     
     %transpose for writing:
     dlmwrite(sprintf('%s_shell%d.bvec',out_dwi_prefix,i),shell_bvec{i}');
-    dlmwrite(sprintf('%s_shell%d.bval',out_dwi_prefix,i),shell_bval{i});
+    dlmwrite(sprintf('%s_shell%d.bval',out_dwi_prefix,i),shell_bval{i}');
     
 end
 
@@ -52,8 +52,8 @@ end
 
 
 dwi_nii.vol=dwi_new;
-dlmwrite(sprintf('%s.bvec',out_dwi_prefix),bvec_new);
-dlmwrite(sprintf('%s.bval',out_dwi_prefix),bval_new);
+dlmwrite(sprintf('%s.bvec',out_dwi_prefix),bvec_new');
+dlmwrite(sprintf('%s.bval',out_dwi_prefix),bval_new');
 
 save_nifti(dwi_nii,sprintf('%s.nii',out_dwi_prefix));
 
