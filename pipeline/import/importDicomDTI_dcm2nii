@@ -22,7 +22,7 @@ output_dir=.
 
 
 
-dti_dir=$output_dir/$subj/dti/uncorrected
+dti_dir=$output_dir/$subj/dwi/uncorrected
 mkdir -p $dti_dir
 
 
