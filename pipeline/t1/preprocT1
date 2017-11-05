@@ -65,11 +65,12 @@ fslmaths $bet_t1 -bin $brainmask
 fi
 
 
-#intensity normalize to mean 100
+#N4 bias field correction, and intensity normalize to mean 100 
 norm_t1=$t1_dir/t1.brain.inorm.nii.gz
-echo fslmaths $bet_t1 -inm 0.5 $norm_t1
-fslmaths $bet_t1 -inm 0.5 $norm_t1
-
+echo N4BiasFieldCorrection -o $bet_t1 $norm_t1
+N4BiasFieldCorrection -o $bet_t1 $norm_t1
+echo fslmaths $norm_t1 -inm 0.5 $norm_t1
+fslmaths $norm_t1 -inm 0.5 $norm_t1
 
 
 done

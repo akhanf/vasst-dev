@@ -6,14 +6,13 @@
 if [ "$#" -lt 2 ]
 then
  echo "Writes output to dwi/<in_dwi>_bedpost"
- echo "Usage $0 <in_dwi> <subjid/list>"
+ echo "Usage $0 <in_dwi_name> <subjid/list>"
  exit 0
 fi
 
 output_dir=`pwd`
 
 in_dwi=$1
-out_name=${in_dwi}_bedpost
 shift 1
 
 if [ -f $1 ]
@@ -36,9 +35,7 @@ dwi_dir=$subj_dir/dwi/${in_dwi}
 out_dir=$subj_dir/dwi/${out_name}
 
 
-bedpost_work=$out_dir/work
-bedpost_data=$bedpost_work/data
-
+bedpost_data=$dwi_dir/bedpost
 mkdir -p $bedpost_data
 
 dwi_bvec=$dwi_dir/dwi.bvec

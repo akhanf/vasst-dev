@@ -29,7 +29,7 @@ mkdir -p $dti_dir
 tmp_folder=/tmp/$subj.dwi
 mkdir -p $tmp_folder
 
-dcm2niix -f '%p_%t_%s' -z y -o $tmp_folder $in_dicom_dir
+dcm2niix -f '%p_%t_%s' -b y -z y -o $tmp_folder $in_dicom_dir
 
 #move the nii with bvec/bval over:
 

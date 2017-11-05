@@ -1,0 +1,135 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]
+then
+ echo "Usage $0 <in_dwi_name> <parcellate_cfg> <subjid/list>"
+ echo ""
+ echo "List of standard parcellate_cfgs: "
+ pushd $PIPELINE_CFG_DIR/parcellate > /dev/null
+ ls *
+ popd > /dev/null
+ echo ""
+
+ exit 0
+fi
+
+  
+in_dwi=$1
+
+parcellate_cfg=$PIPELINE_CFG_DIR/parcellate/$1
+
+if [ ! -e $parcellate_cfg ]
+then
+ echo "tract cfg $parcellate_cfg does not exist!"
+ exit 0
+fi
+
+echo "Sourcing $parcellate_cfg"
+source $parcellate_cfg
+
+shift 1
+
+
+output_dir=.
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+
+for subj in $subjids
+do
+
+
+subj_dir=$output_dir/$subj
+
+dwi_dir=$subj_dir/dwi/${in_dwi}
+ 
+ bedpost_dir=$dwi_dir/bedpost.bedpostX
+
+ #config file specifies: 
+   #parcellation_name
+   #seed_file
+   #target_seg
+   #target_mapping_txt
+   #target_labels_txt
+
+
+ seed_file=$subj_dir/$seed_file
+ target_seg=$subj_dir/$target_seg
+
+ parc_dir=$dwi_dir/bedpost.$parcellation_name
+ mkdir -p $parc_dir
+
+ #probtrack output dir
+ output_dir=$parc_dir/probtrack
+
+ targets_dir=$parc_dir/targets 
+ mkdir -p $targets_dir
+
+ if [ ! -e $target_seg ]
+ then
+	 echo "$target_seg does not exist!"
+	 continue
+ fi
+
+ #process for targets
+# runMatlabCmd remapSegmentationLabels "'$target_seg'" "'$target_mapping_txt'" "'$target_labels_txt'" "'$targets_dir'"
+ echo octave --eval "remapSegmentationLabels('$target_seg','$target_mapping_txt','$target_labels_txt','$targets_dir')"
+ octave --eval "remapSegmentationLabels('$target_seg','$target_mapping_txt','$target_labels_txt','$targets_dir')"
+ 
+ targets_file=$parc_dir/targets.txt
+ ls $targets_dir/*.nii.gz > $targets_file
+
+
+ #--targetmasks targets_file (txt file, each line nii.gz)
+
+ mask_file=$bedpost_dir/nodif_brain_mask.nii.gz
+ 
+ samples_base=$bedpost_dir/merged
+
+ probtrack_opts="-l --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --forcedir --opd --os2t --s2tastext"
+
+
+ echo probtrackx2 -x $seed_file --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
+ probtrackx2 -x $seed_file --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
+
+
+ vol_csv=$parc_dir/target_volumes.csv
+ rm -f $vol_csv
+
+ name_txt=$parc_dir/target_names.txt
+ rm -f $name_txt
+
+ echo "Normalizing seed to target maps by volume of target"
+
+ #normalize seeds_to_targets by volume of target
+ for target in `cat $targets_file`
+ do
+ 
+  vol=`fslstats $target -V`
+  vol=${vol#[0-9]*\ }
+
+  echo $vol >> $vol_csv
+   
+  name=${target##*/}
+  name=${name%%.nii.gz}
+  
+  echo $name >> $name_txt
+
+  in_seeds=$parc_dir/probtrack/seeds_to_$name.nii.gz
+  norm_seeds=$parc_dir/probtrack/seeds_to_$name.normVol.nii.gz
+
+   fslmaths $in_seeds -div $vol $norm_seeds
+ 
+ 
+
+
+ done #targets
+
+
+done #subj
+
