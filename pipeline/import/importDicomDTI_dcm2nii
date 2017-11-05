@@ -39,5 +39,6 @@ prefix=${bvec%%.bvec}
 mv $prefix.nii.gz $dti_dir/dwi.nii.gz
 mv $prefix.bvec $dti_dir/dwi.bvec
 mv $prefix.bval $dti_dir/dwi.bval
+mv $prefix.json $dti_dir/dwi.json
 
 rm -rf $tmp_folder
