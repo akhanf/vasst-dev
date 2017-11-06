@@ -67,8 +67,8 @@ fi
 
 #N4 bias field correction, and intensity normalize to mean 100 
 norm_t1=$t1_dir/t1.brain.inorm.nii.gz
-echo N4BiasFieldCorrection -o $bet_t1 $norm_t1
-N4BiasFieldCorrection -o $bet_t1 $norm_t1
+echo N4BiasFieldCorrection -i $bet_t1 -o $norm_t1
+N4BiasFieldCorrection -i $bet_t1 -o $norm_t1
 echo fslmaths $norm_t1 -inm 0.5 $norm_t1
 fslmaths $norm_t1 -inm 0.5 $norm_t1
 
