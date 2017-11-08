@@ -7,7 +7,7 @@ function usage {
 
  echo ""
  echo "List of standard label cfgs: "
- pushd $PIPELINE_CFG_DIR/labels > /dev/null
+ pushd $PIPELINE_CFG_DIR/labels/name_number > /dev/null
  ls *
  popd > /dev/null
  echo ""
@@ -21,7 +21,7 @@ then
 fi
 
 output_dir=.
-label_cfg=$PIPELINE_CFG_DIR/labels/$1
+label_cfg=$PIPELINE_CFG_DIR/labels/name_number/$1
 seg_path=$2
 
 if [ ! -e $label_cfg ]
