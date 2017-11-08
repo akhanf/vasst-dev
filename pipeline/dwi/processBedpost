@@ -56,7 +56,7 @@ cp -v $dwi_bval $bvals
 cp -v $dwi_vol $data
 cp -v $brain_mask $nodif_brain_mask
 
-bedpostx $bedpost_data/ -c
+bedpostx-parallel $bedpost_data/ -c
 
 
 
