@@ -2,7 +2,6 @@
 
 path=`dirname $0`
 realpath=`realpath $path`
-echo $realpath
 
 LD_LIBRARY_PATH="$realpath/lib:$LD_LIBRARY_PATH"
 
