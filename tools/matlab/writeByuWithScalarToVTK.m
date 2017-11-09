@@ -1,4 +1,4 @@
-function writeByuWithScalarToVTK(in_mat,in_byu,out_vtk);
+function writeByuWithScalarToVTK(in_byu,in_mat,out_vtk);
 
 %data_dir='/home/ROBARTS/alik/EpilepsyDatabase/standard/projects/penny_striatum/with_dti'
 %template_byu=sprintf('%s/surfdisp_data/surfdisp_singlestruct_striatum_unbiasedAvg_affine/template/dstriatum_nii.byu',data_dir);

@@ -6,7 +6,7 @@ mcr_dir=`dirname $0`
 matlab_dir=`realpath $mcr_dir/../tools/matlab`
 out_dir=$mcr_dir/$version
 
-for m in `ls $matlab_dir/{genBYUtoNiftiTransformFromCroppedAnalyze,transformByu*}.m`
+for m in `ls $matlab_dir/{genBYUtoNiftiTransformFromCroppedAnalyze,generateNormalizedDisplacements,transformByu*}.m`
 do
 
 filename=${m##*/}

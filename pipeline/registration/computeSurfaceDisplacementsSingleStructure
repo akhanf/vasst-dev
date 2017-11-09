@@ -349,6 +349,7 @@ fi
  inout_vtk=$target_dir/templateSurface_${struct}_inout.vtk
 
  prop_surf_template_nii=$target_dir/propSurface_${struct}_nii.byu
+ prop_surf_template_norm_nii=$target_dir/propSurface_${struct}_normalized_nii.byu
  prop_surf_subj_nii=$target_dir/propSurface_${struct}_nii_regSubj.byu
 
 if [ ! -e $disp_csv ]
@@ -401,10 +402,12 @@ then
  runMatlabCmd  transformByuLinearXfm "'$prop_surf_template_nii'" "'$rigid_xfm'" "'$prop_surf_subj_nii'" "1"
 fi
 
+
+runMatlabCmd generateNormalizedDisplacements "'$byu_niispace'" "'$prop_surf_template_nii'" "'$disp_txt'" "'$inout_txt'" "'$prop_surf_template_norm_nii'" "'$disp_vtk'" "'$inout_vtk'"
+
 done #structure
 
 
 
 done #subj
-
 

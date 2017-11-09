@@ -64,7 +64,7 @@ for i in `seq 2 $#`
 do
  shift 1
  token=$1
- args="${args},\"${token}\""
+ args="${args},${token}"
 done
 
 
