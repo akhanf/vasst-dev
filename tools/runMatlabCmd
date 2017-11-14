@@ -54,8 +54,7 @@ else
   then 
     echo "Using MATLAB command line to run $func_name"
  
-
-if [ "$#" -gt 1 ]
+if [ "$#" -gt 0 ]
 then 
  args=$1
 fi
