@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# splits target checkerboard label into individual labels using c3d, then merges them across time using fslmerge and propagates them using linear interpolation
+
+if [ "$#" -lt 4 ]
+then
+  echo ""
+  echo "Usage: ${0##*/} <subj_list> <moving_subj> <cost function> <transformation model>"
+  echo ""
+
+  exit 0
+fi
+
+if [ -f $1 ]
+then
+  readarray subjList < $1
+else
+  subjList=$1
+fi
+
+
+movingSubj=$2
+costFunction=$3
+transformationModel=$4
+
+for ((j=0; j<${#subjList[@]}; j++))
+  do
+    if [ ${subjList[$j]} = ${movingSubj} ]
+    then
+      unset subjList[$j]
+      subjList=(${subjList[@]})
+    fi
+done
+
+
+for subj in ${subjList[@]}
+do
+  
+  outDir=~/khangrp/projects/unsorted/averageDeepBrain7T/7THippAtlas/eucDistDir/${transformationModel}_${costFunction}/
+  mkdir -p $outDir
+
+  infileLeft=~/khangrp/projects/unsorted/averageDeepBrain7T/7THippAtlas/$subj/labels/t2/checkerboard_${transformationModel}_${costFunction}/checkerboard.l.10.reorient.06mm.affineAtlasSpace.crop.corr.$movingSubj.4D.LIN.nii.gz
+  infileRight=~/khangrp/projects/unsorted/averageDeepBrain7T/7THippAtlas/$subj/labels/t2/checkerboard_${transformationModel}_${costFunction}/checkerboard.r.10.reorient.06mm.affineAtlasSpace.crop.corr.$movingSubj.4D.LIN.nii.gz
+
+  outFileLeft=$outDir/${movingSubj}_to_${subj}.l.centroids.txt
+  outFileRight=$outDir/${movingSubj}_to_${subj}.r.centroids.txt
+
+  if [ "$costFunction" == "t1" ] || [ "$costFunction" == "t2" ]
+  then
+    fslstats -t $infileLeft -x > $outFileLeft
+    fslstats -t $infileRight -x > $outFileRight      
+
+  elif [ "$costFunction" == "GM" ] || [ "$costFunction" == "GM_DB" ]
+  then
+    fslstats -t $infileLeft -x > $outFileLeft
+
+  elif [ "$costFunction" == "GM_r" ] || [ "$costFunction" == "GM_DB_r" ]
+  then
+    fslstats -t $infileRight -x > $outFileRight
+
+  fi
+ 
+done
