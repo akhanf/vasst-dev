@@ -1,0 +1,25 @@
+#!/bin/bash
+
+subjlist=`cat $1`
+
+labels=`cat $2`
+
+for subj in $subjlist
+do
+
+  for label in $labels
+  do
+
+    prefix=${label##*/}
+    prefix=${prefix%%.nii.gz}
+    reorient=$prefix.reorient.nii.gz
+    genFile=~/khangrp/projects/unsorted/averageDeepBrain7T/clinical_1.5T_DBS/unbiasedAtlas/generationFiles/EPI_${subj}_t2_06mm.nii.gz    
+    resample=$prefix.reorient.06mm.nii.gz
+
+
+    #fslreorient2std $subj/$label $subj/$reorient
+    reg_resample -flo $subj/$reorient -ref $genFile -res $subj/$resample -inter 0
+    
+  done
+
+done
