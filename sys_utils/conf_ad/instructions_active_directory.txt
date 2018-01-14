@@ -1,6 +1,6 @@
 
 
-sudo apt-get install winbind samba libpam-winbind libpam-krb5 ssh libnss-winbind libpam-winbind realmd krb5-user samba-common packagekit samba-common-bin samba-libs adcli ntp
+sudo apt-get install winbind samba libpam-winbind libpam-krb5 ssh libnss-winbind libpam-winbind realmd krb5-user samba-common packagekit samba-common-bin samba-libs adcli ntp cifs-utils
 
 # use domain: ROBARTS.CA   # all caps!
 
@@ -10,6 +10,7 @@ sudo /etc/init.d/samba restart;
 sudo /etc/init.d/winbind restart
 sudo pam-auth-update 
 
+###   Make sure you leave Kerberos, Unix and WinBIND CHECKED
 
 
 # add following to /etc/pam.d/common-session
