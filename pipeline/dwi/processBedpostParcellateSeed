@@ -88,7 +88,11 @@ dwi_dir=$subj_dir/dwi/${in_dwi}
  #--targetmasks targets_file (txt file, each line nii.gz)
 
  mask_file=$bedpost_dir/nodif_brain_mask.nii.gz
- 
+ sig_file=$bedpost_dir/mean_S0samples.nii.gz
+
+ #as a precaution, create new mask based on S0
+ fslmaths $sig_file -bin $mask_file
+
  samples_base=$bedpost_dir/merged
 
  probtrack_opts="-l --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --forcedir --opd --os2t --s2tastext"

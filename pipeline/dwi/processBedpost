@@ -56,6 +56,9 @@ cp -v $dwi_bval $bvals
 cp -v $dwi_vol $data
 cp -v $brain_mask $nodif_brain_mask
 
+#binarize brain mask (had intermittent problems with probtrackx2 otherwise)
+fslmaths $nodif_brain_mask -bin $nodif_brain_mask
+
 bedpostx-parallel $bedpost_data/ -c
 
 
