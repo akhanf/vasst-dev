@@ -22,7 +22,7 @@ then
   git checkout $SINGULARITY_TAG
 fi
 
-echo addpath\(genpath\(\'${PIPELINE_TOOL_DIR}/matlab\'\)\)\; >> /etc/octave.conf 
+echo addpath\(genpath\(\'/opt/vasst-dev/tools/matlab\'\)\)\; >> /etc/octave.conf 
 
 cd /opt/vasst-dev/install_scripts
 export DEBIAN_FRONTEND=noninteractive
