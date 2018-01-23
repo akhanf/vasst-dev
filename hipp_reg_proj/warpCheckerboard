@@ -1,0 +1,99 @@
+#!/bin/bash
+
+if [ "$#" -lt 4 ]
+then
+  echo ""
+  echo "Usage: ${0##*/} <subj_list> <moving_subj> <cost function> <transformation model>"
+  echo ""
+
+  exit 0
+fi
+
+if [ -f $1 ]
+then
+  readarray subjList < $1
+else
+  subjList=$1
+fi
+
+
+movingSubj=$2
+costFunction=$3
+transformationModel=$4
+
+for ((j=0; j<${#subjList[@]}; j++))
+  do
+    if [ ${subjList[$j]} = ${movingSubj} ]
+    then
+      unset subjList[$j]
+      subjList=(${subjList[@]})
+    fi
+done
+
+if [ "$costFunction" == "t1" ]
+then
+  fileDir=t1/t1.brain.inorm.affineAtlasSpace.crop.nii.gz
+elif [ "$costFunction" == "t2" ]
+then
+  fileDir=t2/t2_06mm.affineAtlasSpace.corrected.masked.crop.nii.gz
+elif [ "$costFunction" == "GM" ]
+then
+  fileDir=labels/t2/GM/GM.l.reorient.06mm.affineAtlasSpace.crop.nii.gz
+elif [ "$costFunction" == "GM_DB" ]
+then
+  fileDir=labels/t2/AvgSubfield/l.AvgSubfields.reorient.06mm.bin.affineAtlasSpace.crop.nii.gz
+elif [ "$costFunction" == "GM_r" ]
+then
+  fileDir=labels/t2/GM/GM.r.reorient.06mm.affineAtlasSpace.crop.nii.gz
+elif [ "$costFunction" == "GM_DB_r" ]
+then
+  fileDir=labels/t2/AvgSubfield/r.AvgSubfields.reorient.06mm.bin.affineAtlasSpace.crop.nii.gz
+fi
+
+for subj in ${subjList[@]}
+do
+  
+  outDir=~/khangrp/projects/unsorted/averageDeepBrain7T/7THippAtlas/$subj/labels/t2/checkerboard_${transformationModel}_${costFunction}/
+  mkdir -p $outDir
+  
+  infileLeft=~/khangrp/projects/unsorted/averageDeepBrain7T/7THippAtlas/$movingSubj/labels/t2/checkerboard/checkerboard.l.20.reorient.06mm.affineAtlasSpace.crop.nii.gz
+  infileRight=~/khangrp/projects/unsorted/averageDeepBrain7T/7THippAtlas/$movingSubj/labels/t2/checkerboard/checkerboard.r.20.reorient.06mm.affineAtlasSpace.crop.nii.gz
+  ref=~/khangrp/projects/unsorted/averageDeepBrain7T/7THippAtlas/$subj/$fileDir  
+  outfileLeft=$outDir/checkerboard.l.20.reorient.06mm.affineAtlasSpace.crop.$movingSubj.nii.gz
+  outfileRight=$outDir/checkerboard.r.20.reorient.06mm.affineAtlasSpace.crop.$movingSubj.nii.gz
+
+  if [ "$transformationModel" == "SyN" ]
+  then
+    warp=~/khangrp/projects/unsorted/averageDeepBrain7T/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/0Warp.nii.gz
+    
+    if [ "$costFunction" == "t1" ] || [ "$costFunction" == "t2" ]
+    then
+      antsApplyTransforms -d 3 -i $infileLeft -r $ref -o $outfileLeft -n NearestNeighbor -t $warp -v
+      antsApplyTransforms -d 3 -i $infileRight -r $ref -o $outfileRight -n NearestNeighbor -t $warp -v
+    elif [ "$costFunction" == "GM" ] || [ "$costFunction" == "GM_DB" ]
+    then
+      antsApplyTransforms -d 3 -i $infileLeft -r $ref -o $outfileLeft -n NearestNeighbor -t $warp -v
+    elif [ "$costFunction" == "GM_r" ] || [ "$costFunction" == "GM_DB_r" ]
+    then
+      antsApplyTransforms -d 3 -i $infileRight -r $ref -o $outfileRight -n NearestNeighbor -t $warp -v
+    fi
+ 
+  elif [ "$transformationModel" == "BSpline" ]
+  then
+    cpp=~/khangrp/projects/unsorted/averageDeepBrain7T/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/ctrlpt_${movingSubj}_to_${subj}.nii.gz
+
+    if [ "$costFunction" == "t1" ] || [ "$costFunction" == "t2" ]
+    then
+      reg_resample -flo $infileLeft -res $outfileLeft -cpp $cpp -ref $ref -inter 0
+      reg_resample -flo $infileRight -res $outfileRight -cpp $cpp -ref $ref -inter 0      
+    elif [ "$costFunction" == "GM" ] || [ "$costFunction" == "GM_DB" ]
+    then
+      reg_resample -flo $infileLeft -res $outfileLeft -cpp $cpp -ref $ref -inter 0
+    elif [ "$costFunction" == "GM_r" ] || [ "$costFunction" == "GM_DB_r" ]
+    then
+      reg_resample -flo $infileRight -res $outfileRight -cpp $cpp -ref $ref -inter 0
+    fi    
+
+  fi
+
+done

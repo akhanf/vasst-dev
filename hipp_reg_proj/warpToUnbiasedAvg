@@ -1,0 +1,28 @@
+#!/bin/bash
+
+subjlist=`cat $1`
+
+labels=`cat $2`
+
+atlas=~/khangrp/projects/unsorted/averageDeepBrain7T/clinical_1.5T_DBS/unbiasedAtlas/t2_hires/t2_06mm.nii.gz
+
+for subj in $subjlist
+do
+
+  warp=~/khangrp/projects/unsorted/averageDeepBrain7T/clinical_1.5T_DBS/unbiasedAtlas/generationFiles/unbiasedAvg_EPI_${subj}_t2_06mmWarp.nii.gz
+  affine=~/khangrp/projects/unsorted/averageDeepBrain7T/clinical_1.5T_DBS/unbiasedAtlas/generationFiles/unbiasedAvg_EPI_${subj}_t2_06mmAffine.txt  
+
+  for label in $labels
+  do
+  
+    prefix=${label##*/}
+    prefix=${prefix%%.nii.gz}
+    #newLabel=$prefix.atlasSpace.nii.gz
+    newLabel=$prefix.affineAtlasSpace.nii.gz
+    #WarpImageMultiTransform 3 $subj/$label $subj/$newLabel -R $atlas --use-NN $warp
+    #WarpImageMultiTransform 3 $subj/$label $subj/$newLabel -R $atlas --use-NN $warp $affine
+    WarpImageMultiTransform 3 $subj/$label $subj/$newLabel -R $atlas --use-NN $affine
+
+  done
+
+done

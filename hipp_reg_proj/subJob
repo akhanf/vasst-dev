@@ -1,0 +1,123 @@
+#!/bin/bash
+
+# submits registration jobs to sharcnet given a subject list, moving subject, cost function, and transformation model
+if [ "$#" -lt 4 ]
+then
+  echo ""
+  echo "Usage: ${0##*/} <subj_list> <moving_subj> <cost function> <transformation model>"
+  echo ""
+
+  exit 0
+fi
+
+if [ -f $1 ]
+then
+  readarray subjList < $1
+else
+  subjList=$1
+fi
+
+movingSubj=$2
+costFunction=$3
+transformationModel=$4
+
+
+# set values for transform model and cost function
+if [ "$transformationModel" == "SyN" ]
+then
+  transform=SyN[0.1,3,0]
+elif [ "$transformationModel" == "BSpline" ]
+then
+  transform=BSpline[0.1,26]
+fi
+
+if [ "$costFunction" == "t1" ]
+then
+#  fileDir=t1/t1.brain.inorm.genSpace.nii.gz
+  fileDir=t1/t1.brain.inorm.affineAtlasSpace.crop.nii.gz
+elif [ "$costFunction" == "t2" ]
+then
+#  fileDir=t2/t2_06mm.genSpace.nii.gz
+  fileDir=t2/t2_06mm.affineAtlasSpace.corrected.masked.crop.nii.gz
+elif [ "$costFunction" == "GM" ]
+then
+#  fileDir=labels/t2/GM/GM.l.reorient.06mm.atlasSpace.LIN.nii.gz
+  fileDir=labels/t2/GM/GM.l.reorient.06mm.affineAtlasSpace.crop.nii.gz
+elif [ "$costFunction" == "GM_DB" ]
+then
+#  fileDir=labels/t2/AvgSubfield/l.AvgSubfields.reorient.06mm.bin.atlasSpace.LIN.nii.gz
+  fileDir=labels/t2/AvgSubfield/l.AvgSubfields.reorient.06mm.bin.affineAtlasSpace.crop.nii.gz
+elif [ "$costFunction" == "GM_r" ]
+then
+#  fileDir=labels/t2/GM/GM.r.reorient.06mm.atlasSpace.LIN.nii.gz
+  fileDir=labels/t2/GM/GM.r.reorient.06mm.affineAtlasSpace.crop.nii.gz
+elif [ "$costFunction" == "GM_DB_r" ]
+then
+#  fileDir=labels/t2/AvgSubfield/r.AvgSubfields.reorient.06mm.bin.atlasSpace.LIN.nii.gz
+  fileDir=labels/t2/AvgSubfield/r.AvgSubfields.reorient.06mm.bin.affineAtlasSpace.crop.nii.gz
+fi
+
+# remove moving subject from subject list
+if [ -f $1 ]
+then
+
+for ((j=0; j<${#subjList[@]}; j++))
+  do
+    if [ ${subjList[$j]} = ${movingSubj} ]
+    then
+      unset subjList[$j]
+      subjList=(${subjList[@]})
+    fi
+done
+
+fi
+
+for subj in ${subjList[@]}
+do
+
+   outDir=/project/bwang/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/
+   mkdir -p $outDir
+   jobFile=${outDir}/${movingSubj}_${subj}_job.sh
+   rm $jobFile
+   echo "#!/bin/bash" >> $jobFile
+
+   if [ "$transformationModel" == "SyN" ]
+   then
+	   if [ "$costFunction" == "t1" ] || [ "$costFunction" == "t2" ]
+	   then
+		   echo "antsRegistration -d 3 --output [${outDir},${outDir}/${movingSubj}_to_${subj}_Warped.nii.gz,${outDir}/${subj}_to_${movingSubj}_InverseWarped.nii.gz] --interpolation Linear --use-histogram-matching 0 --transform $transform --metric CC[/project/bwang/7THippAtlas/$subj/$fileDir,/project/bwang/7THippAtlas/$movingSubj/$fileDir,1,4] --convergence [100x100x70x50x0,1e-6,10] --shrink-factors 10x6x4x2x1 --smoothing-sigmas 5x3x2x1x0vox -v" >> $jobFile
+	   else
+		   echo "antsRegistration -d 3 --output [${outDir},${outDir}/${movingSubj}_to_${subj}_Warped.nii.gz,${outDir}/${subj}_to_${movingSubj}_InverseWarped.nii.gz] --interpolation Linear --use-histogram-matching 0 --transform $transform --metric CC[/project/bwang/7THippAtlas/$subj/$fileDir,/project/bwang/7THippAtlas/$movingSubj/$fileDir,1,5] --convergence [30x90x20,1e-6,10] --shrink-factors 4x2x1 --smoothing-sigmas 1x0.5x0mm -v" >> $jobFile
+	   fi
+
+## BSPLINE REGISTRATIONS
+
+   elif [ "$transformationModel" == "BSpline" ]
+   then
+	  cpp=$outDir/ctrlpt_${movingSubj}_to_${subj}.nii.gz
+	  res=$outDir/${movingSubj}_to_${subj}.nreg.nii.gz
+	  echo "reg_f3d -ref /project/bwang/7THippAtlas/$subj/$fileDir -flo /project/bwang/7THippAtlas/$movingSubj/$fileDir -cpp $cpp -res $res" >> $jobFile
+	  
+   fi
+
+# regular antsRegistration calls with CC, parameters adapted from antsRegistrationSynQuick.sh
+## SQSUB SUBMISSIONS FOR LEGACY CLUSTERS
+#   sqsub -q serial -r 24h -o /work/bwang/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/log.dat -v --memperproc=16G antsRegistration -d 3 --output [/work/bwang/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/,/work/bwang/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/${movingSubj}_to_${subj}_Warped.nii.gz,/work/bwang/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/${subj}_to_${movingSubj}_InverseWarped.nii.gz] --interpolation Linear --use-histogram-matching 0 --winsorize-image-intensities [0.005,0.995] --transform $transform --metric CC[/work/bwang/7THippAtlas/$subj/$fileDir,/work/bwang/7THippAtlas/$movingSubj/$fileDir,1,4] --convergence [100x100x70x50x0,1e-6,10] --shrink-factors 10x6x4x2x1 --smoothing-sigmas 5x3x2x1x0vox -v
+
+# remove winsorize intensity option
+#   sqsub -q serial -r 24h -o /work/bwang/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/log.dat -v --memperproc=16G antsRegistration -d 3 --output [/work/bwang/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/,/work/bwang/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/${movingSubj}_to_${subj}_Warped.nii.gz,/work/bwang/7THippAtlas/$subj/reg/${transformationModel}_${costFunction}/${movingSubj}_${subj}/${subj}_to_${movingSubj}_InverseWarped.nii.gz] --interpolation Linear --use-histogram-matching 0 --transform $transform --metric CC[/work/bwang/7THippAtlas/$subj/$fileDir,/work/bwang/7THippAtlas/$movingSubj/$fileDir,1,4] --convergence [100x100x70x50x0,1e-6,10] --shrink-factors 10x6x4x2x1 --smoothing-sigmas 5x3x2x1x0vox -v
+
+## SBATCH SUBMISSION FOR GRAHAM
+  rm ${outDir}/log.dat
+  #sbatch -t 2880 -o ${outDir}/log.dat -c 1 -v -v --mem=16384 --account=rrg-akhanf $jobFile
+  #sbatch -t 1440 -o ${outDir}/log.dat -c 1 -v -v --mem=4096 --account=rrg-akhanf $jobFile
+  sbatch -t 720 -o ${outDir}/log.dat -c 1 -v -v --mem=4096 --account=rrg-akhanf $jobFile
+
+
+done
+
+
+
+
+
+
