@@ -16,4 +16,4 @@ mkdir -p $INSTALL
 #currently retrieving from dropbox -- update this later to use OSF 
 curl -L --retry 5 https://www.dropbox.com/s/q8l2ap16s5so2ct/atlases.tar | tar x -C $INSTALL
 curl -L --retry 5  https://www.dropbox.com/s/1lwo3ff91fvx5mj/atlases_tractPatch.tar | tar x -C $INSTALL
-
+curl -L --retry 5 https://www.dropbox.com/s/tt09w8npjtw0zi0/atlases_JHUpatch.tar | tar x -C $INSTALL
