@@ -1,0 +1,74 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]
+then
+ echo "Copies out preprocessed data into BIDS format"
+ echo ""
+ echo "Command-line Usage: $0 <in_dwi_name>  <subjid>"
+ exit 0
+fi
+
+output_dir=.
+
+in_dwi=$1
+shift 1
+
+
+if [ -f $1 ]
+then
+ subjids=`cat $1`
+else
+ subjids=$1
+fi
+
+out_bids=$output_dir/derivatives
+
+flags="_"
+
+lastproc=${in_dwi##*_}
+if [ "$lastproc" = "regT1" ]
+then 
+  flags="${flags}space-T1w_"
+fi
+
+for subj in $subjids
+do
+
+if [ ${subj%%-*} = sub ]
+then
+  subjid=$subj
+else
+  subjid=sub-$subj
+fi
+
+subj_dir=$output_dir/$subj
+dwi_dir=$subj_dir/dwi/${in_dwi}
+
+if [ ! -e $dwi_dir ]
+then
+ continue
+fi
+
+out_dwi_dir=$out_bids/$subjid/dwi
+mkdir -p $out_dwi_dir
+
+
+for ext in nii.gz bvec bval
+do
+
+ cp -v $dwi_dir/dwi.$ext $out_dwi_dir/${subjid}_dwi${flags}preproc.$ext
+
+done
+
+cp -v $dwi_dir/brainmask.nii.gz $out_dwi_dir/${subjid}_dwi${flags}brainmask.nii.gz
+
+for map in FA MD L1 L2 L3 S0 V1 V2 V3
+do
+ 
+ cp -v $dwi_dir/dti_$map.nii.gz $out_dwi_dir/${subjid}_dwi${flags}$map.nii.gz
+
+done
+
+#deal with bedpost, dke, noddi etc later..
+
+done
