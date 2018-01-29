@@ -82,7 +82,11 @@ echo octave --eval "getDiffPhaseEncodeLine('${in_dwi[$i]}','$petxt_i')"
 cat $petxt_i >> $petxt
 
 dwi=$work_dir/dwi_$i.nii.gz
+bvec=$work_dir/dwi_$i.bvec
+bval=$work_dir/dwi_$i.bval
 cp -v ${in_dwi[$i]} $dwi
+cp -v ${in_bvec[$i]} $bvec #not used until later eddy
+cp -v ${in_bval[$i]} $bval
 
 
 #keep number of directions, and volume wiht greatest number of directions
