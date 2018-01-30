@@ -103,8 +103,8 @@ dwi_bval=$out_dir/dwi.bval
 dwi_vol=$out_dir/dwi.nii.gz
 brain_mask=$out_dir/brainmask.nii.gz
 
-echo dtifit -k $dwi_vol -o $dwi_dir/dti -m $brain_mask -r $dwi_bvec -b $dwi_bval
-dtifit -k $dwi_vol -o $dwi_dir/dti -m $brain_mask -r $dwi_bvec -b $dwi_bval
+echo dtifit -k $dwi_vol -o $out_dir/dti -m $brain_mask -r $dwi_bvec -b $dwi_bval
+dtifit -k $dwi_vol -o $out_dir/dti -m $brain_mask -r $dwi_bvec -b $dwi_bval
 
 
 done

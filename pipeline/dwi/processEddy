@@ -106,8 +106,8 @@ cp -v $dwi_bvec $eddy_dir/dwi.bvec
 cp -v $dwi_bval $eddy_dir/dwi.bval
 cp -v $brainmask $eddy_dir/brainmask.nii.gz
 
-echo dtifit -k $dwi_vol -o $eddy_dir/dti -m $brain_mask -r $dwi_bvec -b $dwi_bval
-dtifit -k $dwi_vol -o $eddy_dir/dti -m $brain_mask -r $eddy_dir/dwi.bvec -b $eddy_dir/dwi.bval
+echo dtifit -k $dwi_vol -o $eddy_dir/dti -m $brainmask -r $dwi_bvec -b $dwi_bval
+dtifit -k $dwi_vol -o $eddy_dir/dti -m $brainmask -r $eddy_dir/dwi.bvec -b $eddy_dir/dwi.bval
 
 
 done
