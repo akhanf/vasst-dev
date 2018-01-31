@@ -8,6 +8,9 @@
 #MCRBINS=$VASST_DEV_HOME/tools/mcr/v92
 #MCRROOT=/opt/mcr/v92
 
+searchpath=$PIPELINE_TOOL_DIR/matlab
+
+
 echo "------------------------------------------"
 if [ "x$1" = "x" ]; then
   echo Usage:
@@ -68,7 +71,7 @@ done
 
 
 echo Running: matlab "$func_name($args)"
- echo " $func_name($args); exit" | matlab -nosplash -nodesktop 
+ echo "addpath(genpath($searchpath));  $func_name($args); exit" | matlab -nosplash -nodesktop 
 
   else
   
