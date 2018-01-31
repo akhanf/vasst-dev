@@ -71,7 +71,7 @@ done
 
 
 echo Running: matlab "$func_name($args)"
- echo "addpath(genpath($searchpath));  $func_name($args); exit" | matlab -nosplash -nodesktop 
+ echo "addpath(genpath('$searchpath'));  $func_name($args); exit" | matlab -nosplash -nodesktop 
 
   else
   

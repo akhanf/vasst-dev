@@ -28,7 +28,6 @@ bash 27.install_vasst_dev_atlases_by_source.sh /opt
 %environment
 
 
-
 #vasst-dev
 export VASST_DEV_HOME=/opt/vasst-dev
 export PIPELINE_ATLAS_DIR=/opt/atlases
