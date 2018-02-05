@@ -16,7 +16,12 @@ fi
   
 in_dwi=$1
 
-parcellate_cfg=$PIPELINE_CFG_DIR/parcellate/$2
+parcellate_cfg=$2
+
+
+if [ ! -e $in_cfg ]
+then
+ parcellate_cfg=$PIPELINE_CFG_DIR/parcellate/$parcellate_cfg
 
 if [ ! -e $parcellate_cfg ]
 then
@@ -24,8 +29,11 @@ then
  exit 0
 fi
 
+fi
+
 echo "Sourcing $parcellate_cfg"
 source $parcellate_cfg
+
 
 shift 2
 
