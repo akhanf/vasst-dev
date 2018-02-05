@@ -1,0 +1,242 @@
+#!/bin/bash
+
+#dependencies:
+
+# FSL
+
+# python: getValueJson.py
+#
+#compiled binaries:
+# ReorderImage
+# despot1
+
+if [  "$#" -lt "2" ]
+then
+ echo "Script to compute despot1 images"
+ echo ""
+ echo "Usage: $0 <bids in> <output dir> <subject_id(s) >"
+
+ exit 0
+fi
+
+datadir=$1
+
+
+bidsout=$2/bids
+outdir=$2/work
+
+mkdir -p $bidsout $outdir
+
+
+
+shift 2
+
+
+for subj in $@
+do
+
+#make sure it is sub-
+if [ ${subj%%-*} = sub ]
+then
+  subjid=$subj
+else
+  subjid=sub-$subj
+fi
+
+
+echo "Processing subject $subjid"
+
+anatdir=$datadir/$subjid/anat
+
+out_anat=$bidsout/$subjid/anat
+mkdir -p $out_anat
+
+
+
+despottype=2 	#hifi
+
+spgr_match="$anatdir/*acq-SPGR_*DESPOT.nii.gz"
+
+nspgr=`ls $spgr_match | wc -l`
+
+
+
+spgr_notmatched=0
+for i in `seq 1 $nspgr`
+do
+ spgr=`ls $spgr_match | head -n $i | tail -n 1`
+ json=${spgr%%.nii.gz}.json
+
+# echo $spgr, $json  
+ spgr_tr[$i]=`getValueJson.py $json RepetitionTime` #get value, from s to ms
+ spgr_tr[$i]=`bashcalc ${spgr_tr[$i]}*1000`
+ spgr_fa[$i]=`getValueJson.py $json FlipAngle` 
+ spgr_nii[$i]=$spgr
+
+ if [ "$i" = 1 ]
+ then
+   spgr_tr=${spgr_tr[$i]}
+ else
+    
+   if [ ! "${spgr_tr[$i]}" = "$spgr_tr" ]
+   then 
+    spgr_notmatched=1
+    echo "SPGR TR not matched!"
+    continue
+   fi
+
+ fi
+ 
+done
+
+if [ "spgr_notmatched" = 1 ]
+then
+  continue
+fi
+
+irspgr_match="$anatdir/*acq-IRSPGR_*DESPOT.nii.gz"
+nirspgr=`ls $irspgr_match | wc -l`
+if [ "$nirspgr" -gt 1 ]
+then  
+  echo "Only 1 IRSPGR expected, but found $nirspgr"
+  continue 
+fi
+
+
+irspgr_nii=`ls $irspgr_match`
+json=${irspgr_nii%%.nii.gz}.json
+
+ irspgr_ti=`getValueJson.py $json InversionTime` #get value, from s to ms
+ irspgr_ti[$i]=`bashcalc ${irspgr_ti[$i]}*1000`
+ irspgr_tr=`getValueJson.py $json RepetitionTime` #get value, from s to ms
+ irspgr_tr[$i]=`bashcalc ${irspgr_tr[$i]}*1000`
+ irspgr_fa=`getValueJson.py $json FlipAngle` 
+
+
+
+
+#hardcoded from pulse sequence:
+
+npulse=78  #readout pulses following inversion
+field=3  #field strength
+invmode=2  #number of inversions per slice
+
+
+
+noiseth=1  #noise threshold scale
+smoothb1=1  #smooth B1 field
+specklerm=0  #enable error-checking and speckle removal
+speckleth=1 #speckle threshold
+
+
+outdespot=$outdir/DESPOT1HIFI_T1Map.img
+
+
+ref=${spgr_nii[1]}
+
+
+ flirt_params="-bins 64 -cost corratio -searchrx -5 5 -searchry -5 5 -searchrz -5 5 -dof 6  -interp sinc -sincwidth 7 -sincwindow hanning -datatype float -v"
+
+ out=$outdir/spgr_1.nii.gz
+ echo flirt -in $ref -ref $ref -out $out -applyxfm -datatype float -interp sinc -sincwidth 7 -sincwindow hanning -v
+ flirt -in $ref -ref $ref -out $out -applyxfm -datatype float -interp sinc -sincwidth 7 -sincwindow hanning -v
+
+#first, use flirt to co-register images to FA18 image
+for i in `seq 2 $nspgr`
+do
+
+ flo=${spgr_nii[$i]}
+
+ out=$outdir/spgr_${i}_reg.nii.gz
+ out_mat=$outdir/spgr_${i}_regFlirt.mat
+
+
+echo flirt -in $flo -ref $ref -out $out -omat $out_mat $flirt_params
+ flirt -in $flo -ref $ref -out $out -omat $out_mat $flirt_params
+
+
+done
+
+#first, use flirt to co-register images to FA18 image
+ flo=${irspgr_nii}
+
+ out=$outdir/irspgr_reg.nii.gz
+ out_mat=$outdir/irspgr_regFlirt.mat
+
+echo flirt -in $flo -ref $ref -out $out -omat $out_mat $flirt_params
+ flirt -in $flo -ref $ref -out $out -omat $out_mat $flirt_params
+
+
+
+
+#convert to ANALYZE format and orientation for despot1 processing
+for im in `ls $outdir/{spgr,irspgr}*.nii.gz`
+do
+
+  im_ana=${im%%.nii.gz}.ana.img
+  im_rot=${im%%.nii.gz}.ana.rot.img
+ 
+  fslchfiletype ANALYZE $im $im_ana
+  ReorderImage $im_ana RAS $im_rot PSR
+
+done
+
+
+despot1_cmd="despot1 $despottype $nspgr ${spgr_tr} $outdir/spgr_1.ana.rot"
+for i in `seq 2 $nspgr`
+do
+  despot1_cmd="$despot1_cmd $outdir/spgr_${i}_reg.ana.rot"
+done
+
+for i in `seq 1 $nspgr`
+do
+  despot1_cmd="$despot1_cmd ${spgr_fa[$i]}"
+done
+
+despot1_out=$outdir/despot1
+mkdir -p $despot1_out
+
+
+despot1_cmd="$despot1_cmd $nirspgr $outdir/irspgr_reg.ana.rot $irspgr_ti $irspgr_tr $irspgr_fa $npulse $field $invmode $outdir/ $noiseth $smoothb1 $specklerm $speckleth"
+
+echo $despot1_cmd
+$despot1_cmd
+
+
+
+
+qform=`fslorient -getqform $ref`
+#now convert back to original space
+for im in `ls $outdir/DESPOT1*img`
+do
+
+  im_unrot=${im%%.img}.unrot.img
+  nii=${im%%.img}.nifti.nii.gz
+
+
+   ReorderImage $im PSR $im_unrot RAS 
+    
+   fslchfiletype NIFTI_GZ $im_unrot $nii
+
+
+   echo fslorient -setqform $qform $nii
+   fslorient -setqform $qform $nii
+   echo fslorient -copyqform2sform $nii
+   fslorient -copyqform2sform  $nii
+   echo fslswapdim $nii -x y z $nii
+   fslswapdim $nii -x y z $nii
+
+
+done
+
+
+cp -v $outdir/DESPOT1HIFI_T1Map.nifti.nii.gz $out_anat/${subjid}_acq-DESPOT_T1map.nii.gz
+cp -v $outdir/DESPOT1HIFI_B1Map.nifti.nii.gz $out_anat/${subjid}_acq-DESPOT_B1map.nii.gz
+cp -v $outdir/DESPOT1HIFI_MoMap.nifti.nii.gz $out_anat/${subjid}_acq-DESPOT_Momap.nii.gz
+
+
+
+done
+
+
+
