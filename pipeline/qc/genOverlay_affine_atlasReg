@@ -39,8 +39,13 @@ subj_dir=$output_dir/$subj
 
 
 #put pipeline commands here
+if [ -e $output_dir/$atlas_name/t1/t1.brain.nii.gz ]
+then
+ t1=$output_dir/$atlas_name/t1/t1.brain.nii.gz
+else
+ t1=$PIPELINE_ATLAS_DIR/$atlas_name/t1/t1.brain.nii.gz
+fi
 
-t1=$PIPELINE_ATLAS_DIR/$atlas_name/t1/t1.brain.nii.gz
 
 overlay=$subj_dir/reg/affine_aladin_t1/${atlas_name}_${subj}/${subj}_to_${atlas_name}.reg.nii.gz
 
