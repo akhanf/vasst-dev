@@ -40,8 +40,8 @@ for i=1:length(out_names)
         
 end
 
-
-save_nifti(out_seg,sprintf('%s/all_segs.nii.gz',out_folder));
+%remove generation of all_segs image (unused..)
+%save_nifti(out_seg,sprintf('%s/all_segs.nii.gz',out_folder));
 
 
 end

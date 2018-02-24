@@ -64,7 +64,7 @@ subj_dir=$output_dir/$subj
    #target_labels_txt
 
 
- seed_file=$subj_dir/$seed_file
+ seed_mask=$subj_dir/$seed_file
  target_seg=$subj_dir/$target_seg
 
  #probtrack output dir
@@ -91,31 +91,44 @@ subj_dir=$output_dir/$subj
  echo octave --eval "remapSegmentationLabels('$target_seg','$target_mapping_txt','$target_labels_txt','$targets_dir')"
  octave --eval "remapSegmentationLabels('$target_seg','$target_mapping_txt','$target_labels_txt','$targets_dir')"
  
- targets_file=$parc_dir/targets.txt
- for target in `ls $targets_dir/*.nii.gz`
- do
-    flirt -in $target -out ${target%%.nii.gz}_resampled.nii.gz -applyxfm -ref $mask_file -interp nearestneighbour
-    fslmaths ${target%%.nii.gz}_resampled.nii.gz -mas $mask_file ${target%%.nii.gz}_resampled.nii.gz
- done
+targets_file=$parc_dir/targets.txt
+ls $targets_dir/*.nii.gz > $targets_file
+# for target in `ls $targets_dir/*.nii.gz`
+# do
+#    flirt -in $target -out ${target%%.nii.gz}_resampled.nii.gz -applyxfm -ref $mask_file -interp nearestneighbour
+#    fslmaths ${target%%.nii.gz}_resampled.nii.gz -mas $mask_file ${target%%.nii.gz}_resampled.nii.gz
+# done
 
- ls $targets_dir/*_resampled.nii.gz > $targets_file
+# ls $targets_dir/*_resampled.nii.gz > $targets_file
 
 
  #--targetmasks targets_file (txt file, each line nii.gz)
 
  samples_base=$bedpost_dir/merged
 
- seed_resampled=$parc_dir/seed_resampled.nii.gz
+# seed_resampled=$parc_dir/seed_resampled.nii.gz
 
- flirt -in $seed_file -out $seed_resampled -applyxfm -ref $mask_file -interp nearestneighbour
- fslmaths $seed_resampled -mas $mask_file $seed_resampled
+# flirt -in $seed_file -out $seed_resampled -applyxfm -ref $mask_file -interp nearestneighbour
+# fslmaths $seed_resampled -mas $mask_file $seed_resampled
 
  probtrack_opts="-l --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --forcedir --opd --os2t --s2tastext"
- probtrack_opts="-l --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --forcedir --opd --os2t --s2tastext"
 
+if [ -n "$avoid_seg" ]
+then
+    if [ -e $avoid_seg ]
+    then
+     probtrack_opts="$probtrack_opts --avoid=$avoid_seg"
+ else
+     echo "WARNING: avoid_seg $avoid_seg not found, not using --avoid"
 
- echo probtrackx2 -x $seed_resampled --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
- probtrackx2 -x $seed_resampled --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
+     fi
+
+fi
+
+# echo probtrackx2 -x $seed_resampled --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
+# probtrackx2 -x $seed_resampled --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
+ echo probtrackx2 -x $seed_mask --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
+ probtrackx2 -x $seed_mask --targetmasks=$targets_file -m $mask_file -s $samples_base --dir=$output_dir $probtrack_opts
 
 
  vol_csv=$parc_dir/target_volumes.csv

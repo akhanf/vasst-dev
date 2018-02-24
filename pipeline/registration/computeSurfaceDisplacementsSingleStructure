@@ -174,17 +174,17 @@ fi
  byu_nii_xfm=$template_dir/${struct}_byuToNifti.xfm
 
  #create surfaces in template nifti space
- if [ -e $crop -a -e $cropparam -a ! -e $byu_nii_xfm ]
+ if [ -e $nii -a -e $cropparam -a ! -e $byu_nii_xfm ]
  then
-  echo runMatlabCmd genBYUtoNiftiTransformFromCroppedAnalyze "'$crop'" "'$cropparam'" "'$byu_nii_xfm'"
- runMatlabCmd genBYUtoNiftiTransformFromCroppedAnalyze "'$crop'" "'$cropparam'" "'$byu_nii_xfm'"
+  echo runMatlabCmd genBYUtoNiftiTransformFromCroppedAnalyze "'$nii'" "'$cropparam'" "'$byu_nii_xfm'"
+ runMatlabCmd genBYUtoNiftiTransformFromCroppedAnalyze "'$nii'" "'$cropparam'" "'$byu_nii_xfm'"
  fi
 
  byu_niispace=$template_dir/${struct}_nii.byu
  if [ ! -e $byu_niispace -a -e $byu_nii_xfm ]
  then
-  echo runMatlabCmd  transformByuLinearXfm "'$byu'" "'$byu_nii_xfm'" "'$byu_niispace'"
-  runMatlabCmd  transformByuLinearXfm "'$byu'" "'$byu_nii_xfm'" "'$byu_niispace'"
+  echo runMatlabCmd  transformByuLinearXfm "'$byu_cpp'" "'$byu_nii_xfm'" "'$byu_niispace'"
+  runMatlabCmd  transformByuLinearXfm "'$byu_cpp'" "'$byu_nii_xfm'" "'$byu_niispace'"
  fi
 
 done
@@ -352,42 +352,42 @@ fi
  prop_surf_template_norm_nii=$target_dir/propSurface_${struct}_normalized_nii.byu
  prop_surf_subj_nii=$target_dir/propSurface_${struct}_nii_regSubj.byu
 
-if [ ! -e $disp_csv ]
-then
- #now compute surface vector displacements
-echo GenSurfDisplacementTxt $template_byu_cpp $hmap $disp_csv
- GenSurfDisplacementTxt $template_byu_cpp $hmap $disp_csv
-fi
+#if [ ! -e $disp_csv ]
+#then
+# #now compute surface vector displacements
+#echo GenSurfDisplacementTxt $template_byu_cpp $hmap $disp_csv
+# GenSurfDisplacementTxt $template_byu_cpp $hmap $disp_csv
+#fi
 
 if [ ! -e $prop_surf ]
 then
  #propagate surface
  echo TransformSurfaceWithMaps $template_byu_cpp $kimap $prop_surf
  TransformSurfaceWithMaps $template_byu_cpp $kimap $prop_surf
- echo ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`
- ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`
+# echo ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`  #keep in cpp space
+# ConvertBYU_BW-CPP $prop_surf $prop_surf `GetImageDims $crop`  
  fi
 
- #generate inout displacements
+ #generate inout displacements -- this is done in matlab now..
 
-if [ ! -e $inout_txt ]
-then
- echo "compdisp $template_byu $prop_surf > $inout_txt"
- compdisp $template_byu $prop_surf > $inout_txt
-fi
+#if [ ! -e $inout_txt ]
+#then
+# echo "compdisp $template_byu $prop_surf > $inout_txt"
+# compdisp $template_byu $prop_surf > $inout_txt
+#fi
 
-if [ ! -e $inout_vtk ]
-then
- echo CombineBYUandSurfDist $template_byu $inout_txt $inout_vtk
- CombineBYUandSurfDist $template_byu $inout_txt $inout_vtk
-fi
+#if [ ! -e $inout_vtk ]
+#then
+# echo CombineBYUandSurfDist $template_byu $inout_txt $inout_vtk
+# CombineBYUandSurfDist $template_byu $inout_txt $inout_vtk
+#fi
 
-if [ ! -e $disp_vtk ]
-then
- sed 's/,/\ /g' $disp_csv > $disp_txt
- echo ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
- ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
-fi
+#if [ ! -e $disp_vtk ]
+#then
+# sed 's/,/\ /g' $disp_csv > $disp_txt
+# echo ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
+# ConvertBYUandVectorDataToVTK $template_byu $disp_txt $disp_vtk
+#fi
 
 if [ ! -e $prop_surf_template_nii ]
 then
