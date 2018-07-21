@@ -7,7 +7,7 @@
 
 if [ "$#" -lt 4 ]
 then
- echo "Usage: $0 <data_dir> <structure - Hp/Neo/SubcortL/SubcortR ..>  <resolution - 100, 20> <subjids>"
+ echo "Usage: $0 <in_mri_nii> <data_dir> <structure - Hp/Neo/SubcortL/SubcortR ..>  <resolution - 100, 20> <subjids>"
  echo "   -t <th>		Set threshold for ex-vivo MRI (default 200; use 0 if already masked)"
  echo ""
  exit 0 
@@ -101,11 +101,14 @@ fi
   #  SUBJDIR/Processed/Ex-Hist_Reg
 
 
-data_dir=$1
-structure=$2
-resolution=$3
+#in_mri=$data_dir/$SUBJ/mri_$structure/${SUBJ}_${structure}_susc3D.nii.gz
+in_mri=$1
+data_dir=$2
+structure=$3
+resolution=$4
+SUBJ=$5
 
-shift 3
+shift 5
 th=200
 
 while getopts "t:" options; do
@@ -118,8 +121,6 @@ while getopts "t:" options; do
 done
 
 
-for SUBJ in $@
-do
 
 
 IN_HIST_DIR=$data_dir/$SUBJ/${resolution}um_Grayscale_nii
@@ -149,7 +150,6 @@ mkdir -p $IMG_DIR
  # echo fslreorient2std $IN_SUBJ_DIR/$MRI_IMAGE $MRI_STD
 #  fslreorient2std $IN_SUBJ_DIR/$MRI_IMAGE $MRI_STD
 
-in_mri=$data_dir/$SUBJ/mri_$structure/${SUBJ}_${structure}_susc3D.nii.gz
 
 if [ ! -e $in_mri ]
 then
@@ -198,8 +198,14 @@ if [ ! -e $MRI_TH ]
 then
 #echo fslmaths $MRI_STD -thrp $th $MRI_TH
 #fslmaths $MRI_STD -thrp $th $MRI_TH
+if [ "$th" == 0 ]
+then
+	cp -v $MRI_STD $MRI_TH
+else
 echo fslmaths $MRI_STD -thr $th $MRI_TH
 fslmaths $MRI_STD -thr $th $MRI_TH
+fi
+
 fi
 
 
@@ -320,7 +326,7 @@ do
 
 # i=${IN_HIST##*_}
 # i=${i%%.*}
- ii=`printf %03d $i`
+ ii=`printf %02d $i`
 
  IN_HIST=$IN_HIST_DIR/${SUBJ}_${structure}_${ii}_HE.nii.gz
 
@@ -697,5 +703,4 @@ done  #iter
 #end of script   -- below from prev script -- can delete
 
 
-done
 
