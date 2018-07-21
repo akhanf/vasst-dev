@@ -10,7 +10,7 @@ init_phys_xfm=eye(4,4);
 init_phys_xfm(1,1)=10;
 init_phys_xfm(2,2)=10;
 
-reg_dir=sprintf('%s/%s/mri_hist_reg_%s_%dum',data_dir,subj,struct,resolution);
+reg_dir=sprintf('%s/%s/mri_hist_reg_initLmk_%s_%dum',data_dir,subj,struct,resolution);
 
 %first, load up hist stack image to determine # of slices and slice spacing
 hist_stack_nii=sprintf('%s/images/hist_stack.nii.gz',reg_dir);
@@ -24,7 +24,7 @@ slicespacing=hdr.pixdim(4);
 %find offset first:
 
 for slice=1:nslices
-    hist_slice=sprintf('%s/images/hist_slice_%02d.nii.gz',reg_dir,slice);
+    hist_slice=sprintf('%s/images/hist_slice_%d.nii.gz',reg_dir,slice);
     hist_slice_alt=sprintf('%s/images/hist_slice_%03d.nii.gz',reg_dir,slice);
 
     if exist(hist_slice) || exist(hist_slice_alt)
@@ -37,7 +37,7 @@ end
 for slice=1+totaloffset:nslices+totaloffset
     
     %0. get hdr for hist slice to determine initial sform
-    hist_slice=sprintf('%s/images/hist_slice_%02d.nii.gz',reg_dir,slice);
+    hist_slice=sprintf('%s/images/hist_slice_%d.nii.gz',reg_dir,slice);
 
     if (~exist(hist_slice))
         hist_slice=sprintf('%s/images/hist_slice_%03d.nii.gz',reg_dir,slice);
@@ -48,8 +48,8 @@ for slice=1+totaloffset:nslices+totaloffset
     
      
     % 1. apply hist stack xfm
-    stack_flirt=sprintf('%s/stack_xfm/hist_stack_%02d.xfm',reg_dir,slice);
-    stack_phys=sprintf('%s/stack_xfm/hist_stack_%02d_phys.xfm',reg_dir,slice);
+    stack_flirt=sprintf('%s/stack_xfm/hist_stack_%d.xfm',reg_dir,slice);
+    stack_phys=sprintf('%s/stack_xfm/hist_stack_%d_phys.xfm',reg_dir,slice);
     
     if (~exist(stack_flirt))
         stack_flirt=sprintf('%s/stack_xfm/hist_stack_%03d.xfm',reg_dir,slice);
@@ -85,7 +85,7 @@ for slice=1+totaloffset:nslices+totaloffset
     
       
     % 4. apply inverse of 3D flirt xfm
-    reg3d_flirt=sprintf('%s/3drigid_iter5/flirt_mri-histstack.xfm',reg_dir);
+ %   reg3d_flirt=sprintf('%s/3drigid_iter5/flirt_mri-histstack.xfm',reg_dir);
     %first convert to phys, then invert..
     reg3d_phys=sprintf('%s/3drigid_iter5/flirt_mri-histstack.phys.xfm',reg_dir);
     mri_vol_glob=dir(sprintf('%s/images/ex_mri_th*_iso_crop.nii.gz',reg_dir));
@@ -93,7 +93,7 @@ for slice=1+totaloffset:nslices+totaloffset
   %  if ~exist(mri_vol)
   %          mri_vol=sprintf('%s/images/ex_mri_th0_iso_crop.nii.gz',reg_dir);
   %  end
-    convertFlirtXFMtoPhysXFM_noadjustX(reg3d_flirt,mri_vol,hist_stack_nii,reg3d_phys);
+ %   convertFlirtXFMtoPhysXFM_noadjustX(reg3d_flirt,mri_vol,hist_stack_nii,reg3d_phys);
     reg3d_phys_xfm=importdata(reg3d_phys);
     
     final_xfm=inv(reg3d_phys_xfm)*reg2d_phys_xfm*zstack_xfm*stack_phys_xfm*hist_slice_sform*init_phys_xfm;
