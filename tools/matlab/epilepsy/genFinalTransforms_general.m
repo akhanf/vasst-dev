@@ -24,7 +24,7 @@ slicespacing=hdr.pixdim(4);
 %find offset first:
 
 for slice=1:nslices
-    hist_slice=sprintf('%s/images/hist_slice_%d.nii.gz',reg_dir,slice);
+    hist_slice=sprintf('%s/images/hist_slice_%02d.nii.gz',reg_dir,slice);
     hist_slice_alt=sprintf('%s/images/hist_slice_%03d.nii.gz',reg_dir,slice);
 
     if exist(hist_slice) || exist(hist_slice_alt)
@@ -37,7 +37,7 @@ end
 for slice=1+totaloffset:nslices+totaloffset
     
     %0. get hdr for hist slice to determine initial sform
-    hist_slice=sprintf('%s/images/hist_slice_%d.nii.gz',reg_dir,slice);
+    hist_slice=sprintf('%s/images/hist_slice_%02d.nii.gz',reg_dir,slice);
 
     if (~exist(hist_slice))
         hist_slice=sprintf('%s/images/hist_slice_%03d.nii.gz',reg_dir,slice);
@@ -48,8 +48,8 @@ for slice=1+totaloffset:nslices+totaloffset
     
      
     % 1. apply hist stack xfm
-    stack_flirt=sprintf('%s/stack_xfm/hist_stack_%d.xfm',reg_dir,slice);
-    stack_phys=sprintf('%s/stack_xfm/hist_stack_%d_phys.xfm',reg_dir,slice);
+    stack_flirt=sprintf('%s/stack_xfm/hist_stack_%02d.xfm',reg_dir,slice);
+    stack_phys=sprintf('%s/stack_xfm/hist_stack_%02d_phys.xfm',reg_dir,slice);
     
     if (~exist(stack_flirt))
         stack_flirt=sprintf('%s/stack_xfm/hist_stack_%03d.xfm',reg_dir,slice);
