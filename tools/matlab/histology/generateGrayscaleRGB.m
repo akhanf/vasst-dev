@@ -46,8 +46,13 @@ Ny=ds_size(2);
 
 imgresolutions=imgSizes(1)./imgSizes(:,1)*hist_res;
 
+if res_microns>=100
+    whichImg=2;
+else
 %find most appropriately scaled image in bigtiff pyramid
 [mindiff,whichImg]=min(abs(imgresolutions-res_microns));
+end
+
 
 
 img=imread(tif,whichImg,'PixelRegion',{[1,imgSizes(whichImg,1)],[1,imgSizes(whichImg,2)]});
