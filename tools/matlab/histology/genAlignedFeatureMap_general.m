@@ -47,11 +47,13 @@ mkdir(slice_dir);
 for slice=1:nslices
     
     
-     coreg_nii=sprintf('%s/%s_%s_%03d_%s_regHE.nii.gz',coreg_dir,subj,struct,slice,stain);
+     coreg_nii=sprintf('%s/%s_%s_%02d_%s_regHE.nii.gz',coreg_dir,subj,struct,slice,stain);
 
     if (~exist(coreg_nii))
-             coreg_nii=sprintf('%s/%s_%s_%03d_%s.nii.gz',coreg_dir,subj,struct,slice,stain);
+             coreg_nii=sprintf('%s/%s_%s_%02d_%s.nii.gz',coreg_dir,subj,struct,slice,stain);
         if ( ~exist(coreg_nii))
+            disp('cannot find coreg_nii');
+            disp(coreg_nii);
             continue;
         end
     end
@@ -133,7 +135,7 @@ A=permute(hist_png,[2,1,3]);
 
 B=permute(B,[2,1,3]);
 
-
+disp('about to set rgbout');
 if(resetvol~=1 )
     
     rgbout=histfillval.*ones(size(B,1),size(B,2),nslices);
