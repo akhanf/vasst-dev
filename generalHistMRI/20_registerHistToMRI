@@ -492,6 +492,8 @@ bending_energy[7]=0.001
 for iter in `seq 0 $MAX_ITER`
 do
 
+
+
   init_hist_stack=$IMG_DIR/hist_stack.nii.gz
 if [ "$iter" = "0" ]
 then
@@ -684,7 +686,7 @@ then
 
  mri=$data_dir/$subj/mri_hist_reg_${struct}_${resolution}um/3drigid_iter${iter}/reg_ex_mri.nii.gz 
  echo "runMatlabCmd genFinalTransforms_general "'$data_dir'" "'$subj'" "'$struct'" "$resolution""
- #runMatlabCmd genFinalTransforms_general "'$data_dir'" "'$subj'" "'$struct'" "$resolution"
+ runMatlabCmd genFinalTransforms_general "'$data_dir'" "'$subj'" "'$struct'" "$resolution"
 
 
  #resample original image to aligned space in one step
@@ -693,9 +695,8 @@ then
  ref_mri=$reg_dir/3drigid_iter5/reg_ex_mri_${resolution}um.nii.gz 
  ref_mri_iso=$reg_dir/3drigid_iter5/reg_ex_mri_${resolution}um_iso.nii.gz 
 
- out_dir=$reg_dir/aligned_mri_${resolution}um
- out_dir_iso=$reg_dir/aligned_mri_${resolution}um_iso
- mkdir -p $out_dir $out_dir_iso
+ out_dir=$reg_dir/aligned
+ mkdir -p $out_dir 
 
  xfm=$reg_dir/final_xfm/ex-aligned.xfm
 
@@ -707,8 +708,9 @@ then
  echo mri_convert $ex_mri -vs $res_mm $res_mm $res_mm $ref_mri_iso
  mri_convert $ex_mri -vs $res_mm $res_mm $res_mm $ref_mri_iso
 
- out_mri=$out_dir/mri_aligned_${struct}_linear_${resolution}.nii.gz
- out_mri_iso=$out_dir/mri_aligned_${struct}_linear_${resolution}_iso.nii.gz
+ out_mri=$out_dir/mri_rigid_${resolution}um.nii.gz
+ out_mri_iso=$out_dir/mri_rigid_${resolution}um_iso.nii.gz
+
  echo reg_resample -flo $in_mri -res $out_mri  -aff $xfm -ref $ref_mri
  reg_resample -flo $in_mri -res $out_mri  -aff $xfm -ref $ref_mri
  echo reg_resample -flo $in_mri -res $out_mri_iso  -aff $xfm -ref $ref_mri_iso
