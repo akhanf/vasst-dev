@@ -1,5 +1,5 @@
 % generate 100um png and nifti files
-function genHistNiftiPngFromThumbnail ( datadir, out_res, varargin )
+function genHistNiftiPngFromThumbnail ( datadir, out_dir, out_res, varargin )
 
 
 subjs=varargin;
@@ -8,13 +8,15 @@ subjs=varargin;
 out_res_mm=out_res/1000;
 
 
+
 for s=1:length(subjs);
     subj=subjs{s};
     
     histdir=sprintf('%s/%s/tif',datadir,subj);
-    niidir=sprintf('%s/%s/%dum_Grayscale_nii',datadir,subj,out_res);
-    pngdir=sprintf('%s/%s/%dum_png',datadir,subj,out_res);
-    niirgbdir=sprintf('%s/%s/%dum_RGB_nii',datadir,subj,out_res);
+
+    niidir=sprintf('%s/%s/%dum_Grayscale_nii',out_dir,subj,out_res);
+    pngdir=sprintf('%s/%s/%dum_png',out_dir,subj,out_res);
+    niirgbdir=sprintf('%s/%s/%dum_RGB_nii',out_dir,subj,out_res);
 
     
     mkdir(niidir);

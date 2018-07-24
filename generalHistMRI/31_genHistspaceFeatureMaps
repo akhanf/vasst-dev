@@ -5,16 +5,19 @@
 if [ "$#" -lt 5 ]
 then
  echo "This script converts feature-map MAT files to nifti, making use of histology orientation cfg files"
- echo "Usage: $0 <data_dir> <structure> <stain>  <res_um> <featuremap name> <subject ids ...>"
+ echo "Usage: $0 <in_hist_dir> <out_root_dir> <structure> <stain>  <res_um> <featuremap name> <subject ids ...>"
  exit 0
 fi
 
+echo CMD: $@
+
 hist_dir=$1
-struct=$2
-stain=$3
-res_um=$4
-feat_name=$5
-shift 5
+out_dir=$2
+struct=$3
+stain=$4
+res_um=$5
+feat_name=$6
+shift 6
 
 feat_dir=${res_um}um_$feat_name
 
@@ -46,10 +49,33 @@ fi
 
 for subj in $@
 do
- work_dir=$hist_dir/$subj/$feat_dir
 
- coreg_dir=$hist_dir/$subj/coregisterToHE
+ work_dir=$out_dir/$subj/$feat_dir
+
  
+
+ echo runMatlabCmd convertFeatureMapToNifti "'$hist_dir'" "'$subj'" "'$struct'" "'$stain'" "$res_um" "'$feat_name'" "'$out_dir'" 
+ runMatlabCmd convertFeatureMapToNifti "'$hist_dir'" "'$subj'" "'$struct'" "'$stain'" "$res_um" "'$feat_name'" "'$out_dir'" 
+
+
+# deal with orientation-based features later...
+
+done
+
+
+#### done converting mat to nii (for scalar data)
+
+#HE coregistration:
+
+
+for subj in $@
+do
+
+
+ work_dir=$out_dir/$subj/$feat_dir
+ coreg_dir=$out_dir/$subj/coregisterToHE
+
+
  for tif in `ls  $hist_dir/$subj/tif/${subj}_${struct}_*_${stain}.tif`
  do
 
@@ -57,24 +83,34 @@ do
   prefix=${prefix%.tif}
   
   matfile=$work_dir/$prefix.mat
- if [ -e $matfile  ]
- then
-  echo runMatlabCmd convertFeatureMapToNifti "'$feat_dir'" "'$tif'"
-  runMatlabCmd convertFeatureMapToNifti "'$feat_dir'" "'$tif'"
-  if [ -n "$orient_vars" ]
-  then
-  echo runMatlabCmd convertOrientationFeatureMapToNifti "'$feat_dir'" "$orient_vars" "'$tif'"
-  runMatlabCmd convertOrientationFeatureMapToNifti "'$feat_dir'" "$orient_vars" "'$tif'"
-  fi
- else
-  echo "mat file for feature vec, $matfile, does not exist!"  
-  continue
- fi
+# if [ -e $matfile  ]
+# then
+#  echo runMatlabCmd convertFeatureMapToNifti "'$data_dir'" "'$subj'" "'$structure'" "'$stain'" "$res_um" "'$feat_name'" "'$out_dir'" 
+#  runMatlabCmd convertFeatureMapToNifti "'$data_dir'" "'$subj'" "'$structure'" "'$stain'" "$res_um" "'$feat_name'" "'$out_dir'" 
+
+  
+#  if [ -n "$orient_vars" ]
+#  then
+#  echo runMatlabCmd convertOrientationFeatureMapToNifti "'$feat_dir'" "$orient_vars" "'$tif'"
+#  runMatlabCmd convertOrientationFeatureMapToNifti "'$feat_dir'" "$orient_vars" "'$tif'"
+#  fi
+# else
+#  echo "mat file for feature vec, $matfile, does not exist!"  
+#  continue
+# fi
  
+
+
+#if stain is HE, then no need for applying coregistration xfm to HE..
+ if [ "$stain" = "HE" ]
+ then
+    continue
+fi
 
  #apply H&E reg warp
  flirt_xfm=$coreg_dir/flirt_${prefix}-HE.xfm
  inhdr=$coreg_dir/${prefix}.grayscale.nii.gz
+
 
  if [ ! -e $flirt_xfm -o ! -e $inhdr ]
  then
@@ -111,22 +147,22 @@ do
  then
 
  #deal with orientation things here  
-echo flirt -in $nii -init $flirt_xfm -applyxfm -ref $ref -out $reg -2D -interp nearestneighbour
+ echo flirt -in $nii -init $flirt_xfm -applyxfm -ref $ref -out $reg -2D -interp nearestneighbour
  flirt -in $nii -init $flirt_xfm -applyxfm -ref $ref -out $reg -2D -interp nearestneighbour
 
  reoriented=${nii%%.nii.gz}_regHE.reoriented.nii.gz
  runMatlabCmd reorientVecField "'$reg'" "'$flirt_xfm'" "'$reoriented'" 1
 
 
-else
+ else
 
-# echo fslcpgeom $inhdr $nii
-# fslcpgeom $inhdr $nii
+ # echo fslcpgeom $inhdr $nii
+ # fslcpgeom $inhdr $nii
 
- echo flirt -in $nii -init $flirt_xfm -applyxfm -ref $ref -out $reg -2D -interp nearestneighbour
- flirt -in $nii -init $flirt_xfm -applyxfm -ref $ref -out $reg -2D -interp nearestneighbour
+  echo flirt -in $nii -init $flirt_xfm -applyxfm -ref $ref -out $reg -2D -interp nearestneighbour
+  flirt -in $nii -init $flirt_xfm -applyxfm -ref $ref -out $reg -2D -interp nearestneighbour
 
-fi
+ fi
 
 
  done #nii  (once for each feature)
@@ -134,4 +170,4 @@ fi
 
  done #tif
 
-done
+ done #subj

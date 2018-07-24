@@ -4,7 +4,7 @@
 
 function usage {
  
- echo "$0 <data_dir> <structure  e.g. Hp > <stain e.g. NEUN> <subject ids>"
+ echo "$0 <data_dir> <structure  e.g. Hp > <stain e.g. NEUN>  <subject ids>"
  echo ""
  exit 0 
 }
@@ -17,29 +17,22 @@ usage
 
 fi
 
-#by default, reference is always HE in Histology
-ref_name=Histology
-ref=HE 
 
 data_dir=$1
 struct=$2  # e.g. Hp
 in_stain=$3  #e.g. NEUN, or GFAP 
+
+ref=HE 
 
 shift 3
 
 for subj in $@
 do
 
-
-
-#hist_dir_ref=$data_dir_ref/$subj
 hist_dir=$data_dir/$subj
-hist_dir_ref=$hist_dir
 
-coreg_dir_ref=$hist_dir_ref/coregisterToHE
 coreg_dir=$hist_dir/coregisterToHE
-mkdir -p $coreg_dir_ref $coreg_dir
-
+mkdir -p $coreg_dir $coreg_dir
 
 
 res=100 #microns
@@ -66,7 +59,7 @@ echo slicen $slicen
 
 
 in_hist=$nii_dir_ref/${subj}_${struct}_${slicen}_${ref}.nii.gz
-histslice=$coreg_dir_ref/${subj}_${struct}_${slicen}_${ref}.grayscale.nii.gz
+histslice=$coreg_dir/${subj}_${struct}_${slicen}_${ref}.grayscale.nii.gz
 
 
 
@@ -113,7 +106,7 @@ for stain in $in_stain
 do
 
 stain_hist=$coreg_dir/${subj}_${struct}_${slicen}_$stain.grayscale.nii.gz
-ref_hist=$coreg_dir_ref/${subj}_${struct}_${slicen}_$ref.grayscale.nii.gz
+ref_hist=$coreg_dir/${subj}_${struct}_${slicen}_$ref.grayscale.nii.gz
 
 reg_hist=$coreg_dir/${subj}_${struct}_${slicen}_${stain}_reg$ref.grayscale.nii.gz
 flirt_xfm=$coreg_dir/flirt_${subj}_${struct}_${slicen}_${stain}-$ref.xfm

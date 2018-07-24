@@ -1,30 +1,29 @@
 #!/bin/bash
 
 
-if [ "$#" -lt 4 ]
+if [ "$#" -lt 6 ]
 then
-echo "Usage: $0 <data_dir> <structure - Hp/Neo/SubcortL/SubcortR ..> <stain>  <resolution - 100, 20> <subjids>"
+echo "Usage: $0 <in_hist_dir> <out_root_dir> <structure - Hp/Neo/SubcortL/SubcortR ..> <stain>  <resolution - 100, 20> <subjids>"
 exit 0
 fi
 
 data_dir=$1
-structure=$2
-stain=$3
-resolution=$4
+out_dir=$2
+structure=$3
+stain=$4
+resolution=$5
 
 
-shift 4
+
+shift 5
 
 for subj in $@
 do
 
 
- for tif in `ls  $data_dir/$subj/tif/${subj}_${structure}_*_${stain}.tif`
- do
-
- echo runMatlabCmd generateGrayscaleRGB "'$tif'" "$resolution" 
- runMatlabCmd generateGrayscaleRGB "'$tif'" "$resolution" 
-done
+ echo runMatlabCmd generateGrayscaleRGB "'$data_dir'" "'$subj'" "'$structure'" "'$stain'" "$resolution" "'$out_dir'" 
+ runMatlabCmd generateGrayscaleRGB "'$data_dir'" "'$subj'" "'$structure'" "'$stain'" "$resolution" "'$out_dir'" 
+ 
 
 
 done
