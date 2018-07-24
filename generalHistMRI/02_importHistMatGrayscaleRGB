@@ -3,22 +3,23 @@
 
 if [ "$#" -lt 4 ]
 then
-echo "Usage: $0 <data_dir> <structure - Hp/Neo/SubcortL/SubcortR ..>  <resolution - 100, 20> <subjids>"
+echo "Usage: $0 <data_dir> <structure - Hp/Neo/SubcortL/SubcortR ..> <stain>  <resolution - 100, 20> <subjids>"
 exit 0
 fi
 
 data_dir=$1
 structure=$2
-resolution=$3
+stain=$3
+resolution=$4
 
 
-shift 3
+shift 4
 
 for subj in $@
 do
 
 
- for tif in `ls  $data_dir/$subj/tif/*${structure}*.tif`
+ for tif in `ls  $data_dir/$subj/tif/${subj}_${structure}_*_${stain}.tif`
  do
 
  echo runMatlabCmd generateGrayscaleRGB "'$tif'" "$resolution" 

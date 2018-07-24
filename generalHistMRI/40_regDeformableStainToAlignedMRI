@@ -2,7 +2,7 @@
 
 if [ "$#" -lt 6 ]
 then
- echo "Usage: $0 <data_dir> <structure> <stain> <featuremapdir - e.g.: 100um_FeatureMaps> <hist_feat_name> <mri_modality_name> <subject ids ...>"
+ echo "Usage: $0 <data_dir> <structure> <stain> <featuremapdir - e.g.: 100um_FeatureMaps> <hist_feat_name> <mri_name> <subject ids ...>"
  exit 0
 fi
 
@@ -20,6 +20,9 @@ res_um=${feat_dir%%um*}
 for subj in $@
 do
 
+mri_linear=$data_dir/$subj/mri_hist_reg_${struct}_${res_um}um/aligned_mri_${res_um}um/mri_aligned_${struct}_linear_${res_um}.nii.gz
+hist_linear=$data_dir/$subj/ ...
+
 
 mri_dir=$data_dir/$subj/mri_${struct}
 reg_dir=$data_dir/$subj/mri_hist_reg_${struct}_${res_um}um
@@ -35,7 +38,7 @@ hist_aligned_dir=$data_dir/$subj/$feat_dir/aligned/${struct}_${stain}
 
 
 hist_nii=$hist_aligned_dir/${featname}_rigid_${res_um}um.nii.gz
-mri_nii=$mri_aligned_dir/${subj}_${struct}_${mriname}.nii.gz
+mri_nii=$mri_aligned_dir/${mriname}.nii.gz
 
 
 if [ ! -e $hist_nii ]
@@ -56,6 +59,7 @@ nreg_dir=$data_dir/$subj/mri_hist_reg_${struct}_${res_um}um_nonrigid_${featname}
 hist_def_nii=$hist_aligned_dir/${featname}_deformable_${res_um}um.nii.gz
 
 echo reg_f3d_split2D $mri_nii $hist_nii $hist_def_nii $nreg_dir
+reg_f3d_split2D $mri_nii $hist_nii $hist_def_nii $nreg_dir
 
 #for spacing in 0.2 1.0
 #do
