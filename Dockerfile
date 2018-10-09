@@ -6,7 +6,7 @@ COPY . /opt/vasst-dev
 
 RUN echo addpath\(genpath\(\'/opt/vasst-dev/tools/matlab\'\)\)\; >> /etc/octave.conf 
 RUN cd /opt/vasst-dev/install_scripts
-RUN ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN bash 05.install_MCR.sh /opt v92 R2017a
 RUN bash 27.install_vasst_dev_atlases_by_source.sh /opt
