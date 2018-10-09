@@ -2,7 +2,7 @@ FROM khanlab/neuroglia-dwi:v1.4.1
 MAINTAINER <alik@robarts.ca>
 
 RUN mkdir -p /opt/vasst-dev
-COPY . /opt/vasst-dev
+COPY / /opt/vasst-dev
 
 RUN echo addpath\(genpath\(\'/opt/vasst-dev/tools/matlab\'\)\)\; >> /etc/octave.conf 
 RUN cd /opt/vasst-dev/install_scripts
