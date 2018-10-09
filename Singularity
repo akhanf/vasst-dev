@@ -1,6 +1,8 @@
 Bootstrap: shub
 From: khanlab/neuroglia-dwi:v1.0.0
 
+
+
 %labels
 Maintainer "Ali Khan"
 
@@ -14,14 +16,6 @@ cp -Rv . $SINGULARITY_ROOTFS/opt/vasst-dev
 %post
 #########
 
-SINGULARITY_TAG=${SINGULARITY_BUILDDEF#Singularity.}
-
-cd /opt/vasst-dev
-if [ ! "$SINGULARITY_TAG" = "Singularity" ]
-then
-  git checkout $SINGULARITY_TAG
-fi
-
 echo addpath\(genpath\(\'/opt/vasst-dev/tools/matlab\'\)\)\; >> /etc/octave.conf 
 
 cd /opt/vasst-dev/install_scripts
@@ -33,7 +27,6 @@ bash 27.install_vasst_dev_atlases_by_source.sh /opt
 
 #########
 %environment
-
 
 
 #vasst-dev
