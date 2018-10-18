@@ -3,15 +3,12 @@
 
 if [ "$#" -lt 3 ]
 then
-echo "Usage: $0 <Histology Name - i.e. Histology or Histology_Neo> <out_res_um, e.g. 100> <subjids>"
+echo "Usage: $0 <data_dir> <out_res_um, e.g. 100> <subjids>"
 exit 0
 fi
 
-hist_name=$1
+data_dir=$1
 out_res=$2
-
-#data_dir=/links/Histology
-data_dir=/eq-nas/$USER/EpilepsyHistology/$hist_name
 
 
 shift 2
@@ -37,6 +34,7 @@ fi
 
 
 #now run import script
-runMatlabCmd genHistNiftiPng "'$data_dir'" "$out_res" "'$subj'"
+runMatlabCmd genHistNiftiPngFromThumbnail "'$data_dir'" "$out_res" "'$subj'"
+
 
 done

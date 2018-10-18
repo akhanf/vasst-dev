@@ -1,17 +1,17 @@
+#!/bin/bash
 
 if [ "$#" -lt 4 ]
 then
-echo "Usage: $0 <Histology Name - i.e. Histology or Histology_Neo> <structure - Hp or Neo>  <resolution - 100, 20>  <annotation_name> <subjids>"
+echo "Usage: $0 <data_dir> <structure - Hp/Neo/SubcortL/SubcortR ..>  <resolution - 100, 20>  <annotation_name> <subjids>"
 exit 0
 fi
 
-hist_name=$1
+data_dir=$1
 structure=$2
 resolution=$3
 annot_name=$4
 
 
-data_dir=/eq-nas/$USER/EpilepsyHistology/$hist_name
 
 
 shift 4
@@ -21,8 +21,8 @@ for subj in $@
 do
 
  annot_folder=$data_dir/$subj/annotations/$annot_name
- #echo runMatlabCmd loadHistologyAnnotation "'$annot_folder'" "$resolution"
- runMatlabCmd loadHistologyAnnotation "'$annot_folder'" "$resolution"
+ #echo runMatlabCmd loadHistologyAnnotation_linkContours "'$annot_folder'" "$resolution"
+ runMatlabCmd loadHistologyAnnotation_linkContours "'$annot_folder'" "$resolution"
  
 
 
